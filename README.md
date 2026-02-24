@@ -379,6 +379,3 @@ cd src-tauri && cargo fmt
 - [React](https://react.dev/) - 强大的 UI 库
 - [Tailwind CSS](https://tailwindcss.com/) - 高效的 CSS 框架
 
----
-
-**Made with ❤️ by BrowserBgSwap Team**
