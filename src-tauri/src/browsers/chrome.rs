@@ -20,17 +20,18 @@ impl ChromeExtensionBuilder {
         fs::create_dir_all(ext_dir.join("icons"))?;
         fs::create_dir_all(ext_dir.join("images"))?;
 
+        let background_file_name = image_path.and_then(Self::background_file_name);
+
         fs::write(ext_dir.join("manifest.json"), Self::generate_manifest())?;
-        fs::write(ext_dir.join("newtab.html"), Self::generate_newtab_html(settings, image_path))?;
+        fs::write(
+            ext_dir.join("newtab.html"),
+            Self::generate_newtab_html(settings, background_file_name.as_deref()),
+        )?;
         fs::write(ext_dir.join("styles.css"), Self::generate_styles_css())?;
         fs::write(ext_dir.join("newtab.js"), Self::generate_newtab_js())?;
 
-        if let Some(img) = image_path {
-            let ext = Path::new(img)
-                .extension()
-                .and_then(|e| e.to_str())
-                .unwrap_or("jpg");
-            let dest = ext_dir.join("images").join(format!("background.{}", ext));
+        if let (Some(img), Some(file_name)) = (image_path, background_file_name.as_deref()) {
+            let dest = ext_dir.join("images").join(file_name);
             fs::copy(img, dest)?;
         }
 
@@ -64,9 +65,11 @@ impl ChromeExtensionBuilder {
         .to_string()
     }
 
-    fn generate_newtab_html(settings: &BrowserSettings, image_path: Option<&str>) -> String {
-        let bg_style = if image_path.is_some() {
-            "background-image: url('images/background.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;".to_string()
+    fn generate_newtab_html(settings: &BrowserSettings, background_file_name: Option<&str>) -> String {
+        let bg_style = if let Some(file_name) = background_file_name {
+            format!(
+                "background-image: url('images/{file_name}'); background-size: cover; background-position: center; background-repeat: no-repeat;"
+            )
         } else {
             "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);".to_string()
         };
@@ -109,6 +112,14 @@ impl ChromeExtensionBuilder {
 </html>"#,
             bg_style, search_display, shortcuts_display
         )
+    }
+
+    fn background_file_name(image_path: &str) -> Option<String> {
+        let ext = Path::new(image_path)
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.to_ascii_lowercase())?;
+        Some(format!("background.{ext}"))
     }
 
     fn generate_styles_css() -> &'static str {

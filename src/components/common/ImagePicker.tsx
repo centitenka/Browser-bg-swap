@@ -7,6 +7,14 @@ interface ImagePickerProps {
   onClear: () => void;
 }
 
+function toFileUrl(path: string): string {
+  const normalized = path.replace(/\\/g, '/');
+  const withLeadingSlash = /^[A-Za-z]:\//.test(normalized)
+    ? `/${normalized}`
+    : normalized;
+  return `file://${withLeadingSlash}`;
+}
+
 function getImageInfo(path: string): { name: string; ext: string } {
   const parts = path.split(/[/\\]/);
   const name = parts[parts.length - 1] || path;
@@ -50,7 +58,7 @@ export function ImagePicker({ path, onSelect, onClear }: ImagePickerProps) {
         <div className="space-y-3 animate-fade-in">
           <div className="group relative aspect-video w-full overflow-hidden rounded-lg border border-border-subtle/50 bg-black/40 shadow-sm">
             <img
-              src={`file://${path}`}
+              src={toFileUrl(path)}
               alt="Background Preview"
               className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
               onError={(e) => {

@@ -126,19 +126,24 @@ impl FirefoxManager {
     /// 检查about:config前置条件
     pub fn check_prerequisites(profile_path: &str) -> Result<PrereqCheck> {
         let prefs_path = Path::new(profile_path).join("prefs.js");
+        let user_js_path = Path::new(profile_path).join("user.js");
 
-        if !prefs_path.exists() {
+        if !prefs_path.exists() && !user_js_path.exists() {
             return Ok(PrereqCheck {
                 toolkit_legacy_enabled: false,
                 all_ok: false,
-                instructions: vec!["未找到prefs.js文件".into()],
+                instructions: vec!["未找到prefs.js/user.js文件".into()],
             });
         }
 
-        let content = fs::read_to_string(&prefs_path)?;
+        let pref_key = "toolkit.legacyUserProfileCustomizations.stylesheets";
 
-        let toolkit_enabled = content.contains("toolkit.legacyUserProfileCustomizations.stylesheets")
-            && content.contains("true");
+        let toolkit_enabled = (prefs_path.exists()
+            && fs::read_to_string(&prefs_path)?
+                .contains(&format!(r#"user_pref("{pref_key}", true);"#)))
+            || (user_js_path.exists()
+                && fs::read_to_string(&user_js_path)?
+                    .contains(&format!(r#"user_pref("{pref_key}", true);"#)));
 
         let mut instructions = Vec::new();
 
