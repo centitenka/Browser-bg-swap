@@ -1,5 +1,3 @@
-import { useCallback, useRef } from 'react';
-
 interface SwitchProps {
   label: string;
   checked: boolean;
@@ -8,46 +6,31 @@ interface SwitchProps {
 }
 
 export function Switch({ label, checked, onChange, description }: SwitchProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onChange(!checked);
-      }
-    },
-    [checked, onChange]
-  );
-
   return (
-    <label className="flex items-center justify-between p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700/80 transition-colors focus-within:ring-2 focus-within:ring-blue-500">
+    <div className="flex items-center justify-between py-3">
       <div className="flex flex-col gap-0.5">
-        <span className="text-gray-200 font-medium">{label}</span>
+        <span className="text-sm font-medium text-gray-200">{label}</span>
         {description && (
-          <span className="text-gray-400 text-xs">{description}</span>
+          <span className="text-xs text-gray-400">{description}</span>
         )}
       </div>
       <button
-        ref={buttonRef}
         type="button"
         role="switch"
         aria-checked={checked}
         aria-label={label}
         onClick={() => onChange(!checked)}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        className={`relative w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 ${
-          checked ? 'bg-blue-600' : 'bg-gray-600'
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
+          checked ? 'bg-primary' : 'bg-gray-600'
         }`}
       >
         <span
-          className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${
-            checked ? 'translate-x-7' : 'translate-x-1'
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            checked ? 'translate-x-5' : 'translate-x-0'
           }`}
           aria-hidden="true"
         />
       </button>
-    </label>
+    </div>
   );
 }

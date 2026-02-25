@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 export interface ConfirmOptions {
   title: string;
@@ -19,8 +19,8 @@ export function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmText = '确认',
-  cancelText = '取消',
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
   isDangerous = false,
   onConfirm,
   onCancel,
@@ -54,52 +54,46 @@ export function ConfirmDialog({
       aria-describedby="confirm-message"
     >
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onCancel}
         aria-hidden="true"
       />
 
-      <div className="relative bg-gray-800 rounded-xl border border-gray-700 shadow-2xl max-w-md w-full animate-scale-in">
+      <div className="relative bg-card rounded-2xl border border-border-subtle/50 shadow-2xl max-w-sm w-full animate-scale-in overflow-hidden">
         <div className="p-6">
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col items-center text-center gap-4">
             {isDangerous && (
-              <div className="shrink-0 w-10 h-10 rounded-full bg-red-900/50 flex items-center justify-center">
-                <AlertTriangle className="text-red-400" size={20} aria-hidden="true" />
+              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-2">
+                <AlertTriangle className="text-red-500" size={24} aria-hidden="true" />
               </div>
             )}
-            <div className="flex-1">
+            
+            <div className="space-y-2">
               <h3
                 id="confirm-title"
-                className="text-lg font-semibold text-white mb-2"
+                className="text-lg font-bold text-gray-50"
               >
                 {title}
               </h3>
-              <p id="confirm-message" className="text-gray-300 text-sm">
+              <p id="confirm-message" className="text-sm text-gray-400 leading-relaxed">
                 {message}
               </p>
             </div>
-            <button
-              onClick={onCancel}
-              className="p-1 rounded hover:bg-gray-700 transition-colors"
-              aria-label="关闭"
-            >
-              <X size={18} className="text-gray-400" />
-            </button>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="grid grid-cols-2 gap-3 mt-8">
             <button
               onClick={onCancel}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+              className="px-4 py-2.5 bg-transparent hover:bg-white/5 text-gray-400 hover:text-gray-200 border border-border-subtle/30 hover:border-border-subtle/60 rounded-xl transition-all font-medium text-sm"
             >
               {cancelText}
             </button>
             <button
               onClick={onConfirm}
-              className={`px-4 py-2 text-white rounded-lg transition-colors text-sm ${
+              className={`px-4 py-2.5 text-white rounded-xl transition-all font-medium text-sm shadow-lg ${
                 isDangerous
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                  ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20'
+                  : 'bg-primary hover:bg-primary-hover shadow-primary/25'
               }`}
             >
               {confirmText}

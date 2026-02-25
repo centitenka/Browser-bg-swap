@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Plus,
 } from 'lucide-react';
 import { useConfigStore } from '../../stores/configStore';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -18,7 +19,7 @@ function formatBackupTime(filename: string): string {
   if (!match) return filename;
 
   const [, year, month, day, hour, minute] = match;
-  return `${year}年${month}月${day}日 ${hour}:${minute}`;
+  return `${year}/${month}/${day} ${hour}:${minute}`;
 }
 
 export function BackupManager() {
@@ -41,46 +42,46 @@ export function BackupManager() {
   const handleCreateBackup = async () => {
     try {
       await createBackup();
-      success('备份创建成功！');
+      success('Backup created successfully');
     } catch (e) {
-      showError('备份创建失败：' + (e as Error).message);
+      showError('Failed to create backup: ' + (e as Error).message);
     }
   };
 
   const handleRestore = async (name: string) => {
     const confirmed = await confirm({
-      title: '恢复备份',
-      message: `确定要恢复备份 "${formatBackupTime(name)}" 吗？这将覆盖当前配置。`,
-      confirmText: '恢复',
-      cancelText: '取消',
+      title: 'Restore Backup',
+      message: `Are you sure you want to restore "${formatBackupTime(name)}"? This will overwrite your current settings.`,
+      confirmText: 'Restore',
+      cancelText: 'Cancel',
       isDangerous: true,
     });
 
     if (confirmed) {
       try {
         await restoreBackup(name);
-        success('备份恢复成功！');
+        success('Backup restored successfully');
       } catch (e) {
-        showError('备份恢复失败：' + (e as Error).message);
+        showError('Failed to restore backup: ' + (e as Error).message);
       }
     }
   };
 
   const handleDelete = async (name: string) => {
     const confirmed = await confirm({
-      title: '删除备份',
-      message: `确定要删除备份 "${formatBackupTime(name)}" 吗？此操作不可撤销。`,
-      confirmText: '删除',
-      cancelText: '取消',
+      title: 'Delete Backup',
+      message: `Are you sure you want to delete "${formatBackupTime(name)}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
       isDangerous: true,
     });
 
     if (confirmed) {
       try {
         await deleteBackup?.(name);
-        success('备份已删除');
+        success('Backup deleted');
       } catch (e) {
-        showError('删除失败：' + (e as Error).message);
+        showError('Failed to delete: ' + (e as Error).message);
       }
     }
   };
@@ -98,77 +99,72 @@ export function BackupManager() {
         onCancel={onCancel}
       />
 
-      <div className="bg-gray-800 rounded-xl p-6">
+      <div className="bg-card border border-border-subtle/50 rounded-xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-medium text-white">备份管理</h3>
-            <p className="text-sm text-gray-400 mt-0.5">
-              {backups.length > 0
-                ? `共有 ${backups.length} 个备份`
-                : '备份可在需要时恢复配置'}
-            </p>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Backups
+          </h3>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-medium">
+              {backups.length > 0 ? `${backups.length} saved` : 'No backups'}
+            </span>
+            {backups.length > 0 && (
+              <button
+                onClick={() => setShowBackups(!showBackups)}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary-hover transition-colors px-2 py-1 rounded hover:bg-primary/10"
+                aria-expanded={showBackups}
+              >
+                {showBackups ? 'Hide' : 'Show All'}
+                {showBackups ? (
+                  <ChevronUp size={14} />
+                ) : (
+                  <ChevronDown size={14} />
+                )}
+              </button>
+            )}
           </div>
-          {backups.length > 0 && (
-            <button
-              onClick={() => setShowBackups(!showBackups)}
-              className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
-              aria-expanded={showBackups}
-            >
-              {showBackups ? '收起' : '查看全部'}
-              {showBackups ? (
-                <ChevronUp size={16} />
-              ) : (
-                <ChevronDown size={16} />
-              )}
-            </button>
-          )}
         </div>
 
         <button
           onClick={handleCreateBackup}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="创建新备份"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-sidebar border border-border-subtle hover:border-primary/50 text-gray-200 hover:text-primary rounded-lg transition-all duration-200 group"
+          aria-label="Create new backup"
         >
-          <Archive size={18} aria-hidden="true" />
-          <span>创建备份</span>
+          <div className="p-1 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
+             <Plus size={16} className="group-hover:text-primary transition-colors" />
+          </div>
+          <span className="text-sm font-medium">Create New Backup</span>
         </button>
 
         {showBackups && backups.length > 0 && (
-          <div className="mt-4 space-y-2" role="list" aria-label="备份列表">
+          <div className="mt-4 border-t border-border-subtle/30 divide-y divide-border-subtle/30">
             {backups.map((backup) => (
               <div
                 key={backup}
-                className="flex items-center justify-between p-3 bg-gray-700 rounded-lg group hover:bg-gray-650 transition-colors"
+                className="flex items-center justify-between py-3 px-2 group hover:bg-white/5 rounded-lg -mx-2 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <Clock
-                    size={16}
-                    className="text-gray-400 shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span
-                    className="text-gray-200 text-sm truncate"
-                    title={backup}
-                  >
+                  <div className="p-1.5 rounded-full bg-sidebar border border-border-subtle text-gray-400">
+                    <Clock size={14} />
+                  </div>
+                  <span className="text-sm text-gray-300 font-mono truncate">
                     {formatBackupTime(backup)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleRestore(backup)}
-                    className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 rounded-lg transition-colors"
-                    title="恢复此备份"
-                    aria-label={`恢复备份 ${formatBackupTime(backup)}`}
+                    className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                    title="Restore"
                   >
-                    <RotateCcw size={16} />
+                    <RotateCcw size={14} />
                   </button>
                   <button
                     onClick={() => handleDelete(backup)}
-                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded-lg transition-colors"
-                    title="删除此备份"
-                    aria-label={`删除备份 ${formatBackupTime(backup)}`}
+                    className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                    title="Delete"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
@@ -177,15 +173,11 @@ export function BackupManager() {
         )}
 
         {showBackups && backups.length === 0 && (
-          <div className="mt-4">
+          <div className="mt-6">
             <EmptyState
               icon={<Archive size={24} />}
-              title="暂无备份"
-              description="创建备份以保存当前配置，需要时可随时恢复。"
-              action={{
-                label: '立即创建',
-                onClick: handleCreateBackup,
-              }}
+              title="No Backups Yet"
+              description="Create a backup to save your current configuration."
             />
           </div>
         )}

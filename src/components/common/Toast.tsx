@@ -18,31 +18,23 @@ interface ToastProps {
 const typeConfig = {
   success: {
     icon: CheckCircle,
-    bg: 'bg-green-900/90',
-    border: 'border-green-700',
-    text: 'text-green-100',
-    iconColor: 'text-green-400',
+    color: 'text-green-500',
+    border: 'border-green-500/20',
   },
   error: {
     icon: AlertCircle,
-    bg: 'bg-red-900/90',
-    border: 'border-red-700',
-    text: 'text-red-100',
-    iconColor: 'text-red-400',
+    color: 'text-red-500',
+    border: 'border-red-500/20',
   },
   warning: {
     icon: AlertTriangle,
-    bg: 'bg-yellow-900/90',
-    border: 'border-yellow-700',
-    text: 'text-yellow-100',
-    iconColor: 'text-yellow-400',
+    color: 'text-yellow-500',
+    border: 'border-yellow-500/20',
   },
   info: {
     icon: Info,
-    bg: 'bg-blue-900/90',
-    border: 'border-blue-700',
-    text: 'text-blue-100',
-    iconColor: 'text-blue-400',
+    color: 'text-blue-500',
+    border: 'border-blue-500/20',
   },
 };
 
@@ -53,25 +45,28 @@ function ToastItemComponent({ toast, onRemove }: { toast: ToastItem; onRemove: (
   useEffect(() => {
     const timer = setTimeout(() => {
       onRemove(toast.id);
-    }, toast.duration || 3000);
+    }, toast.duration || 4000);
 
     return () => clearTimeout(timer);
   }, [toast.id, toast.duration, onRemove]);
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-[300px] max-w-md animate-slide-in ${config.bg} ${config.border}`}
+      className={`flex items-start gap-3 px-4 py-3 rounded-xl border shadow-xl bg-card/95 backdrop-blur-md transition-all duration-300 animate-slide-in hover:translate-y-[-2px] ${config.border}`}
       role="alert"
       aria-live="polite"
+      style={{ minWidth: '320px', maxWidth: '400px' }}
     >
-      <Icon className={`shrink-0 ${config.iconColor}`} size={20} aria-hidden="true" />
-      <p className={`flex-1 text-sm ${config.text}`}>{toast.message}</p>
+      <Icon className={`shrink-0 mt-0.5 ${config.color}`} size={18} aria-hidden="true" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-200 leading-snug">{toast.message}</p>
+      </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="p-1 rounded hover:bg-white/10 transition-colors"
-        aria-label="关闭通知"
+        className="shrink-0 -mr-1 -mt-1 p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/10 transition-colors"
+        aria-label="Close notification"
       >
-        <X size={16} className="text-gray-400" />
+        <X size={14} />
       </button>
     </div>
   );
@@ -82,13 +77,15 @@ export function ToastContainer({ toasts, onRemove }: ToastProps) {
 
   return (
     <div
-      className="fixed top-4 right-4 z-50 flex flex-col gap-2"
+      className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"
       aria-live="polite"
-      aria-label="通知"
+      aria-label="Notifications"
     >
-      {toasts.map((toast) => (
-        <ToastItemComponent key={toast.id} toast={toast} onRemove={onRemove} />
-      ))}
+      <div className="flex flex-col gap-3 pointer-events-auto">
+        {toasts.map((toast) => (
+          <ToastItemComponent key={toast.id} toast={toast} onRemove={onRemove} />
+        ))}
+      </div>
     </div>
   );
 }

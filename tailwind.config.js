@@ -7,12 +7,32 @@ export default {
   theme: {
     extend: {
       colors: {
+        sidebar: '#191919',
+        content: '#202020',
+        card: '#2C2C2C',
+        'border-subtle': '#333333',
+        primary: {
+          DEFAULT: '#007AFF', // Apple Blue
+          hover: '#0062CC',
+        },
         gray: {
           750: '#2d3748',
           650: '#374151',
           850: '#1a202c',
           950: '#0d1117',
         },
+      },
+      fontFamily: {
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Text"',
+          '"Segoe UI"',
+          'Roboto',
+          'Helvetica',
+          'Arial',
+          'sans-serif',
+        ],
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',

@@ -17,11 +17,11 @@ export function LoadingSpinner({ size = 'md', text, fullScreen = false }: Loadin
     <div className={`flex items-center gap-3 ${fullScreen ? 'flex-col' : ''}`}>
       <Loader2
         size={sizeMap[size]}
-        className="animate-spin text-blue-500"
+        className="animate-spin text-primary"
         aria-hidden="true"
       />
       {text && (
-        <span className={`text-gray-300 ${fullScreen ? 'text-lg' : 'text-sm'}`}>
+        <span className={`text-gray-400 font-medium ${fullScreen ? 'text-base' : 'text-sm'}`}>
           {text}
         </span>
       )}
@@ -31,10 +31,10 @@ export function LoadingSpinner({ size = 'md', text, fullScreen = false }: Loadin
   if (fullScreen) {
     return (
       <div
-        className="fixed inset-0 bg-gray-900/90 flex flex-col items-center justify-center z-50"
+        className="fixed inset-0 bg-sidebar/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-200"
         role="alert"
         aria-busy="true"
-        aria-label={text || '加载中'}
+        aria-label={text || 'Loading'}
       >
         {spinnerContent}
       </div>
@@ -45,7 +45,8 @@ export function LoadingSpinner({ size = 'md', text, fullScreen = false }: Loadin
     <div
       role="status"
       aria-busy="true"
-      aria-label={text || '加载中'}
+      aria-label={text || 'Loading'}
+      className="inline-flex"
     >
       {spinnerContent}
     </div>

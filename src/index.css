@@ -1,20 +1,52 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0a0a0a;
+  color-scheme: dark;
+  --color-sidebar: #191919;
+  --color-content: #202020;
+  --color-card: #2C2C2C;
+  --color-border-subtle: #333333;
+  --color-primary: #007AFF;
+  --color-primary-hover: #0062CC;
+
+  color: rgba(255, 255, 255, 0.92);
+  background-color: var(--color-content);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@theme {
+  --color-sidebar: #191919;
+  --color-content: #202020;
+  --color-card: #2C2C2C;
+  --color-border-subtle: #333333;
+  --color-primary: #007AFF;
+  --color-primary-hover: #0062CC;
+
+  --animate-fade-in: fadeIn 0.2s ease-out;
+  --animate-slide-in: slideIn 0.3s ease-out;
+  --animate-scale-in: scaleIn 0.2s ease-out;
+  --animate-spin-slow: spin 2s linear infinite;
+
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes slideIn {
+    0% { transform: translateY(-10px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes scaleIn {
+    0% { transform: scale(0.95); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
 }
 
 * {
@@ -30,6 +62,7 @@ body {
   display: flex;
   min-width: 320px;
   min-height: 100vh;
+  @apply bg-content text-gray-200;
 }
 
 #root {
@@ -38,7 +71,7 @@ body {
 
 /* Global focus styles for accessibility */
 :focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -53,27 +86,27 @@ body {
   }
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar for dark theme - Modern Minimalist */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Selection colors */
 ::selection {
-  background-color: #3b82f6;
+  background-color: rgba(0, 122, 255, 0.3);
   color: white;
 }

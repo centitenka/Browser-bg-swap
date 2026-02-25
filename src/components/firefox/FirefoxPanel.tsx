@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle, Save, FolderOpen } from 'lucide-react';
+import { AlertCircle, CheckCircle, Save, FolderOpen, ArrowRight } from 'lucide-react';
 import { useConfigStore } from '../../stores/configStore';
 import { useToast } from '../../hooks/useToast';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ToastContainer } from '../common/Toast';
-import { SkeletonCard } from '../common/Skeleton';
 import { SettingsPanel } from '../common/SettingsPanel';
 import { BackupManager } from './BackupManager';
 import { ProfileSelector } from './ProfileSelector';
@@ -49,19 +48,22 @@ export function FirefoxPanel() {
     try {
       await applyFirefox();
       setHasApplied(true);
-      success('Firefox 背景设置已成功应用！重启浏览器后生效。');
+      success('Firefox background applied successfully! Restart Firefox to see changes.');
       setTimeout(() => setHasApplied(false), 3000);
     } catch (e) {
-      showError('应用设置失败，请重试');
+      showError('Failed to apply settings. Please try again.');
     }
   };
 
   if (!firefoxInfo) {
     return (
-      <div className="max-w-2xl">
-        <LoadingSpinner text="正在检测 Firefox 安装..." />
-        <div className="mt-8 space-y-4">
-          <SkeletonCard rows={3} />
+      <div className="max-w-3xl mx-auto">
+        <div className="flex flex-col items-center justify-center py-12">
+          <LoadingSpinner text="Detecting Firefox..." />
+        </div>
+        <div className="space-y-6 opacity-50">
+           <div className="h-32 bg-white/5 rounded-xl w-full animate-pulse" />
+           <div className="h-48 bg-white/5 rounded-xl w-full animate-pulse" />
         </div>
       </div>
     );
@@ -71,25 +73,22 @@ export function FirefoxPanel() {
     return (
       <>
         <ToastContainer toasts={toasts} onRemove={removeToast} />
-        <div className="bg-yellow-900/50 border border-yellow-700 rounded-xl p-6 max-w-2xl">
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 w-12 h-12 rounded-full bg-yellow-900/50 flex items-center justify-center">
-              <AlertCircle className="text-yellow-500" size={24} aria-hidden="true" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-yellow-200 font-semibold text-lg">未检测到 Firefox 浏览器</h3>
-              <p className="text-yellow-400 text-sm mt-2">
-                请确保 Firefox 已正确安装在您的系统上。如果已安装但未检测到，请检查安装路径是否正确。
+        <div className="max-w-3xl mx-auto">
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-8 text-center">
+              <div className="w-16 h-16 bg-yellow-500/20 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={32} />
+              </div>
+              <h3 className="text-xl font-semibold text-yellow-100 mb-2">Firefox Not Detected</h3>
+              <p className="text-yellow-200/70 max-w-md mx-auto mb-6">
+                We couldn't find a standard Firefox installation. Please ensure Firefox is installed correctly.
               </p>
               <button
                 onClick={detectFirefox}
-                className="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                aria-label="重新检测 Firefox"
+                className="px-6 py-2.5 bg-yellow-600/80 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
               >
-                重新检测
+                Retry Detection
               </button>
             </div>
-          </div>
         </div>
       </>
     );
@@ -98,17 +97,20 @@ export function FirefoxPanel() {
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="space-y-6 max-w-2xl animate-fade-in">
+      <div className="space-y-8 max-w-3xl mx-auto animate-fade-in pb-12">
         {prereqCheck && !prereqCheck.all_ok && (
-          <div className="bg-yellow-900/50 border border-yellow-700 rounded-xl p-5">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="text-yellow-500 shrink-0 mt-0.5" size={20} aria-hidden="true" />
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-500 shrink-0">
+                  <AlertCircle size={20} />
+              </div>
               <div className="flex-1">
-                <h4 className="text-yellow-200 font-medium">需要配置 Firefox</h4>
-                <ul className="mt-2 space-y-1 text-sm text-yellow-400" role="list">
+                <h4 className="text-yellow-100 font-medium text-base mb-1">Configuration Required</h4>
+                <p className="text-yellow-200/70 text-sm mb-3">Firefox needs a few tweaks to support custom backgrounds.</p>
+                <ul className="space-y-1.5 text-sm text-yellow-200/80 mb-4" role="list">
                   {prereqCheck.instructions.map((instruction, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <span aria-hidden="true">•</span>
+                      <span className="mt-1.5 w-1 h-1 rounded-full bg-yellow-500" aria-hidden="true" />
                       <span>{instruction}</span>
                     </li>
                   ))}
@@ -116,9 +118,9 @@ export function FirefoxPanel() {
                 <button
                   onClick={autoFixPrerequisites}
                   disabled={isLoading}
-                  className="mt-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 disabled:text-gray-400 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 bg-yellow-600/90 hover:bg-yellow-600 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500/50 disabled:opacity-50"
                 >
-                  自动配置
+                  Auto Configure
                 </button>
               </div>
             </div>
@@ -139,40 +141,40 @@ export function FirefoxPanel() {
 
         {selectedProfile && <BackupManager />}
 
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4 pt-4 border-t border-border-subtle/30">
           <button
             onClick={handleApply}
             disabled={isLoading || !prereqCheck?.all_ok}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label={isLoading ? '应用中' : hasApplied ? '已应用' : '应用设置'}
+            className="flex-1 flex items-center justify-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary-hover disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg shadow-primary/25 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             {isLoading ? (
               <LoadingSpinner size="sm" />
             ) : hasApplied ? (
-              <CheckCircle size={20} aria-hidden="true" />
+              <CheckCircle size={20} className="animate-scale-in" />
             ) : (
-              <Save size={20} aria-hidden="true" />
+              <Save size={20} />
             )}
             <span>
-              {isLoading ? '应用中...' : hasApplied ? '已应用' : '应用设置'}
+              {isLoading ? 'Applying...' : hasApplied ? 'Applied Successfully' : 'Apply Changes'}
             </span>
           </button>
 
           <button
             onClick={() => {}}
             disabled={!selectedProfile}
-            className="flex items-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
-            aria-label="打开配置文件目录"
+            className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white/5 hover:bg-white/10 border border-border-subtle/50 text-gray-200 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-border-subtle"
+            title="Open Profile Folder"
           >
-            <FolderOpen size={18} aria-hidden="true" />
-            <span className="text-sm">打开目录</span>
+            <FolderOpen size={20} />
           </button>
         </div>
 
-        <div className="bg-blue-900/30 border border-blue-800 rounded-lg p-4 text-sm text-blue-200">
-          <p className="flex items-start gap-2">
-            <span aria-hidden="true">💡</span>
-            <span>应用设置后需要重启 Firefox 才能看到效果。</span>
+        <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 flex items-start gap-3">
+          <div className="mt-0.5 text-blue-400">
+             <ArrowRight size={18} />
+          </div>
+          <p className="text-sm text-blue-200/80 leading-relaxed">
+            <span className="font-medium text-blue-200">Pro Tip:</span> A browser restart is required for changes to take effect. If you don't see your changes, check the "about:config" settings mentioned above.
           </p>
         </div>
       </div>

@@ -28,40 +28,43 @@ function App() {
   const getTitle = () => {
     switch (activeTab) {
       case 'firefox':
-        return 'Firefox 设置';
+        return 'Firefox';
       case 'chrome':
-        return 'Chrome/Edge 设置';
+        return 'Chrome / Edge';
       default:
-        return '设置';
+        return 'Settings';
     }
   };
 
   const getBreadcrumbs = () => {
     return [
-      { label: activeTab === 'firefox' ? 'Firefox' : 'Chrome/Edge' },
+      { label: 'Settings' },
+      { label: activeTab === 'firefox' ? 'Firefox' : 'Chrome / Edge' },
     ];
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-950">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <Header
           title={getTitle()}
           breadcrumbs={getBreadcrumbs()}
         />
 
-        <main className="flex-1 p-6 overflow-auto">
-          <div
-            className={`transition-all duration-150 ${
-              isTransitioning
-                ? 'opacity-0 transform translate-y-2'
-                : 'opacity-100 transform translate-y-0'
-            }`}
-          >
-            {activeTab === 'firefox' && <FirefoxPanel />}
-            {activeTab === 'chrome' && <ChromePanel />}
+        <main className="flex-1 overflow-y-auto bg-content scroll-smooth">
+          <div className="max-w-5xl mx-auto p-8 w-full">
+            <div
+              className={`transition-all duration-300 ease-in-out ${
+                isTransitioning
+                  ? 'opacity-0 translate-y-4'
+                  : 'opacity-100 translate-y-0'
+              }`}
+            >
+              {activeTab === 'firefox' && <FirefoxPanel />}
+              {activeTab === 'chrome' && <ChromePanel />}
+            </div>
           </div>
         </main>
       </div>

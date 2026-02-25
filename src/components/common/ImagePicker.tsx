@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Image, X, Upload, FileImage } from 'lucide-react';
+import { Image as ImageIcon, X, Upload, FileImage, RefreshCw } from 'lucide-react';
 
 interface ImagePickerProps {
   path: string | null;
@@ -13,7 +13,7 @@ function getImageInfo(path: string): { name: string; ext: string } {
   const extMatch = name.match(/\.([^.]+)$/);
   return {
     name,
-    ext: extMatch ? extMatch[1].toUpperCase() : '未知',
+    ext: extMatch ? extMatch[1].toUpperCase() : 'UNK',
   };
 }
 
@@ -45,49 +45,59 @@ export function ImagePicker({ path, onSelect, onClear }: ImagePickerProps) {
   const imageInfo = path ? getImageInfo(path) : null;
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-300">
-        背景图片
-      </label>
-
+    <div className="w-full">
       {path ? (
-        <div className="relative group">
-          <div className="aspect-video max-h-48 bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
+        <div className="space-y-3 animate-fade-in">
+          <div className="group relative aspect-video w-full overflow-hidden rounded-lg border border-border-subtle/50 bg-black/40 shadow-sm">
             <img
               src={`file://${path}`}
-              alt="背景预览"
-              className="w-full h-full object-contain"
+              alt="Background Preview"
+              className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
-          </div>
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={onClear}
-              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-              aria-label="清除图片"
-              title="清除图片"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="mt-2 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              <FileImage size={16} className="text-gray-400" aria-hidden="true" />
-              <span className="text-gray-300 truncate max-w-[200px]" title={imageInfo?.name}>
-                {imageInfo?.name}
-              </span>
-              <span className="text-gray-500 text-xs px-2 py-0.5 bg-gray-700 rounded">
-                {imageInfo?.ext}
-              </span>
+            
+            {/* Overlay Actions */}
+            <div className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/20" />
+            
+            <div className="absolute top-3 right-3 flex gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <button
+                onClick={onSelect}
+                className="rounded-full bg-black/50 p-2 text-white backdrop-blur-md hover:bg-black/70 transition-colors"
+                title="Change Image"
+              >
+                <RefreshCw size={16} />
+              </button>
+              <button
+                onClick={onClear}
+                className="rounded-full bg-red-500/80 p-2 text-white backdrop-blur-md hover:bg-red-600 transition-colors"
+                title="Remove Image"
+              >
+                <X size={16} />
+              </button>
             </div>
-            <button
-              onClick={onSelect}
-              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              更换图片
-            </button>
+
+            {/* File Info Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <div className="flex items-center gap-2 text-xs text-white/90">
+                <FileImage size={14} className="opacity-70" />
+                <span className="truncate font-medium">{imageInfo?.name}</span>
+                <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  {imageInfo?.ext}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center px-1">
+             <p className="text-xs text-gray-500">Currently selected background.</p>
+             <button 
+               onClick={onSelect}
+               className="text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+             >
+               Replace Image
+             </button>
           </div>
         </div>
       ) : (
@@ -96,28 +106,31 @@ export function ImagePicker({ path, onSelect, onClear }: ImagePickerProps) {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`w-full py-8 px-4 border-2 border-dashed rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`group relative flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-card ${
             isDragging
-              ? 'border-blue-500 bg-blue-900/20'
-              : 'border-gray-600 bg-gray-750 hover:border-gray-500 hover:bg-gray-700'
+              ? 'border-primary bg-primary/5'
+              : 'border-border-subtle/50 bg-white/2 hover:border-gray-500 hover:bg-white/5'
           }`}
-          aria-label="选择图片"
         >
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
             <div
-              className={`p-3 rounded-full transition-colors ${
-                isDragging ? 'bg-blue-600' : 'bg-gray-700'
+              className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
+                isDragging ? 'bg-primary text-white scale-110' : 'bg-sidebar text-gray-400 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary'
               }`}
             >
               {isDragging ? (
-                <Upload size={24} className="text-white" aria-hidden="true" />
+                <Upload size={24} strokeWidth={2} />
               ) : (
-                <Image size={24} className="text-gray-400" aria-hidden="true" />
+                <ImageIcon size={24} strokeWidth={1.5} />
               )}
             </div>
-            <div className="text-center">
-              <p className="text-gray-300 font-medium">点击选择图片</p>
-              <p className="text-gray-500 text-sm mt-1">或拖拽图片到此处</p>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-200">
+                Click to upload or drag and drop
+              </p>
+              <p className="text-xs text-gray-500">
+                Supports JPG, PNG, WEBP (Max 10MB)
+              </p>
             </div>
           </div>
         </button>

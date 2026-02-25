@@ -8,12 +8,12 @@ import { SettingsPanel } from '../common/SettingsPanel';
 import { invoke } from '@tauri-apps/api/core';
 
 const installSteps = [
-  { step: 1, text: '打开 Chrome/Edge 浏览器' },
-  { step: 2, text: '在地址栏输入 chrome://extensions/（Chrome）或 edge://extensions/（Edge）' },
-  { step: 3, text: '开启右上角的"开发者模式"' },
-  { step: 4, text: '点击"加载已解压的扩展程序"' },
-  { step: 5, text: '选择生成的 BrowserBgSwap_Extension 文件夹' },
-  { step: 6, text: '扩展安装完成，打开新标签页查看效果' },
+  { step: 1, text: 'Open Chrome or Edge Browser' },
+  { step: 2, text: 'Go to chrome://extensions/ or edge://extensions/' },
+  { step: 3, text: 'Enable "Developer mode" in the top right' },
+  { step: 4, text: 'Click "Load unpacked"' },
+  { step: 5, text: 'Select the generated "BrowserBgSwap_Extension" folder' },
+  { step: 6, text: 'Done! Open a new tab to see your background' },
 ];
 
 export function ChromePanel() {
@@ -36,7 +36,7 @@ export function ChromePanel() {
         const defaultPath = await invoke<string>('get_downloads_dir');
         setOutputPath(defaultPath);
       } catch (e) {
-        showError('无法获取默认下载目录');
+        showError('Could not get default downloads directory');
         return;
       }
     }
@@ -45,10 +45,10 @@ export function ChromePanel() {
     try {
       await generateChromeExtension(outputPath || './');
       setGenerated(true);
-      success('Chrome 扩展已生成！请按照安装说明进行安装。');
+      success('Chrome extension generated! Follow the guide to install.');
       setTimeout(() => setGenerated(false), 3000);
     } catch (e) {
-      showError('生成扩展失败：' + (e as Error).message);
+      showError('Generation failed: ' + (e as Error).message);
     } finally {
       setIsGenerating(false);
     }
@@ -56,31 +56,33 @@ export function ChromePanel() {
 
   const handleOpenFolder = async () => {
     if (!outputPath) {
-      showError('请先生成扩展');
+      showError('Please generate the extension first');
       return;
     }
     try {
       await invoke('open_folder', { path: outputPath });
     } catch (e) {
-      showError('无法打开文件夹');
+      showError('Could not open folder');
     }
   };
 
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="space-y-6 max-w-2xl animate-fade-in">
+      <div className="space-y-8 max-w-3xl mx-auto animate-fade-in pb-12">
         <SettingsPanel
           settings={currentSettings}
           onChange={updateSettings}
           onSelectImage={selectImage}
         />
 
-        <div className="bg-gray-800 rounded-xl p-6">
-          <h3 className="text-lg font-medium text-white mb-4">输出设置</h3>
+        <div className="bg-card border border-border-subtle/50 rounded-xl p-6 shadow-sm">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            Output Configuration
+          </h3>
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-300" htmlFor="output-path">
-              扩展输出路径
+              Extension Output Path
             </label>
             <div className="flex gap-3">
               <input
@@ -88,33 +90,33 @@ export function ChromePanel() {
                 type="text"
                 value={outputPath}
                 onChange={(e) => setOutputPath(e.target.value)}
-                placeholder="留空使用默认下载路径"
-                className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                placeholder="Leave empty for Downloads folder"
+                className="flex-1 px-4 py-3 bg-sidebar/50 border border-border-subtle/50 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
               />
             </div>
-            <p className="text-sm text-gray-400">
-              生成的扩展文件夹 BrowserBgSwap_Extension 将保存在此路径下
+            <p className="text-xs text-gray-500">
+              The extension folder "BrowserBgSwap_Extension" will be created here.
             </p>
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl p-6">
+        <div className="bg-card border border-border-subtle/50 rounded-xl overflow-hidden shadow-sm">
           <button
             onClick={() => setShowGuide(!showGuide)}
-            className="w-full flex items-center justify-between text-left group"
+            className="w-full flex items-center justify-between p-6 text-left group hover:bg-white/5 transition-colors"
             aria-expanded={showGuide}
             aria-controls="install-guide"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center">
-                <Info size={20} className="text-blue-400" aria-hidden="true" />
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
+                <Info size={20} />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-white">安装说明</h3>
-                <p className="text-sm text-gray-400">查看详细的扩展安装步骤</p>
+                <h3 className="text-base font-medium text-gray-200 group-hover:text-white transition-colors">Installation Guide</h3>
+                <p className="text-sm text-gray-500 mt-0.5">How to install the generated extension</p>
               </div>
             </div>
-            <div className="text-gray-400 group-hover:text-white transition-colors">
+            <div className="text-gray-500 group-hover:text-gray-300 transition-colors">
               {showGuide ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </div>
           </button>
@@ -122,61 +124,61 @@ export function ChromePanel() {
           {showGuide && (
             <div
               id="install-guide"
-              className="mt-4 pt-4 border-t border-gray-700 animate-fade-in"
+              className="px-6 pb-8 pt-2 border-t border-border-subtle/30 animate-fade-in"
             >
-              <ol className="space-y-3" role="list">
+              <ol className="space-y-4" role="list">
                 {installSteps.map(({ step, text }) => (
                   <li
                     key={step}
                     className="flex items-start gap-3 text-sm text-gray-300"
                   >
                     <span
-                      className="shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-medium"
+                      className="shrink-0 w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shadow-sm"
                       aria-hidden="true"
                     >
                       {step}
                     </span>
-                    <span className="pt-0.5">{text}</span>
+                    <span className="pt-0.5 leading-relaxed">{text}</span>
                   </li>
                 ))}
               </ol>
 
-              <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-800 rounded-lg">
-                <p className="text-sm text-yellow-200">
-                  <strong>注意：</strong> 如果背景图片未显示，请确保图片路径正确。
+              <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-3">
+                 <Info size={18} className="text-yellow-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-yellow-200/90 leading-relaxed">
+                  <strong>Note:</strong> If the background image doesn't appear immediately, please check if the image path is accessible or try re-generating with a different image.
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4 pt-4 border-t border-border-subtle/30">
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label={isGenerating ? '生成中' : generated ? '已生成' : '生成扩展'}
+            className="flex-1 flex items-center justify-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary-hover disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg shadow-primary/25 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
+            aria-label={isGenerating ? 'Generating...' : generated ? 'Generated!' : 'Generate Extension'}
           >
             {isGenerating ? (
               <LoadingSpinner size="sm" />
             ) : generated ? (
-              <CheckCircle size={20} aria-hidden="true" />
+              <CheckCircle size={20} className="animate-scale-in" />
             ) : (
-              <Package size={20} aria-hidden="true" />
+              <Package size={20} />
             )}
             <span>
-              {isGenerating ? '生成中...' : generated ? '已生成' : '生成扩展'}
+              {isGenerating ? 'Generating...' : generated ? 'Generated Successfully' : 'Generate Extension'}
             </span>
           </button>
 
           <button
             onClick={handleOpenFolder}
             disabled={!outputPath || isGenerating}
-            className="flex items-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
-            aria-label="打开输出文件夹"
+            className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white/5 hover:bg-white/10 border border-border-subtle/50 text-gray-200 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-border-subtle disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Open Output Folder"
           >
-            <FolderOpen size={18} aria-hidden="true" />
-            <span className="text-sm">打开文件夹</span>
+            <FolderOpen size={20} />
           </button>
         </div>
       </div>
