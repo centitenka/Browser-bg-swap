@@ -1,3 +1,5 @@
+# 📖 [English Version](README.en.md) | [中文版](README.md)
+
 # BrowserBgSwap - 浏览器背景自定义工具
 
 一款专为 Windows 用户设计的可视化 GUI 工具，让你轻松自定义浏览器背景图片和主页样式。
