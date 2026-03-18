@@ -7,6 +7,7 @@ import { ToastContainer } from '../common/Toast';
 import { SettingsPanel } from '../common/SettingsPanel';
 import { BackupManager } from './BackupManager';
 import { ProfileSelector } from './ProfileSelector';
+import { invoke } from '@tauri-apps/api/core';
 
 export function FirefoxPanel() {
   const [hasApplied, setHasApplied] = useState(false);
@@ -15,7 +16,7 @@ export function FirefoxPanel() {
   const {
     firefoxInfo,
     selectedProfile,
-    currentSettings,
+    firefoxSettings: currentSettings,
     prereqCheck,
     isLoading,
     error,
@@ -30,13 +31,13 @@ export function FirefoxPanel() {
 
   useEffect(() => {
     detectFirefox();
-  }, []);
+  }, [detectFirefox]);
 
   useEffect(() => {
     if (selectedProfile) {
       checkPrerequisites();
     }
-  }, [selectedProfile]);
+  }, [selectedProfile, checkPrerequisites]);
 
   useEffect(() => {
     if (error) {
@@ -160,7 +161,13 @@ export function FirefoxPanel() {
           </button>
 
           <button
-            onClick={() => {}}
+            onClick={() => {
+              if (selectedProfile) {
+                invoke('open_folder', { path: selectedProfile }).catch(() => {
+                  showError('Could not open profile folder');
+                });
+              }
+            }}
             disabled={!selectedProfile}
             className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white/5 hover:bg-white/10 border border-border-subtle/50 text-gray-200 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-border-subtle"
             title="Open Profile Folder"

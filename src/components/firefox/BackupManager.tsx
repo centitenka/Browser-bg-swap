@@ -37,14 +37,14 @@ export function BackupManager() {
 
   useEffect(() => {
     loadBackups();
-  }, []);
+  }, [loadBackups]);
 
   const handleCreateBackup = async () => {
     try {
       await createBackup();
       success('Backup created successfully');
     } catch (e) {
-      showError('Failed to create backup: ' + (e as Error).message);
+      showError('Failed to create backup: ' + (e instanceof Error ? e.message : String(e)));
     }
   };
 
@@ -62,7 +62,7 @@ export function BackupManager() {
         await restoreBackup(name);
         success('Backup restored successfully');
       } catch (e) {
-        showError('Failed to restore backup: ' + (e as Error).message);
+        showError('Failed to restore backup: ' + (e instanceof Error ? e.message : String(e)));
       }
     }
   };
@@ -81,7 +81,7 @@ export function BackupManager() {
         await deleteBackup?.(name);
         success('Backup deleted');
       } catch (e) {
-        showError('Failed to delete: ' + (e as Error).message);
+        showError('Failed to delete: ' + (e instanceof Error ? e.message : String(e)));
       }
     }
   };

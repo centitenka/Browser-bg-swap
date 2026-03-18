@@ -72,7 +72,7 @@ impl FirefoxManager {
                 } else if line.starts_with("Path=") {
                     let rel_path = &line[5..];
                     p.path = Self::get_firefox_dir()
-                        .unwrap()
+                        .ok_or(AppError::Io("无法获取Firefox目录".into()))?
                         .join(rel_path)
                         .to_string_lossy()
                         .to_string();
@@ -98,7 +98,7 @@ impl FirefoxManager {
             let path = entry.path();
 
             if path.is_dir() {
-                let name = path.file_name().unwrap().to_string_lossy().to_string();
+                let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
                 if name.ends_with(".default") || name.ends_with(".default-release") {
                     profiles.push(ProfileInfo {
                         name: name.clone(),
@@ -226,6 +226,19 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 
         backups.sort_by(|a, b| b.cmp(a));
         Ok(backups)
+    }
+
+    /// 删除备份
+    pub fn delete_backup(backup_name: &str) -> Result<()> {
+        let backup_dir = Self::get_backup_dir()?;
+        let backup_path = backup_dir.join(backup_name);
+
+        if !backup_path.exists() {
+            return Err(AppError::BackupFailed("备份文件不存在".into()));
+        }
+
+        fs::remove_file(&backup_path)?;
+        Ok(())
     }
 
     fn get_backup_dir() -> Result<PathBuf> {

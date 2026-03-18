@@ -1,18 +1,16 @@
 import { useState, useCallback } from 'react';
 import { Image as ImageIcon, X, Upload, FileImage, RefreshCw } from 'lucide-react';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 interface ImagePickerProps {
   path: string | null;
   onSelect: () => void;
   onClear: () => void;
+  onDropPath?: (path: string) => void;
 }
 
 function toFileUrl(path: string): string {
-  const normalized = path.replace(/\\/g, '/');
-  const withLeadingSlash = /^[A-Za-z]:\//.test(normalized)
-    ? `/${normalized}`
-    : normalized;
-  return `file://${withLeadingSlash}`;
+  return convertFileSrc(path);
 }
 
 function getImageInfo(path: string): { name: string; ext: string } {
@@ -25,7 +23,7 @@ function getImageInfo(path: string): { name: string; ext: string } {
   };
 }
 
-export function ImagePicker({ path, onSelect, onClear }: ImagePickerProps) {
+export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePickerProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -44,10 +42,17 @@ export function ImagePicker({ path, onSelect, onClear }: ImagePickerProps) {
       setIsDragging(false);
       const files = e.dataTransfer.files;
       if (files.length > 0 && files[0].type.startsWith('image/')) {
-        onSelect();
+        // In Tauri, webkitRelativePath or path may be available for dropped files
+        const file = files[0];
+        const filePath = (file as unknown as { path?: string }).path;
+        if (filePath && onDropPath) {
+          onDropPath(filePath);
+        } else {
+          onSelect();
+        }
       }
     },
-    [onSelect]
+    [onSelect, onDropPath]
   );
 
   const imageInfo = path ? getImageInfo(path) : null;

@@ -19,13 +19,19 @@ pub fn run() {
             backup_firefox,
             restore_firefox,
             list_firefox_backups,
-            // Chrome commands
-            generate_chrome_extension,
-            get_chrome_install_guide,
+            delete_firefox_backup,
+            // Chrome/Edge commands
+            detect_chrome,
+            apply_chrome_settings,
+            remove_chrome_settings,
             // Common commands
             select_image,
             save_app_config,
             load_app_config,
+            open_folder,
+            get_downloads_dir,
+            export_settings,
+            import_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

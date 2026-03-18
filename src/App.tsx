@@ -10,17 +10,19 @@ export type Tab = 'firefox' | 'chrome';
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('firefox');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const { loadConfig } = useConfigStore();
+  const loadConfig = useConfigStore((s) => s.loadConfig);
+  const setStoreTab = useConfigStore((s) => s.setActiveTab);
 
   useEffect(() => {
     loadConfig();
-  }, []);
+  }, [loadConfig]);
 
   const handleTabChange = (tab: Tab) => {
     if (tab === activeTab) return;
     setIsTransitioning(true);
     setTimeout(() => {
       setActiveTab(tab);
+      setStoreTab(tab);
       setIsTransitioning(false);
     }, 150);
   };
@@ -54,7 +56,7 @@ function App() {
         />
 
         <main className="flex-1 overflow-y-auto bg-content scroll-smooth">
-          <div className="max-w-5xl mx-auto p-8 w-full">
+          <div className="max-w-7xl mx-auto p-8 w-full">
             <div
               className={`transition-all duration-300 ease-in-out ${
                 isTransitioning

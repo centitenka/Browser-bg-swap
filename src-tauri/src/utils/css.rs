@@ -2,16 +2,56 @@ use crate::core::config::BrowserSettings;
 
 pub struct CssGenerator;
 
+fn escape_css_url(path: &str) -> String {
+    path.replace('\\', "/")
+        .replace('\'', "\\'")
+        .replace('"', "\\\"")
+        .replace('(', "\\(")
+        .replace(')', "\\)")
+}
+
 impl CssGenerator {
     pub fn generate_user_content_css(settings: &BrowserSettings) -> String {
+        let has_bg_image = settings.background_image.is_some();
         let bg_url = settings
             .background_image
             .as_deref()
-            .unwrap_or("")
-            .replace('\\', "/");
+            .map(escape_css_url)
+            .unwrap_or_default();
 
+        let overlay_alpha = settings.overlay_opacity as f64 / 100.0;
         let search_display = if settings.show_search_box { "flex" } else { "none" };
         let shortcuts_display = if settings.show_shortcuts { "block" } else { "none" };
+
+        let bg_size = match settings.background_fit.as_str() {
+            "contain" => "contain",
+            "center" => "auto",
+            "stretch" => "100% 100%",
+            _ => "cover", // "cover" or any unknown value
+        };
+
+        let background_css = if has_bg_image {
+            format!(
+                "background-image: url(\"{bg_url}\") !important;\n        background-size: {bg_size} !important;\n        background-position: center !important;\n        background-repeat: no-repeat !important;\n        background-attachment: fixed !important;",
+                bg_url = bg_url,
+                bg_size = bg_size,
+            )
+        } else {
+            format!(
+                "background: {bg_color} !important;",
+                bg_color = settings.background_color,
+            )
+        };
+
+        let filter_css = if settings.background_blur > 0 || settings.background_brightness != 100 {
+            format!(
+                "\n        filter: blur({blur}px) brightness({brightness}%) !important;",
+                blur = settings.background_blur,
+                brightness = settings.background_brightness,
+            )
+        } else {
+            String::new()
+        };
 
         format!(
             r#"/* BrowserBgSwap - Firefox New Tab Customization */
@@ -19,11 +59,7 @@ impl CssGenerator {
 
     /* 主容器背景 */
     .outer-wrapper {{
-        background-image: url("{bg_url}") !important;
-        background-size: cover !important;
-        background-position: center !important;
-        background-repeat: no-repeat !important;
-        background-attachment: fixed !important;
+        {background_css}{filter_css}
     }}
 
     /* 背景遮罩层 */
@@ -34,7 +70,7 @@ impl CssGenerator {
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        background: rgba(0, 0, 0, 0.3) !important;
+        background: rgba(0, 0, 0, {overlay_alpha:.2}) !important;
         z-index: -1 !important;
     }}
 
@@ -86,7 +122,9 @@ impl CssGenerator {
     }}
 }}
 "#,
-            bg_url = bg_url,
+            background_css = background_css,
+            filter_css = filter_css,
+            overlay_alpha = overlay_alpha,
             search_display = search_display,
             shortcuts_display = shortcuts_display,
         )
