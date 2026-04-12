@@ -1,5 +1,6 @@
 import { Chrome, FileCode, Layers } from 'lucide-react';
 import type { Tab } from '../../App';
+import { useT } from '../../i18n';
 
 interface SidebarProps {
   activeTab: Tab;
@@ -7,6 +8,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
+  const t = useT();
+
   const tabs = [
     { id: 'firefox' as Tab, label: 'Firefox', icon: FileCode },
     { id: 'chrome' as Tab, label: 'Chrome/Edge', icon: Chrome },
@@ -20,17 +23,17 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   };
 
   return (
-    <aside className="w-64 bg-sidebar flex flex-col border-r border-border-subtle/50 h-screen select-none">
-      <div className="p-6 pb-4">
-        <div className="flex items-center gap-3 px-2 mb-6">
+    <aside className="w-52 xl:w-64 bg-sidebar flex flex-col border-r border-border-subtle/50 h-screen select-none shrink-0">
+      <div className="p-4 xl:p-6 pb-4">
+        <div className="flex items-center gap-2.5 px-1.5 xl:px-2 mb-5 xl:mb-6">
           <div className="p-1.5 bg-primary/20 rounded-lg">
             <Layers size={20} className="text-primary" />
           </div>
           <div>
             <h1 className="text-base font-semibold text-gray-100 tracking-tight leading-none">
-              BrowserSwap
+              {t('sidebar.title')}
             </h1>
-            <p className="text-xs text-gray-500 mt-1 font-medium">Background Tools</p>
+            <p className="text-xs text-gray-500 mt-1 font-medium">{t('sidebar.subtitle')}</p>
           </div>
         </div>
 
@@ -68,7 +71,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       <div className="mt-auto p-6 pt-0">
         <div className="px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-default">
           <p className="text-[10px] uppercase tracking-wider text-gray-600 font-semibold">
-            Version 1.0.0
+            {t('sidebar.version')}
           </p>
         </div>
       </div>

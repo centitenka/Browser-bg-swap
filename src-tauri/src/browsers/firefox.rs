@@ -1,9 +1,22 @@
 use crate::core::config::{BrowserInfo, BrowserType, PrereqCheck, ProfileInfo};
 use crate::core::error::{AppError, Result};
+use regex::Regex;
+use std::collections::hash_map::DefaultHasher;
 use std::fs;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 pub struct FirefoxManager;
+
+const TOOLKIT_PREF_KEY: &str = "toolkit.legacyUserProfileCustomizations.stylesheets";
+
+#[derive(Default)]
+struct ProfileSection {
+    name: Option<String>,
+    path: Option<String>,
+    is_default: bool,
+    is_relative: bool,
+}
 
 impl FirefoxManager {
     /// 获取Firefox配置目录
@@ -51,42 +64,10 @@ impl FirefoxManager {
     /// 解析profiles.ini
     fn parse_profiles_ini(path: &Path) -> Result<Vec<ProfileInfo>> {
         let content = fs::read_to_string(path)?;
-        let mut profiles = Vec::new();
-        let mut current_profile: Option<ProfileInfo> = None;
-
-        for line in content.lines() {
-            let line = line.trim();
-
-            if line.starts_with("[Profile") {
-                if let Some(p) = current_profile.take() {
-                    profiles.push(p);
-                }
-                current_profile = Some(ProfileInfo {
-                    name: String::new(),
-                    path: String::new(),
-                    is_default: false,
-                });
-            } else if let Some(ref mut p) = current_profile {
-                if line.starts_with("Name=") {
-                    p.name = line[5..].to_string();
-                } else if line.starts_with("Path=") {
-                    let rel_path = &line[5..];
-                    p.path = Self::get_firefox_dir()
-                        .ok_or(AppError::Io("无法获取Firefox目录".into()))?
-                        .join(rel_path)
-                        .to_string_lossy()
-                        .to_string();
-                } else if line.starts_with("Default=1") {
-                    p.is_default = true;
-                }
-            }
-        }
-
-        if let Some(p) = current_profile {
-            profiles.push(p);
-        }
-
-        Ok(profiles)
+        let firefox_dir = path
+            .parent()
+            .ok_or_else(|| AppError::Io("profiles.ini 路径无效".into()))?;
+        Self::parse_profiles_ini_content(firefox_dir, &content)
     }
 
     /// 直接扫描Profiles目录
@@ -98,17 +79,20 @@ impl FirefoxManager {
             let path = entry.path();
 
             if path.is_dir() {
-                let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-                if name.ends_with(".default") || name.ends_with(".default-release") {
-                    profiles.push(ProfileInfo {
-                        name: name.clone(),
-                        path: path.to_string_lossy().to_string(),
-                        is_default: name.contains("default"),
-                    });
-                }
+                let name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
+
+                profiles.push(ProfileInfo {
+                    name: name.clone(),
+                    path: path.to_string_lossy().to_string(),
+                    is_default: name.ends_with(".default") || name.ends_with(".default-release"),
+                });
             }
         }
 
+        profiles.sort_by_key(|profile| (!profile.is_default, profile.name.clone()));
         Ok(profiles)
     }
 
@@ -136,21 +120,18 @@ impl FirefoxManager {
             });
         }
 
-        let pref_key = "toolkit.legacyUserProfileCustomizations.stylesheets";
-
         let toolkit_enabled = (prefs_path.exists()
             && fs::read_to_string(&prefs_path)?
-                .contains(&format!(r#"user_pref("{pref_key}", true);"#)))
+                .contains(&format!(r#"user_pref("{TOOLKIT_PREF_KEY}", true);"#)))
             || (user_js_path.exists()
                 && fs::read_to_string(&user_js_path)?
-                    .contains(&format!(r#"user_pref("{pref_key}", true);"#)));
+                    .contains(&format!(r#"user_pref("{TOOLKIT_PREF_KEY}", true);"#)));
 
         let mut instructions = Vec::new();
 
         if !toolkit_enabled {
             instructions.push(
-                "请在about:config中设置 toolkit.legacyUserProfileCustomizations.stylesheets = true"
-                    .into(),
+                format!("请在about:config中设置 {} = true", TOOLKIT_PREF_KEY),
             );
         }
 
@@ -166,12 +147,14 @@ impl FirefoxManager {
     /// 尝试自动修复（通过创建user.js）
     pub fn auto_fix_prerequisites(profile_path: &str) -> Result<()> {
         let user_js_path = Path::new(profile_path).join("user.js");
+        let existing_content = fs::read_to_string(&user_js_path).unwrap_or_default();
+        let merged = Self::merge_user_pref(&existing_content, TOOLKIT_PREF_KEY, true)?;
 
-        let config = r#"// BrowserBgSwap Auto Configuration
-user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
-"#;
+        if !existing_content.is_empty() && existing_content != merged {
+            Self::backup_user_js(profile_path, &existing_content)?;
+        }
 
-        fs::write(&user_js_path, config)?;
+        fs::write(&user_js_path, merged)?;
         Ok(())
     }
 
@@ -184,7 +167,7 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
             return Err(AppError::BackupFailed("无现有CSS需要备份".into()));
         }
 
-        let backup_dir = Self::get_backup_dir()?;
+        let backup_dir = Self::get_backup_dir(profile_path)?;
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
         let backup_name = format!("userContent_backup_{}.css", timestamp);
         let backup_path = backup_dir.join(&backup_name);
@@ -196,7 +179,7 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 
     /// 恢复备份
     pub fn restore_backup(profile_path: &str, backup_name: &str) -> Result<()> {
-        let backup_dir = Self::get_backup_dir()?;
+        let backup_dir = Self::get_backup_dir(profile_path)?;
         let backup_path = backup_dir.join(backup_name);
         let css_path = Path::new(profile_path).join("chrome").join("userContent.css");
 
@@ -204,13 +187,16 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
             return Err(AppError::BackupFailed("备份文件不存在".into()));
         }
 
+        if let Some(parent) = css_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
         fs::copy(&backup_path, &css_path)?;
         Ok(())
     }
 
     /// 获取备份列表
-    pub fn list_backups() -> Result<Vec<String>> {
-        let backup_dir = Self::get_backup_dir()?;
+    pub fn list_backups(profile_path: &str) -> Result<Vec<String>> {
+        let backup_dir = Self::get_backup_dir(profile_path)?;
         let mut backups = Vec::new();
 
         if backup_dir.exists() {
@@ -229,8 +215,8 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
     }
 
     /// 删除备份
-    pub fn delete_backup(backup_name: &str) -> Result<()> {
-        let backup_dir = Self::get_backup_dir()?;
+    pub fn delete_backup(profile_path: &str, backup_name: &str) -> Result<()> {
+        let backup_dir = Self::get_backup_dir(profile_path)?;
         let backup_path = backup_dir.join(backup_name);
 
         if !backup_path.exists() {
@@ -241,13 +227,191 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
         Ok(())
     }
 
-    fn get_backup_dir() -> Result<PathBuf> {
+    fn get_backup_dir(profile_path: &str) -> Result<PathBuf> {
         let backup_dir = dirs::data_dir()
             .ok_or(AppError::Io("无法获取数据目录".into()))?
             .join("BrowserBgSwap")
-            .join("backups");
+            .join("backups")
+            .join(Self::profile_dir_key(profile_path));
 
         fs::create_dir_all(&backup_dir)?;
         Ok(backup_dir)
+    }
+
+    fn parse_profiles_ini_content(firefox_dir: &Path, content: &str) -> Result<Vec<ProfileInfo>> {
+        let mut profiles = Vec::new();
+        let mut current: Option<ProfileSection> = None;
+
+        for raw_line in content.lines() {
+            let line = raw_line.trim();
+            if line.is_empty() || line.starts_with(';') || line.starts_with('#') {
+                continue;
+            }
+
+            if line.starts_with('[') && line.ends_with(']') {
+                if let Some(section) = current.take() {
+                    if let Some(profile) = Self::build_profile_info(firefox_dir, section) {
+                        profiles.push(profile);
+                    }
+                }
+
+                if line.starts_with("[Profile") {
+                    current = Some(ProfileSection::default());
+                } else {
+                    current = None;
+                }
+                continue;
+            }
+
+            let Some((key, value)) = line.split_once('=') else {
+                continue;
+            };
+
+            if let Some(section) = current.as_mut() {
+                match key.trim() {
+                    "Name" => section.name = Some(value.trim().to_string()),
+                    "Path" => section.path = Some(value.trim().to_string()),
+                    "Default" => section.is_default = value.trim() == "1",
+                    "IsRelative" => section.is_relative = value.trim() != "0",
+                    _ => {}
+                }
+            }
+        }
+
+        if let Some(section) = current {
+            if let Some(profile) = Self::build_profile_info(firefox_dir, section) {
+                profiles.push(profile);
+            }
+        }
+
+        profiles.sort_by_key(|profile| (!profile.is_default, profile.name.clone()));
+        Ok(profiles)
+    }
+
+    fn build_profile_info(firefox_dir: &Path, section: ProfileSection) -> Option<ProfileInfo> {
+        let raw_path = section.path?;
+        let resolved_path = if section.is_relative {
+            firefox_dir.join(raw_path)
+        } else {
+            PathBuf::from(raw_path)
+        };
+
+        if !resolved_path.exists() || !resolved_path.is_dir() {
+            return None;
+        }
+
+        let name = section.name.unwrap_or_else(|| {
+            resolved_path
+                .file_name()
+                .map(|name| name.to_string_lossy().to_string())
+                .unwrap_or_else(|| "Firefox".to_string())
+        });
+
+        Some(ProfileInfo {
+            name,
+            path: resolved_path.to_string_lossy().to_string(),
+            is_default: section.is_default,
+        })
+    }
+
+    fn merge_user_pref(content: &str, key: &str, value: bool) -> Result<String> {
+        let pattern = format!(
+            r#"(?m)^\s*user_pref\("{}"\s*,\s*(true|false)\s*\);\s*$"#,
+            regex::escape(key)
+        );
+        let regex = Regex::new(&pattern).map_err(|error| AppError::InvalidConfig(error.to_string()))?;
+        let pref_line = format!(r#"user_pref("{}", {});"#, key, value);
+
+        if regex.is_match(content) {
+            Ok(regex.replace_all(content, pref_line.as_str()).into_owned())
+        } else if content.trim().is_empty() {
+            Ok(format!(
+                "// BrowserBgSwap Auto Configuration\n{}\n",
+                pref_line
+            ))
+        } else {
+            Ok(format!(
+                "{}\n\n// BrowserBgSwap Auto Configuration\n{}\n",
+                content.trim_end(),
+                pref_line
+            ))
+        }
+    }
+
+    fn backup_user_js(profile_path: &str, content: &str) -> Result<()> {
+        let backup_dir = Self::get_backup_dir(profile_path)?.join("prereq");
+        fs::create_dir_all(&backup_dir)?;
+        let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+        let backup_path = backup_dir.join(format!("user_js_backup_{}.js", timestamp));
+        fs::write(backup_path, content)?;
+        Ok(())
+    }
+
+    fn profile_dir_key(profile_path: &str) -> String {
+        let mut hasher = DefaultHasher::new();
+        profile_path.to_ascii_lowercase().hash(&mut hasher);
+        format!("{:016x}", hasher.finish())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_temp_dir(name: &str) -> PathBuf {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("browser_bg_swap_{name}_{unique}"));
+        fs::create_dir_all(&path).unwrap();
+        path
+    }
+
+    #[test]
+    fn parses_profiles_ini_with_relative_and_absolute_paths() {
+        let root = unique_temp_dir("profiles");
+        let firefox_dir = root.join("Firefox");
+        let relative_profile = firefox_dir.join("Profiles").join("alpha.default-release");
+        let absolute_profile = root.join("absolute-profile");
+        fs::create_dir_all(&relative_profile).unwrap();
+        fs::create_dir_all(&absolute_profile).unwrap();
+
+        let content = format!(
+            "[Profile0]\nName=Alpha\nIsRelative=1\nPath=Profiles/alpha.default-release\nDefault=1\n\n[Profile1]\nName=Beta\nIsRelative=0\nPath={}\n",
+            absolute_profile.to_string_lossy()
+        );
+
+        let profiles = FirefoxManager::parse_profiles_ini_content(&firefox_dir, &content).unwrap();
+
+        assert_eq!(profiles.len(), 2);
+        assert_eq!(profiles[0].name, "Alpha");
+        assert!(profiles[0].is_default);
+        assert_eq!(PathBuf::from(&profiles[0].path), relative_profile);
+        assert_eq!(PathBuf::from(&profiles[1].path), absolute_profile);
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn merges_user_pref_without_losing_existing_content() {
+        let content = r#"user_pref("browser.startup.page", 3);
+user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", false);
+"#;
+
+        let merged = FirefoxManager::merge_user_pref(content, TOOLKIT_PREF_KEY, true).unwrap();
+
+        assert!(merged.contains(r#"user_pref("browser.startup.page", 3);"#));
+        assert!(merged.contains(r#"user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);"#));
+        assert!(!merged.contains("false);"));
+    }
+
+    #[test]
+    fn profile_backup_keys_are_scoped_per_profile() {
+        let first = FirefoxManager::profile_dir_key("C:/Users/test/AppData/Roaming/Mozilla/Firefox/Profiles/a.default-release");
+        let second = FirefoxManager::profile_dir_key("C:/Users/test/AppData/Roaming/Mozilla/Firefox/Profiles/b.default-release");
+
+        assert_ne!(first, second);
     }
 }

@@ -10,6 +10,19 @@ fn escape_css_url(path: &str) -> String {
         .replace(')', "\\)")
 }
 
+fn hex_to_rgba(hex: &str, opacity: f64) -> String {
+    let cleaned = hex.trim().trim_start_matches('#');
+    if cleaned.len() != 6 || !cleaned.chars().all(|ch| ch.is_ascii_hexdigit()) {
+        return format!("rgba(0, 0, 0, {:.2})", opacity);
+    }
+
+    let red = u8::from_str_radix(&cleaned[0..2], 16).unwrap_or(0);
+    let green = u8::from_str_radix(&cleaned[2..4], 16).unwrap_or(0);
+    let blue = u8::from_str_radix(&cleaned[4..6], 16).unwrap_or(0);
+
+    format!("rgba({}, {}, {}, {:.2})", red, green, blue, opacity)
+}
+
 impl CssGenerator {
     pub fn generate_user_content_css(settings: &BrowserSettings) -> String {
         let has_bg_image = settings.background_image.is_some();
@@ -22,6 +35,7 @@ impl CssGenerator {
         let overlay_alpha = settings.overlay_opacity as f64 / 100.0;
         let search_display = if settings.show_search_box { "flex" } else { "none" };
         let shortcuts_display = if settings.show_shortcuts { "block" } else { "none" };
+        let overlay_color = hex_to_rgba(&settings.overlay_color, overlay_alpha);
 
         let bg_size = match settings.background_fit.as_str() {
             "contain" => "contain",
@@ -45,7 +59,7 @@ impl CssGenerator {
 
         let filter_css = if settings.background_blur > 0 || settings.background_brightness != 100 {
             format!(
-                "\n        filter: blur({blur}px) brightness({brightness}%) !important;",
+                "\n        filter: blur({blur}px) brightness({brightness}%) !important;\n        transform: scale(1.05) !important;",
                 blur = settings.background_blur,
                 brightness = settings.background_brightness,
             )
@@ -59,6 +73,20 @@ impl CssGenerator {
 
     /* 主容器背景 */
     .outer-wrapper {{
+        position: relative !important;
+        isolation: isolate !important;
+        background: transparent !important;
+    }}
+
+    /* 独立背景层，避免滤镜影响前景 */
+    .outer-wrapper::after {{
+        content: "" !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: -2 !important;
         {background_css}{filter_css}
     }}
 
@@ -70,7 +98,7 @@ impl CssGenerator {
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        background: rgba(0, 0, 0, {overlay_alpha:.2}) !important;
+        background: {overlay_color} !important;
         z-index: -1 !important;
     }}
 
@@ -124,9 +152,29 @@ impl CssGenerator {
 "#,
             background_css = background_css,
             filter_css = filter_css,
-            overlay_alpha = overlay_alpha,
+            overlay_color = overlay_color,
             search_display = search_display,
             shortcuts_display = shortcuts_display,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::config::BrowserSettings;
+
+    #[test]
+    fn firefox_background_filter_is_applied_on_background_layer_only() {
+        let mut settings = BrowserSettings::default();
+        settings.background_blur = 8;
+        settings.background_brightness = 120;
+        settings.overlay_color = "#123456".into();
+
+        let css = CssGenerator::generate_user_content_css(&settings);
+
+        assert!(css.contains(".outer-wrapper::after"));
+        assert!(css.contains("filter: blur(8px) brightness(120%)"));
+        assert!(css.contains("background: rgba(18, 52, 86, 0.30)"));
     }
 }

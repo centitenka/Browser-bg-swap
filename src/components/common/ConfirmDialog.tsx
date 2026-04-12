@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useT } from '../../i18n';
 
 export interface ConfirmOptions {
   title: string;
@@ -19,12 +20,13 @@ export function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   isDangerous = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const t = useT();
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       onCancel();
@@ -44,6 +46,9 @@ export function ConfirmDialog({
   }, [isOpen, handleKeyDown]);
 
   if (!isOpen) return null;
+
+  const resolvedConfirmText = confirmText ?? t('common.confirm');
+  const resolvedCancelText = cancelText ?? t('common.cancel');
 
   return (
     <div
@@ -86,7 +91,7 @@ export function ConfirmDialog({
               onClick={onCancel}
               className="px-4 py-2.5 bg-transparent hover:bg-white/5 text-gray-400 hover:text-gray-200 border border-border-subtle/30 hover:border-border-subtle/60 rounded-xl transition-all font-medium text-sm"
             >
-              {cancelText}
+              {resolvedCancelText}
             </button>
             <button
               onClick={onConfirm}
@@ -96,7 +101,7 @@ export function ConfirmDialog({
                   : 'bg-primary hover:bg-primary-hover shadow-primary/25'
               }`}
             >
-              {confirmText}
+              {resolvedConfirmText}
             </button>
           </div>
         </div>

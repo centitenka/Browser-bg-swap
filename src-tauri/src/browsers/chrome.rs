@@ -645,3 +645,28 @@ updateClock();
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::config::BrowserSettings;
+
+    #[test]
+    fn manifest_keeps_new_tab_override() {
+        let manifest = ChromeManager::generate_manifest();
+
+        assert!(manifest.contains("\"manifest_version\":3"));
+        assert!(manifest.contains("\"newtab\":\"newtab.html\""));
+    }
+
+    #[test]
+    fn generated_html_uses_selected_search_engine() {
+        let mut settings = BrowserSettings::default();
+        settings.search_engine = "duckduckgo".into();
+
+        let html = ChromeManager::generate_html(&settings, None);
+
+        assert!(html.contains("https://duckduckgo.com/"));
+        assert!(html.contains("name=\"q\""));
+    }
+}

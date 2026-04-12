@@ -11,7 +11,7 @@
   <p>
     <img src="https://img.shields.io/badge/platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Platform Windows">
     <img src="https://img.shields.io/badge/Tauri-2.0-24C8DB?style=for-the-badge&logo=tauri&logoColor=white" alt="Tauri">
-    <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
+    <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
     <img src="https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
     <img src="https://img.shields.io/badge/License-MIT-success?style=for-the-badge" alt="License">
   </p>
@@ -43,18 +43,19 @@
       <h3>🦊 Firefox Support</h3>
       <ul>
         <li>🔍 Auto-detect profiles</li>
-        <li>🖼️ One-click background setup</li>
+        <li>🖼️ Background image or solid color setup</li>
+        <li>🎛️ Fit, blur, brightness, and overlay controls</li>
         <li>👁️ Toggle search box display</li>
         <li>🔗 Toggle shortcuts/recent visits</li>
         <li>🧠 Smart precondition check</li>
         <li>🔧 Auto-fix configurations</li>
-        <li>💾 Backup and restore</li>
+        <li>💾 Profile-scoped backup and restore</li>
       </ul>
     </td>
     <td width="33%" valign="top">
       <h3>🌐 Chrome/Edge Support</h3>
       <ul>
-        <li>📦 Generate Manifest V3 extension</li>
+        <li>📦 Generate a persistent Manifest V3 extension</li>
         <li>⚙️ Fully customizable new tab</li>
         <li>⏰ Real-time clock display</li>
         <li>🔎 Integrated Google search box</li>
@@ -140,17 +141,17 @@ cargo tauri build
 1. **Select Profile**: Open the app and switch to the **Firefox** tab. It will auto-detect installed Firefox profiles (usually, select the "default" one).
 2. **Check Preconditions**: If prompted to "Configure Firefox", click the **[Auto Configure]** button to let the tool enable the required settings (`toolkit.legacyUserProfileCustomizations.stylesheets`).
 3. **Set Background**: Click **[Choose Image]** and select an image from your PC (JPG, PNG, GIF, WebP supported).
-4. **Display Options**: Toggle the "Show Search Box" and "Show Shortcuts" options according to your preference.
+4. **Supported Firefox Options**: Firefox currently supports background image or color, fit, blur, brightness, overlay, and search or shortcut visibility toggles.
 5. **Apply & Restart**: Click **[Apply Settings]**, then **completely close Firefox** (ensure no firefox.exe in Task Manager), and reopen it.
 
 ---
 
 ### 🌐 Chrome/Edge Setup
 
-> **Note:** Chrome/Edge customization works by generating a local browser extension.
+> **Note:** Chrome/Edge customization works by generating a local browser extension stored in a persistent app-data directory by default.
 
 1. **Configure Background**: Switch to the **Chrome/Edge** tab and set the background image and display options.
-2. **Generate Extension**: Choose an output path (or leave blank for default), then click **[Generate Extension]**.
+2. **Generate Extension**: Click **[Generate Extension]** to update the persistent extension bundle.
 3. **Install Extension**:
    - 🔵 **Chrome**: Go to `chrome://extensions/` ➔ Enable **[Developer mode]** (top right) ➔ Click **[Load unpacked]** ➔ Select the generated `BrowserBgSwap_Extension` folder.
    - 🟢 **Edge**: Go to `edge://extensions/` ➔ Enable **[Developer mode]** (bottom left) ➔ Click **[Load unpacked]** ➔ Select the generated `BrowserBgSwap_Extension` folder.
@@ -198,7 +199,7 @@ cargo tauri build
 | :--- | :--- | :--- |
 | **🚀 Core Framework** | Tauri v2 | Cross-platform framework for fast, tiny apps |
 | **🦀 Backend (Rust)** | Rust, serde, thiserror, dirs, chrono | High-performance file system & path handling |
-| **⚛️ Frontend (UI)** | React 18, TypeScript | Modern, type-safe reactive interface |
+| **⚛️ Frontend (UI)** | React 19, TypeScript | Modern, type-safe reactive interface |
 | **🎨 Styling & State** | Tailwind CSS, Zustand, Lucide React | Utility-first CSS, lightweight state & icons |
 | **📦 Build Tools** | Vite, Cargo | Blazing fast frontend build & Rust package management |
 
@@ -266,7 +267,9 @@ cd src-tauri && cargo fmt    # Format Rust code
 <summary><b>📝 Changelog & Notes</b></summary>
 
 ### Notes
+- **Platform scope**: The current release is designed and validated as a **Windows desktop tool**.
 - **Firefox Config**: Restart Firefox after changing `about:config`. `userContent.css` only affects `about:newtab` and `about:home`.
+- **Firefox capability boundary**: Firefox currently implements background and basic visibility controls only; it does not yet match the full Chrome/Edge advanced styling surface.
 - **Security**: This tool collects no user data; all operations are local.
 
 ### Changelog

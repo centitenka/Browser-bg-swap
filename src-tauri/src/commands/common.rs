@@ -1,5 +1,6 @@
-use crate::core::config::{AppConfig, BrowserSettings};
+use crate::core::config::{AppConfig, BrowserSettings, SettingsExchangeFile, CONFIG_VERSION};
 use crate::core::error::{AppError, Result};
+use base64::Engine;
 use std::fs;
 use tauri::AppHandle;
 
@@ -55,7 +56,7 @@ pub async fn save_app_config(config: AppConfig) -> Result<()> {
     fs::create_dir_all(&config_dir)?;
 
     let config_path = config_dir.join("config.json");
-    let config_json = serde_json::to_string_pretty(&config)?;
+    let config_json = serde_json::to_string_pretty(&config.normalized())?;
     fs::write(&config_path, config_json)?;
 
     Ok(())
@@ -69,28 +70,20 @@ pub async fn load_app_config() -> Result<AppConfig> {
         .join("config.json");
 
     if !config_path.exists() {
-        return Ok(AppConfig {
-            firefox: crate::core::config::FirefoxConfig {
-                profile_path: None,
-                enabled: true,
-                settings: crate::core::config::BrowserSettings::default(),
-            },
-            chrome: crate::core::config::ChromeConfig {
-                extension_output_path: None,
-                enabled: true,
-                settings: crate::core::config::BrowserSettings::default(),
-            },
-            custom_presets: Vec::new(),
-        });
+        return Ok(AppConfig::default());
     }
 
     let config_json = fs::read_to_string(&config_path)?;
     let config: AppConfig = serde_json::from_str(&config_json)?;
-    Ok(config)
+    Ok(config.normalized())
 }
 
 #[tauri::command]
-pub async fn export_settings(app: AppHandle, settings: BrowserSettings) -> Result<Option<String>> {
+pub async fn export_settings(
+    app: AppHandle,
+    browser: String,
+    settings: BrowserSettings,
+) -> Result<Option<String>> {
     use tauri_plugin_dialog::DialogExt;
 
     let file_path = app
@@ -101,7 +94,12 @@ pub async fn export_settings(app: AppHandle, settings: BrowserSettings) -> Resul
         .blocking_save_file();
 
     if let Some(ref p) = file_path {
-        let json = serde_json::to_string_pretty(&settings)?;
+        let payload = SettingsExchangeFile {
+            version: CONFIG_VERSION,
+            browser: Some(browser.trim().to_ascii_lowercase()),
+            settings: settings.normalized(),
+        };
+        let json = serde_json::to_string_pretty(&payload)?;
         fs::write(p.to_string(), json)?;
     }
 
@@ -109,7 +107,7 @@ pub async fn export_settings(app: AppHandle, settings: BrowserSettings) -> Resul
 }
 
 #[tauri::command]
-pub async fn import_settings(app: AppHandle) -> Result<Option<BrowserSettings>> {
+pub async fn import_settings(app: AppHandle) -> Result<Option<SettingsExchangeFile>> {
     use tauri_plugin_dialog::DialogExt;
 
     let file_path = app
@@ -121,10 +119,45 @@ pub async fn import_settings(app: AppHandle) -> Result<Option<BrowserSettings>> 
     match file_path {
         Some(p) => {
             let json = fs::read_to_string(p.to_string())?;
+            if let Ok(payload) = serde_json::from_str::<SettingsExchangeFile>(&json) {
+                return Ok(Some(payload.normalized()));
+            }
+
             let settings: BrowserSettings = serde_json::from_str(&json)
                 .map_err(|e| AppError::Io(format!("Invalid settings file: {}", e)))?;
-            Ok(Some(settings))
+
+            Ok(Some(SettingsExchangeFile {
+                version: CONFIG_VERSION,
+                browser: None,
+                settings: settings.normalized(),
+            }))
         }
         None => Ok(None),
     }
+}
+
+#[tauri::command]
+pub async fn save_cropped_image(data_url: String) -> Result<String> {
+    // data_url format: "data:image/png;base64,xxxx..."
+    let base64_data = data_url
+        .split(',')
+        .nth(1)
+        .ok_or_else(|| AppError::Io("Invalid data URL".into()))?;
+
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(base64_data)
+        .map_err(|e| AppError::Io(format!("Base64 decode error: {}", e)))?;
+
+    let save_dir = dirs::data_dir()
+        .ok_or_else(|| AppError::Io("无法获取数据目录".into()))?
+        .join("BrowserBgSwap")
+        .join("cropped");
+
+    fs::create_dir_all(&save_dir)?;
+
+    let filename = format!("cropped_{}.png", chrono::Local::now().format("%Y%m%d_%H%M%S"));
+    let save_path = save_dir.join(&filename);
+    fs::write(&save_path, bytes)?;
+
+    Ok(save_path.to_string_lossy().to_string())
 }

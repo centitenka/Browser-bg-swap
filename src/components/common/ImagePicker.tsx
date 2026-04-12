@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
-import { Image as ImageIcon, X, Upload, FileImage, RefreshCw } from 'lucide-react';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { Image as ImageIcon, X, Upload, FileImage, RefreshCw, Crop } from 'lucide-react';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
+import { ImageCropper } from './ImageCropper';
+import { useT } from '../../i18n';
 
 interface ImagePickerProps {
   path: string | null;
@@ -24,7 +26,9 @@ function getImageInfo(path: string): { name: string; ext: string } {
 }
 
 export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePickerProps) {
+  const t = useT();
   const [isDragging, setIsDragging] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -42,7 +46,6 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
       setIsDragging(false);
       const files = e.dataTransfer.files;
       if (files.length > 0 && files[0].type.startsWith('image/')) {
-        // In Tauri, webkitRelativePath or path may be available for dropped files
         const file = files[0];
         const filePath = (file as unknown as { path?: string }).path;
         if (filePath && onDropPath) {
@@ -55,10 +58,32 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
     [onSelect, onDropPath]
   );
 
+  const handleCropDone = async (dataUrl: string) => {
+    try {
+      const savedPath = await invoke<string>('save_cropped_image', { dataUrl });
+      if (onDropPath) {
+        onDropPath(savedPath);
+      }
+    } catch (e) {
+      console.error('Failed to save cropped image:', e);
+    } finally {
+      setIsCropping(false);
+    }
+  };
+
   const imageInfo = path ? getImageInfo(path) : null;
 
   return (
     <div className="w-full">
+      {/* Crop modal */}
+      {isCropping && path && (
+        <ImageCropper
+          imageSrc={toFileUrl(path)}
+          onCropDone={handleCropDone}
+          onCancel={() => setIsCropping(false)}
+        />
+      )}
+
       {path ? (
         <div className="space-y-3 animate-fade-in">
           <div className="group relative aspect-video w-full overflow-hidden rounded-lg border border-border-subtle/50 bg-black/40 shadow-sm">
@@ -70,22 +95,29 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
-            
+
             {/* Overlay Actions */}
             <div className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/20" />
-            
+
             <div className="absolute top-3 right-3 flex gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <button
+                onClick={() => setIsCropping(true)}
+                className="rounded-full bg-black/50 p-2 text-white backdrop-blur-md hover:bg-black/70 transition-colors"
+                title={t('image.crop')}
+              >
+                <Crop size={16} />
+              </button>
               <button
                 onClick={onSelect}
                 className="rounded-full bg-black/50 p-2 text-white backdrop-blur-md hover:bg-black/70 transition-colors"
-                title="Change Image"
+                title={t('image.change')}
               >
                 <RefreshCw size={16} />
               </button>
               <button
                 onClick={onClear}
                 className="rounded-full bg-red-500/80 p-2 text-white backdrop-blur-md hover:bg-red-600 transition-colors"
-                title="Remove Image"
+                title={t('image.remove')}
               >
                 <X size={16} />
               </button>
@@ -102,15 +134,23 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-between items-center px-1">
-             <p className="text-xs text-gray-500">Currently selected background.</p>
-             <button 
-               onClick={onSelect}
-               className="text-xs font-medium text-primary hover:text-primary-hover transition-colors"
-             >
-               Replace Image
-             </button>
+             <p className="text-xs text-gray-500">{t('image.current')}</p>
+             <div className="flex items-center gap-3">
+               <button
+                 onClick={() => setIsCropping(true)}
+                 className="text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+               >
+                 {t('image.crop')}
+               </button>
+               <button
+                 onClick={onSelect}
+                 className="text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+               >
+                 {t('image.replace')}
+               </button>
+             </div>
           </div>
         </div>
       ) : (
@@ -139,10 +179,10 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-gray-200">
-                Click to upload or drag and drop
+                {t('image.upload')}
               </p>
               <p className="text-xs text-gray-500">
-                Supports JPG, PNG, WEBP (Max 10MB)
+                {t('image.formats')}
               </p>
             </div>
           </div>

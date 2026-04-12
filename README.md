@@ -53,18 +53,19 @@
       <h3>🦊 Firefox 支持</h3>
       <ul>
         <li>🔍 自动检测 Firefox 配置文件</li>
-        <li>🖼️ 一键设置新标签页背景图片</li>
+        <li>🖼️ 设置新标签页背景图片或背景色</li>
+        <li>🎛️ 调整背景适应方式、模糊、亮度与遮罩</li>
         <li>👁️ 控制搜索框显示/隐藏</li>
         <li>🔗 控制快捷方式/最近访问显示/隐藏</li>
         <li>🧠 智能前置条件检查（about:config）</li>
         <li>🔧 自动修复配置问题</li>
-        <li>💾 配置备份与恢复功能</li>
+        <li>💾 按 Profile 隔离的备份与恢复功能</li>
       </ul>
     </td>
     <td width="33%" valign="top">
       <h3>🌐 Chrome/Edge 支持</h3>
       <ul>
-        <li>📦 生成 Manifest V3 浏览器扩展</li>
+        <li>📦 生成持久化的 Manifest V3 浏览器扩展</li>
         <li>⚙️ 完全自定义的新标签页</li>
         <li>⏰ 实时时钟显示</li>
         <li>🔎 集成 Google 搜索框</li>
@@ -150,14 +151,14 @@ cargo tauri build
 1. **选择配置文件**：打开应用后切换到 **Firefox** 选项卡，系统会自动检测已安装的 Firefox 及其配置文件（通常选择标记为“默认”的即可）。
 2. **检查前置条件**：如果提示“需要配置 Firefox”，请点击 **[自动配置]** 按钮，工具会自动启用相关设置（`toolkit.legacyUserProfileCustomizations.stylesheets`）。
 3. **设置背景图片**：点击 **[选择图片]** 按钮，从本地选择一张喜欢的图片（支持 JPG, PNG, GIF, WebP 等）。
-4. **配置显示选项**：根据需要开启或关闭“显示搜索框”和“显示快捷方式”。
+4. **调整受支持的样式项**：Firefox 目前支持背景图/背景色、适应方式、模糊、亮度、遮罩，以及“显示搜索框”“显示快捷方式”。
 5. **应用与重启**：点击 **[应用设置]**，然后**完全关闭 Firefox**（确保任务管理器中没有 firefox.exe 进程），重新打开即可看到效果。
 
 ---
 
 ### 🌐 Chrome/Edge 设置
 
-> **提示：** Chrome/Edge 的修改基于生成本地扩展的方式实现。
+> **提示：** Chrome/Edge 的修改基于生成本地扩展的方式实现，扩展文件默认保存在应用数据目录下的持久路径中。
 
 1. **配置背景**：切换到 **Chrome/Edge** 选项卡，设置背景图片和显示选项。
 2. **生成扩展**：选择一个扩展输出路径（可留空使用默认），点击 **[生成扩展]**。
@@ -173,7 +174,7 @@ cargo tauri build
 | :--- | :--- | :--- |
 | **🚀 核心框架** | Tauri v2 | 跨平台桌面应用框架，提供高性能与小体积 |
 | **🦀 后端 (Rust)** | Rust, serde, thiserror, dirs, chrono | 高性能系统编程，处理文件系统、路径与配置 |
-| **⚛️ 前端 (UI)** | React 18, TypeScript | 提供现代化、类型安全的响应式交互界面 |
+| **⚛️ 前端 (UI)** | React 19, TypeScript | 提供现代化、类型安全的响应式交互界面 |
 | **🎨 样式与状态** | Tailwind CSS, Zustand, Lucide React | 原子化 CSS 样式、轻量级状态管理与精美图标 |
 | **📦 构建工具** | Vite, Cargo | 极速前端构建与 Rust 依赖管理 |
 
@@ -241,7 +242,9 @@ cd src-tauri && cargo fmt    # 格式化 Rust 代码
 <summary><b>📝 更新日志 & 注意事项</b></summary>
 
 ### 注意事项
+- **平台范围**: 当前版本以 **Windows 桌面工具** 为边界设计和验证。
 - **Firefox 配置**: 修改 `about:config` 设置后需要重启 Firefox；`userContent.css` 仅对 `about:newtab` 和 `about:home` 页面生效。
+- **Firefox 能力边界**: Firefox 目前只实现背景与基础显隐控制，不包含 Chrome/Edge 新标签页的完整高级样式能力。
 - **扩展安全性**: 本工具不会收集任何用户数据，所有操作均在本地完成。
 
 ### 更新日志

@@ -14,16 +14,21 @@ import {
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { useConfigStore } from '../../stores/configStore';
+import { useConfirm } from '../../hooks/useConfirm';
 import { useToast } from '../../hooks/useToast';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ToastContainer } from '../common/Toast';
 import { NtpPreview } from './NtpPreview';
 import { ChromeSettings } from './ChromeSettings';
+import { useT } from '../../i18n';
 import type { ElementPosition } from '../../types';
 
 export function ChromePanel() {
+  const t = useT();
   const [hasApplied, setHasApplied] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const { confirmState, confirm, onConfirm, onCancel } = useConfirm();
   const { toasts, removeToast, success, error: showError } = useToast();
 
   const {
@@ -72,21 +77,21 @@ export function ChromePanel() {
       setHasApplied(true);
       success(
         chromeInfo?.extension_exists
-          ? 'Extension updated! Open a new tab to see changes.'
-          : 'Extension generated! Follow the steps below to load it.'
+          ? t('chrome.extUpdated')
+          : t('chrome.extGenerated')
       );
       setTimeout(() => setHasApplied(false), 3000);
     } catch {
-      showError('Failed to apply settings.');
+      showError(t('chrome.applyFailed'));
     }
   };
 
   const handleRemove = async () => {
     try {
       await removeChrome();
-      success('Extension files removed.');
+      success(t('chrome.removedOk'));
     } catch {
-      showError('Failed to remove.');
+      showError(t('chrome.removeFailed'));
     }
   };
 
@@ -94,36 +99,46 @@ export function ChromePanel() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(label);
-      success(`${label} copied!`);
+      success(t('common.copied', { label }));
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      showError('Failed to copy');
+      showError(t('chrome.copyFailed'));
     }
   };
 
   const handleExport = async () => {
     try {
       await exportSettings();
-      success('Settings exported!');
+      success(t('chrome.exportedOk'));
     } catch {
-      showError('Failed to export settings.');
+      showError(t('chrome.exportFailed'));
     }
   };
 
   const handleImport = async () => {
     try {
       await importSettings();
-      success('Settings imported!');
+      success(t('chrome.importedOk'));
     } catch {
-      showError('Failed to import settings.');
+      showError(t('chrome.importFailed'));
     }
   };
 
-  const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset all settings to defaults?')) {
-      resetSettings();
-      success('Settings reset to defaults.');
+  const handleReset = async () => {
+    const confirmed = await confirm({
+      title: t('chrome.resetTitle'),
+      message: t('chrome.resetConfirm'),
+      confirmText: t('chrome.resetConfirmAction'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
     }
+
+    resetSettings();
+    success(t('chrome.resetOk'));
   };
 
   const handleOpenFolder = async () => {
@@ -131,7 +146,7 @@ export function ChromePanel() {
     try {
       await invoke('open_folder', { path: chromeInfo.extension_path });
     } catch {
-      showError('Could not open folder');
+      showError(t('chrome.folderFailed'));
     }
   };
 
@@ -142,7 +157,7 @@ export function ChromePanel() {
     return (
       <div className="max-w-3xl mx-auto">
         <div className="flex flex-col items-center justify-center py-12">
-          <LoadingSpinner text="Detecting browsers..." />
+          <LoadingSpinner text={t('chrome.detecting')} />
         </div>
       </div>
     );
@@ -157,15 +172,15 @@ export function ChromePanel() {
             <div className="w-16 h-16 bg-yellow-500/20 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle size={32} />
             </div>
-            <h3 className="text-xl font-semibold text-yellow-100 mb-2">No Browser Detected</h3>
+            <h3 className="text-xl font-semibold text-yellow-100 mb-2">{t('chrome.noBrowser')}</h3>
             <p className="text-yellow-200/70 max-w-md mx-auto mb-6">
-              Could not find Chrome or Edge on this system.
+              {t('chrome.noBrowserDesc')}
             </p>
             <button
               onClick={detectChrome}
               className="px-6 py-2.5 bg-yellow-600/80 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors"
             >
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         </div>
@@ -175,10 +190,20 @@ export function ChromePanel() {
 
   return (
     <>
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        isDangerous={confirmState.isDangerous}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="flex gap-6 max-w-6xl mx-auto animate-fade-in pb-12">
-        {/* Left: Preview + Actions (sticky) */}
-        <div className="w-[60%] shrink-0 sticky top-0 self-start space-y-4">
+      <div className="flex flex-col xl:flex-row gap-6 max-w-6xl mx-auto animate-fade-in pb-12">
+        {/* Left: Preview + Actions (sticky on wide screens) */}
+        <div className="w-full xl:w-[58%] shrink-0 xl:sticky xl:top-0 xl:self-start space-y-4">
           {/* Browser badges */}
           <div className="flex items-center gap-3">
             {chromeInfo.chrome_installed && (
@@ -196,7 +221,7 @@ export function ChromePanel() {
             {chromeInfo.extension_exists && (
               <span className="flex items-center gap-1 text-xs text-green-400 ml-auto">
                 <CheckCircle size={12} />
-                Deployed
+                {t('chrome.deployed')}
               </span>
             )}
           </div>
@@ -208,11 +233,11 @@ export function ChromePanel() {
           />
 
           {/* Action buttons */}
-          <div className="flex items-center gap-3 pt-4 border-t border-border-subtle/30">
+          <div className="flex items-center gap-2 lg:gap-3 pt-4 border-t border-border-subtle/30">
             <button
               onClick={handleApply}
               disabled={isLoading}
-              className="flex-1 flex items-center justify-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary-hover disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg shadow-primary/25 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 px-4 lg:px-8 py-3 lg:py-3.5 bg-primary hover:bg-primary-hover disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg shadow-primary/25 transition-all text-sm lg:text-base"
             >
               {isLoading ? (
                 <LoadingSpinner size="sm" />
@@ -223,12 +248,12 @@ export function ChromePanel() {
               )}
               <span>
                 {isLoading
-                  ? 'Applying...'
+                  ? t('chrome.applying')
                   : hasApplied
-                    ? 'Done!'
+                    ? t('common.done')
                     : chromeInfo.extension_exists
-                      ? 'Update Extension'
-                      : 'Generate Extension'}
+                      ? t('chrome.updateExt')
+                      : t('chrome.generateExt')}
               </span>
             </button>
 
@@ -237,7 +262,7 @@ export function ChromePanel() {
                 <button
                   onClick={handleOpenFolder}
                   className="p-3.5 bg-white/5 hover:bg-white/10 border border-border-subtle/50 text-gray-200 rounded-xl transition-colors"
-                  title="Open folder"
+                  title={t('chrome.openFolder')}
                 >
                   <FolderOpen size={20} />
                 </button>
@@ -245,7 +270,7 @@ export function ChromePanel() {
                   onClick={handleRemove}
                   disabled={isLoading}
                   className="p-3.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl transition-colors disabled:opacity-50"
-                  title="Remove"
+                  title={t('chrome.remove')}
                 >
                   <Trash2 size={20} />
                 </button>
@@ -254,30 +279,30 @@ export function ChromePanel() {
           </div>
 
           {/* Import / Export / Reset */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleExport}
               className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 border border-border-subtle/50 text-gray-300 text-sm rounded-lg transition-colors"
-              title="Export settings"
+              title={t('chrome.exportSettings')}
             >
               <Download size={16} />
-              Export
+              {t('common.export')}
             </button>
             <button
               onClick={handleImport}
               className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 border border-border-subtle/50 text-gray-300 text-sm rounded-lg transition-colors"
-              title="Import settings"
+              title={t('chrome.importSettings')}
             >
               <Upload size={16} />
-              Import
+              {t('common.import')}
             </button>
             <button
               onClick={handleReset}
               className="flex items-center gap-1.5 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm rounded-lg transition-colors"
-              title="Reset to defaults"
+              title={t('chrome.resetDefaults')}
             >
               <RotateCcw size={16} />
-              Reset
+              {t('common.reset')}
             </button>
           </div>
         </div>
@@ -295,13 +320,13 @@ export function ChromePanel() {
           {chromeInfo.extension_exists && (
             <div className="bg-card border border-border-subtle/50 rounded-xl p-6 shadow-sm space-y-4">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                First-time Setup
+                {t('setup.title')}
               </h3>
 
               <div className="flex items-start gap-3">
                 <span className="shrink-0 w-6 h-6 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">1</span>
                 <div className="flex-1 space-y-1.5">
-                  <p className="text-sm text-gray-200">Open extensions page in your browser:</p>
+                  <p className="text-sm text-gray-200">{t('setup.step1')}</p>
                   <div className="flex flex-wrap gap-2">
                     {chromeInfo.chrome_installed && (
                       <button
@@ -327,7 +352,7 @@ export function ChromePanel() {
 
               <div className="flex items-start gap-3">
                 <span className="shrink-0 w-6 h-6 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">2</span>
-                <p className="text-sm text-gray-200">Enable <strong>Developer mode</strong>, click <strong>"Load unpacked"</strong>, select:</p>
+                <p className="text-sm text-gray-200" dangerouslySetInnerHTML={{ __html: t('setup.step2html') }} />
               </div>
 
               <div className="ml-9 flex items-center gap-2">
@@ -344,7 +369,7 @@ export function ChromePanel() {
 
               <div className="flex items-start gap-3">
                 <span className="shrink-0 w-6 h-6 rounded-full bg-green-500 text-white text-[10px] flex items-center justify-center font-bold">&#10003;</span>
-                <p className="text-sm text-gray-200">Done! Open a new tab to see your background.</p>
+                <p className="text-sm text-gray-200">{t('setup.done')}</p>
               </div>
             </div>
           )}
@@ -353,8 +378,7 @@ export function ChromePanel() {
           <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 flex items-start gap-3">
             <ArrowRight size={16} className="mt-0.5 text-blue-400 shrink-0" />
             <p className="text-sm text-blue-200/80">
-              <span className="font-medium text-blue-200">Tip:</span> After first-time setup, just
-              click "Update Extension" and open a new tab — no need to reload the extension.
+              <span className="font-medium text-blue-200">{t('setup.tip')}</span> {t('setup.tipText')}
             </p>
           </div>
         </div>
