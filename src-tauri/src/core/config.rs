@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const CONFIG_VERSION: u32 = 2;
+pub const CONFIG_VERSION: u32 = 3;
 
 fn default_config_version() -> u32 {
     CONFIG_VERSION
@@ -19,15 +19,11 @@ pub struct AppConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FirefoxConfig {
     pub profile_path: Option<String>,
-    pub enabled: bool,
     pub settings: BrowserSettings,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChromeConfig {
-    #[serde(default)]
-    pub extension_output_path: Option<String>,
-    pub enabled: bool,
     pub settings: BrowserSettings,
 }
 
@@ -328,7 +324,6 @@ impl Default for FirefoxConfig {
     fn default() -> Self {
         Self {
             profile_path: None,
-            enabled: true,
             settings: BrowserSettings::default(),
         }
     }
@@ -337,8 +332,6 @@ impl Default for FirefoxConfig {
 impl Default for ChromeConfig {
     fn default() -> Self {
         Self {
-            extension_output_path: None,
-            enabled: true,
             settings: BrowserSettings::default(),
         }
     }
@@ -396,12 +389,9 @@ impl AppConfig {
             config_version: CONFIG_VERSION,
             firefox: FirefoxConfig {
                 profile_path: self.firefox.profile_path.and_then(normalize_optional_text),
-                enabled: self.firefox.enabled,
                 settings: self.firefox.settings.normalized(),
             },
             chrome: ChromeConfig {
-                extension_output_path: self.chrome.extension_output_path.and_then(normalize_optional_text),
-                enabled: self.chrome.enabled,
                 settings: self.chrome.settings.normalized(),
             },
             custom_presets: firefox_presets,
@@ -636,4 +626,19 @@ pub struct PrereqCheck {
     pub toolkit_legacy_enabled: bool,
     pub all_ok: bool,
     pub instructions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct BackupEntry {
+    pub name: String,
+    pub label: String,
+    pub is_auto: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ApplyResult {
+    pub success: bool,
+    pub output_path: Option<String>,
+    pub backup_name: Option<String>,
+    pub warnings: Vec<String>,
 }

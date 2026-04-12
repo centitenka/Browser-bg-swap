@@ -29,6 +29,7 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
   const t = useT();
   const [isDragging, setIsDragging] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -50,6 +51,7 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
         const filePath = (file as unknown as { path?: string }).path;
         if (filePath && onDropPath) {
           onDropPath(filePath);
+          setFeedback({ type: 'success', message: 'Image ready. Review the preview, then apply it.' });
         } else {
           onSelect();
         }
@@ -63,9 +65,13 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
       const savedPath = await invoke<string>('save_cropped_image', { dataUrl });
       if (onDropPath) {
         onDropPath(savedPath);
+        setFeedback({ type: 'success', message: 'Cropped image saved and selected.' });
       }
     } catch (e) {
-      console.error('Failed to save cropped image:', e);
+      setFeedback({
+        type: 'error',
+        message: e instanceof Error ? e.message : 'Failed to save the cropped image.',
+      });
     } finally {
       setIsCropping(false);
     }
@@ -152,41 +158,67 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
                </button>
              </div>
           </div>
-        </div>
-      ) : (
-        <button
-          onClick={onSelect}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`group relative flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-card ${
-            isDragging
-              ? 'border-primary bg-primary/5'
-              : 'border-border-subtle/50 bg-white/2 hover:border-gray-500 hover:bg-white/5'
-          }`}
-        >
-          <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
+
+          {feedback && (
             <div
-              className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
-                isDragging ? 'bg-primary text-white scale-110' : 'bg-sidebar text-gray-400 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary'
+              className={`rounded-xl border px-3 py-2 text-xs ${
+                feedback.type === 'success'
+                  ? 'border-green-500/20 bg-green-500/10 text-green-100'
+                  : 'border-red-500/20 bg-red-500/10 text-red-100'
               }`}
             >
-              {isDragging ? (
-                <Upload size={24} strokeWidth={2} />
-              ) : (
-                <ImageIcon size={24} strokeWidth={1.5} />
-              )}
+              {feedback.message}
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-200">
-                {t('image.upload')}
-              </p>
-              <p className="text-xs text-gray-500">
-                {t('image.formats')}
-              </p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <button
+            onClick={onSelect}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`group relative flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-card ${
+              isDragging
+                ? 'border-primary bg-primary/8 shadow-lg shadow-primary/10'
+                : 'border-border-subtle/50 bg-white/2 hover:border-gray-500 hover:bg-white/5'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
+                  isDragging
+                    ? 'bg-primary text-white scale-110'
+                    : 'bg-sidebar text-gray-400 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary'
+                }`}
+              >
+                {isDragging ? (
+                  <Upload size={24} strokeWidth={2} />
+                ) : (
+                  <ImageIcon size={24} strokeWidth={1.5} />
+                )}
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-200">{t('image.upload')}</p>
+                <p className="text-xs text-gray-500">
+                  {isDragging ? 'Drop the image to replace the current background.' : t('image.formats')}
+                </p>
+              </div>
             </div>
-          </div>
-        </button>
+          </button>
+
+          {feedback && (
+            <div
+              className={`rounded-xl border px-3 py-2 text-xs ${
+                feedback.type === 'success'
+                  ? 'border-green-500/20 bg-green-500/10 text-green-100'
+                  : 'border-red-500/20 bg-red-500/10 text-red-100'
+              }`}
+            >
+              {feedback.message}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

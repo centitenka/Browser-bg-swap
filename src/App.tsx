@@ -14,6 +14,7 @@ function App() {
   const [lang, setLangState] = useState<Lang>(getSavedLang);
   const loadConfig = useConfigStore((s) => s.loadConfig);
   const setStoreTab = useConfigStore((s) => s.setActiveTab);
+  const dirtyByTab = useConfigStore((s) => s.dirtyByTab);
 
   const setLang = (l: Lang) => {
     setLangState(l);
@@ -64,6 +65,16 @@ function App() {
           <Header
             title={getTitle()}
             breadcrumbs={getBreadcrumbs()}
+            actions={
+              <div className="inline-flex items-center gap-2 rounded-full border border-border-subtle/50 bg-white/5 px-3 py-1.5 text-xs text-gray-300">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    dirtyByTab[activeTab] ? 'bg-amber-400' : 'bg-green-400'
+                  }`}
+                />
+                {dirtyByTab[activeTab] ? 'Pending changes' : 'Workspace synced'}
+              </div>
+            }
           />
 
           <main className="flex-1 overflow-y-auto bg-content scroll-smooth">

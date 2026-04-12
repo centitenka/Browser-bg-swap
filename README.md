@@ -1,7 +1,7 @@
 <div align="center">
   <img src="src-tauri/icons/128x128.png" alt="BrowserBgSwap Logo" width="120" height="120" />
   <h1>BrowserBgSwap</h1>
-  <p><strong>✨ 一款专为 Windows 用户设计的可视化 GUI 工具，轻松自定义浏览器背景图片和主页样式。 ✨</strong></p>
+  <p><strong>✨ 一个以个人自用为主的 Windows 桌面工具，用来快速调整 Firefox / Chrome / Edge 的新标签页背景与样式。✨</strong></p>
 
   <p>
     <a href="README.md"><b>中文版</b></a> •
@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/Tauri-2.0-24C8DB?style=for-the-badge&logo=tauri&logoColor=white" alt="Tauri">
     <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
     <img src="https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
-    <img src="https://img.shields.io/badge/License-MIT-success?style=for-the-badge" alt="License">
+    <img src="https://img.shields.io/badge/status-Personal%20Use-3B82F6?style=for-the-badge" alt="Personal Use">
   </p>
 </div>
 
@@ -25,8 +25,7 @@
 - [✨ 功能特性](#-功能特性)
 - [🖥️ 系统要求](#️-系统要求)
 - [🚀 安装方法](#-安装方法)
-  - [📦 方法一：下载预编译版本（✨ 推荐 ✨）](#-方法一下载预编译版本-推荐-)
-  - [🛠️ 方法二：从源码构建](#️-方法二从源码构建)
+  - [🛠️ 从源码构建](#️-从源码构建)
     - [环境要求](#环境要求)
     - [构建步骤](#构建步骤)
 - [📖 使用指南](#-使用指南)
@@ -99,14 +98,7 @@
 
 ## 🚀 安装方法
 
-### 📦 方法一：下载预编译版本（✨ 推荐 ✨）
-
-1. 访问 [Releases](https://github.com/yourusername/browser-bg-swap/releases) 页面
-2. 下载最新版本的 `BrowserBgSwap_x.x.x_x64.msi`
-3. 双击安装包，按向导完成安装
-4. 从开始菜单或桌面快捷方式启动
-
-### 🛠️ 方法二：从源码构建
+### 🛠️ 从源码构建
 
 <details>
 <summary><b>点击查看源码构建步骤</b></summary>
@@ -119,8 +111,7 @@
 #### 构建步骤
 
 ```bash
-# 1. 克隆仓库
-git clone https://github.com/yourusername/browser-bg-swap.git
+# 1. 进入项目目录
 cd browser-bg-swap
 
 # 2. 安装前端依赖
@@ -130,13 +121,14 @@ npm install
 cargo install tauri-cli
 
 # 4. 开发模式运行
-cargo tauri dev
+npm run tauri:dev
 
 # 5. 构建发布版本
-cargo tauri build
+npm run tauri build
 ```
 
 > 💡 构建完成后，安装包将位于 `src-tauri/target/release/bundle/msi/` 目录下。
+> 💡 这是一个个人自用项目，README 默认按本地构建与本地使用流程维护，没有提供固定的公开发布地址。
 
 </details>
 
@@ -161,7 +153,7 @@ cargo tauri build
 > **提示：** Chrome/Edge 的修改基于生成本地扩展的方式实现，扩展文件默认保存在应用数据目录下的持久路径中。
 
 1. **配置背景**：切换到 **Chrome/Edge** 选项卡，设置背景图片和显示选项。
-2. **生成扩展**：选择一个扩展输出路径（可留空使用默认），点击 **[生成扩展]**。
+2. **生成扩展**：点击 **[保存并应用]**，应用会在本地应用数据目录内刷新扩展包。
 3. **安装扩展**：
    - 🔵 **Chrome**: 打开 `chrome://extensions/` ➔ 开启右上角 **[开发者模式]** ➔ 点击 **[加载已解压的扩展程序]** ➔ 选择生成的 `BrowserBgSwap_Extension` 文件夹。
    - 🟢 **Edge**: 打开 `edge://extensions/` ➔ 开启左下角 **[开发人员模式]** ➔ 点击 **[加载解压缩的扩展]** ➔ 选择生成的 `BrowserBgSwap_Extension` 文件夹。
@@ -236,6 +228,14 @@ cd src-tauri && cargo check  # 检查 Rust 代码
 cd src-tauri && cargo fmt    # 格式化 Rust 代码
 ```
 
+### 本地数据目录
+```text
+%AppData%\BrowserBgSwap\
+├── config.json        # 应用配置
+├── backups\           # Firefox 备份
+└── Extension\         # Chrome / Edge 扩展包
+```
+
 </details>
 
 <details>
@@ -260,7 +260,7 @@ cd src-tauri && cargo fmt    # 格式化 Rust 代码
 ---
 
 <div align="center">
-  <p>本项目采用 <a href="LICENSE">MIT License</a> 许可证开源。</p>
-  <p>欢迎提交 Issue 和 Pull Request！💖</p>
+  <p>当前 README 以个人自用与本地构建为前提维护。</p>
+  <p>如需公开发布或开源整理，建议先补充 LICENSE、发布流程与仓库地址。</p>
   <p><b>致谢：</b> <a href="https://tauri.app/">Tauri</a> • <a href="https://react.dev/">React</a> • <a href="https://tailwindcss.com/">Tailwind CSS</a></p>
 </div>

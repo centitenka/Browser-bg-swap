@@ -1,4 +1,4 @@
-use crate::core::config::BrowserSettings;
+use crate::core::config::{ApplyResult, BrowserSettings};
 use crate::core::error::{AppError, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -50,19 +50,19 @@ impl ChromeManager {
     pub fn apply(
         settings: &BrowserSettings,
         image_path: Option<&str>,
-    ) -> Result<String> {
+    ) -> Result<ApplyResult> {
         let ext_dir = Self::get_extension_dir()?;
-
-        if ext_dir.exists() {
-            fs::remove_dir_all(&ext_dir)?;
-        }
         fs::create_dir_all(&ext_dir)?;
         fs::create_dir_all(ext_dir.join("icons"))?;
         fs::create_dir_all(ext_dir.join("images"))?;
 
+        Self::cleanup_controlled_files(&ext_dir)?;
+
         let bg_file_name = image_path.and_then(Self::background_file_name);
 
-        if let (Some(img), Some(ref name)) = (image_path, &bg_file_name) {
+        Self::reset_images_dir(&ext_dir.join("images"))?;
+
+        if let (Some(img), Some(name)) = (image_path, bg_file_name.as_deref()) {
             fs::copy(img, ext_dir.join("images").join(name))?;
         }
 
@@ -73,9 +73,15 @@ impl ChromeManager {
         )?;
         fs::write(ext_dir.join("styles.css"), Self::generate_css(settings))?;
         fs::write(ext_dir.join("newtab.js"), Self::generate_js(settings))?;
-        Self::create_default_icons(&ext_dir.join("icons"))?;
+        Self::write_embedded_icons(&ext_dir.join("icons"))?;
+        Self::validate_bundle(&ext_dir, bg_file_name.as_deref())?;
 
-        Ok(ext_dir.to_string_lossy().to_string())
+        Ok(ApplyResult {
+            success: true,
+            output_path: Some(ext_dir.to_string_lossy().to_string()),
+            backup_name: None,
+            warnings: vec![],
+        })
     }
 
     /// Remove extension files
@@ -160,6 +166,31 @@ impl ChromeManager {
             .map(|e| format!("background.{}", e.to_ascii_lowercase()))
     }
 
+    fn cleanup_controlled_files(ext_dir: &Path) -> Result<()> {
+        for relative in ["manifest.json", "newtab.html", "styles.css", "newtab.js"] {
+            let path = ext_dir.join(relative);
+            if path.exists() {
+                fs::remove_file(path)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn reset_images_dir(images_dir: &Path) -> Result<()> {
+        if images_dir.exists() {
+            for entry in fs::read_dir(images_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_file() {
+                    fs::remove_file(path)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn generate_manifest() -> String {
         serde_json::json!({
             "manifest_version": 3,
@@ -238,13 +269,17 @@ impl ChromeManager {
             ""
         };
 
-        let custom_css = &settings.custom_css;
-
         let shortcuts_vis = if settings.show_shortcuts {
             "".to_string()
         } else {
             "#shortcuts { display: none !important; }".to_string()
         };
+
+        let search_action =
+            serde_json::to_string(search_action).unwrap_or_else(|_| "\"https://www.google.com/search\"".into());
+        let search_param = serde_json::to_string(search_param).unwrap_or_else(|_| "\"q\"".into());
+        let search_placeholder =
+            serde_json::to_string(&settings.search_placeholder).unwrap_or_else(|_| "\"Search...\"".into());
 
         format!(
             r#"<!DOCTYPE html>
@@ -261,8 +296,7 @@ impl ChromeManager {
         .search-wrap form {{ background: rgba({search_r},{search_g},{search_b},{search_bg_alpha:.2}); border-radius: {search_border_radius}px; }}
         .shortcut-item {{ background: rgba({sc_r},{sc_g},{sc_b},{sc_bg_alpha:.2}); border-radius: {shortcuts_border_radius}px; }}
         {shortcuts_vis}
-        {custom_css}
-    </style>
+      </style>
 </head>
 <body>
     <div class="background" style="{bg_style} {filter_style}">
@@ -272,8 +306,8 @@ impl ChromeManager {
     <div class="clock" id="clock"></div>{clock_date_div}
 
     <div class="search-wrap">
-        <form action="{search_action}" method="GET">
-            <input type="text" name="{search_param}" placeholder="{search_placeholder}" autofocus>
+        <form action={search_action} method="GET">
+            <input type="text" name={search_param} placeholder={search_placeholder} autofocus>
             <button type="submit">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
@@ -305,7 +339,7 @@ impl ChromeManager {
             filter_style = filter_style,
             search_action = search_action,
             search_param = search_param,
-            search_placeholder = settings.search_placeholder,
+            search_placeholder = search_placeholder,
             shortcuts_json = shortcuts_json,
             search_r = search_r,
             search_g = search_g,
@@ -318,7 +352,6 @@ impl ChromeManager {
             sc_bg_alpha = sc_bg_alpha,
             shortcuts_border_radius = settings.shortcuts_border_radius,
             clock_date_div = clock_date_div,
-            custom_css = custom_css,
             clock_format_24h = settings.clock_format_24h,
             clock_show_seconds = settings.clock_show_seconds,
             clock_show_date = settings.clock_show_date,
@@ -369,7 +402,7 @@ impl ChromeManager {
             _ => "",
         };
 
-        format!(
+        let base_css = format!(
             r#"* {{ margin: 0; padding: 0; box-sizing: border-box; }}
 
 body {{
@@ -476,10 +509,10 @@ body {{
     width: {icon_size}px; height: {icon_size}px; border-radius: 8px; object-fit: contain;
 }}
 
-.shortcut-title {{
-    color: {sc_title_color}; font-size: 11px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}}
+  .shortcut-title {{
+      color: {sc_title_color}; font-size: 11px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }}
 "#,
             search_r = search_r, search_g = search_g, search_b = search_b,
             search_bg_alpha = search_bg_alpha,
@@ -502,10 +535,16 @@ body {{
             icon_size = settings.shortcuts_icon_size,
             sc_title_color = settings.shortcuts_title_color,
             cs_r = cs_r, cs_g = cs_g, cs_b = cs_b, cs_alpha = cs_alpha,
-            cs_blur = settings.clock_shadow_blur,
-            clock_letter_spacing = settings.clock_letter_spacing,
-            clock_font = clock_font,
-        )
+              cs_blur = settings.clock_shadow_blur,
+              clock_letter_spacing = settings.clock_letter_spacing,
+              clock_font = clock_font,
+        );
+
+        if settings.custom_css.trim().is_empty() {
+            base_css
+        } else {
+            format!("{}\n\n/* BrowserBgSwap custom CSS */\n{}", base_css, settings.custom_css.trim())
+        }
     }
 
     fn generate_js(settings: &BrowserSettings) -> String {
@@ -624,22 +663,42 @@ updateClock();
         )
     }
 
-    fn create_default_icons(icons_dir: &Path) -> Result<()> {
-        // Minimal valid 1x1 pixel transparent PNG
-        let minimal_png: Vec<u8> = vec![
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-            0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41,
-            0x54, 0x08, 0xD7, 0x63, 0x60, 0x60, 0x60, 0x60,
-            0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0x62, 0xF5,
-            0x6A, 0xCE, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45,
-            0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
-        ];
+    fn write_embedded_icons(icons_dir: &Path) -> Result<()> {
+        const ICON_16: &[u8] = include_bytes!("../../../BrowserBgSwap_Extension/icons/icon16.png");
+        const ICON_48: &[u8] = include_bytes!("../../../BrowserBgSwap_Extension/icons/icon48.png");
+        const ICON_128: &[u8] = include_bytes!("../../../BrowserBgSwap_Extension/icons/icon128.png");
 
-        for name in &["icon16.png", "icon48.png", "icon128.png"] {
-            fs::write(icons_dir.join(name), &minimal_png)?;
+        for (name, bytes) in [
+            ("icon16.png", ICON_16),
+            ("icon48.png", ICON_48),
+            ("icon128.png", ICON_128),
+        ] {
+            fs::write(icons_dir.join(name), bytes)?;
+        }
+
+        Ok(())
+    }
+
+    fn validate_bundle(ext_dir: &Path, bg_file_name: Option<&str>) -> Result<()> {
+        for required in ["manifest.json", "newtab.html", "styles.css", "newtab.js"] {
+            let path = ext_dir.join(required);
+            if !path.exists() {
+                return Err(AppError::Io(format!("生成扩展缺少文件: {}", required)));
+            }
+        }
+
+        for icon in ["icon16.png", "icon48.png", "icon128.png"] {
+            let path = ext_dir.join("icons").join(icon);
+            if !path.exists() {
+                return Err(AppError::Io(format!("生成扩展缺少图标: {}", icon)));
+            }
+        }
+
+        if let Some(name) = bg_file_name {
+            let image = ext_dir.join("images").join(name);
+            if !image.exists() {
+                return Err(AppError::Io(format!("生成扩展缺少背景图: {}", name)));
+            }
         }
 
         Ok(())
@@ -668,5 +727,16 @@ mod tests {
 
         assert!(html.contains("https://duckduckgo.com/"));
         assert!(html.contains("name=\"q\""));
+    }
+
+    #[test]
+    fn generated_html_escapes_search_placeholder() {
+        let mut settings = BrowserSettings::default();
+        settings.search_placeholder = "\" autofocus onfocus=alert(1)".into();
+
+        let html = ChromeManager::generate_html(&settings, None);
+
+        assert!(html.contains("\\\" autofocus onfocus=alert(1)"));
+        assert!(!html.contains("placeholder=\"\" autofocus"));
     }
 }

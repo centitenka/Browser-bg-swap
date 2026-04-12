@@ -1,6 +1,6 @@
 import type { AppConfig, BrowserSettings, Shortcut } from '../types';
 
-export const CONFIG_VERSION = 2;
+export const CONFIG_VERSION = 3;
 
 export function createDefaultShortcuts(): Shortcut[] {
   return [
@@ -79,12 +79,9 @@ export function createDefaultAppConfig(): AppConfig {
     config_version: CONFIG_VERSION,
     firefox: {
       profile_path: null,
-      enabled: true,
       settings: createDefaultSettings(),
     },
     chrome: {
-      extension_output_path: null,
-      enabled: true,
       settings: createDefaultSettings(),
     },
     custom_presets: [],

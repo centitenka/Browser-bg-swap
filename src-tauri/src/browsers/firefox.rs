@@ -1,4 +1,4 @@
-use crate::core::config::{BrowserInfo, BrowserType, PrereqCheck, ProfileInfo};
+use crate::core::config::{ApplyResult, BackupEntry, BrowserInfo, BrowserType, PrereqCheck, ProfileInfo};
 use crate::core::error::{AppError, Result};
 use regex::Regex;
 use std::collections::hash_map::DefaultHasher;
@@ -9,6 +9,8 @@ use std::path::{Path, PathBuf};
 pub struct FirefoxManager;
 
 const TOOLKIT_PREF_KEY: &str = "toolkit.legacyUserProfileCustomizations.stylesheets";
+const AUTO_BACKUP_PREFIX: &str = "userContent_auto_";
+const MANUAL_BACKUP_PREFIX: &str = "userContent_manual_";
 
 #[derive(Default)]
 struct ProfileSection {
@@ -97,14 +99,24 @@ impl FirefoxManager {
     }
 
     /// 应用CSS到指定配置文件
-    pub fn apply_css(profile_path: &str, css: &str) -> Result<()> {
+    pub fn apply_css(profile_path: &str, css: &str) -> Result<ApplyResult> {
         let chrome_dir = Path::new(profile_path).join("chrome");
         fs::create_dir_all(&chrome_dir)?;
 
         let css_path = chrome_dir.join("userContent.css");
+        let backup_name = if css_path.exists() {
+            Some(Self::create_backup_with_kind(profile_path, "auto")?)
+        } else {
+            None
+        };
         fs::write(&css_path, css)?;
 
-        Ok(())
+        Ok(ApplyResult {
+            success: true,
+            output_path: Some(css_path.to_string_lossy().to_string()),
+            backup_name,
+            warnings: vec![],
+        })
     }
 
     /// 检查about:config前置条件
@@ -160,6 +172,10 @@ impl FirefoxManager {
 
     /// 创建备份
     pub fn create_backup(profile_path: &str) -> Result<String> {
+        Self::create_backup_with_kind(profile_path, "manual")
+    }
+
+    fn create_backup_with_kind(profile_path: &str, kind: &str) -> Result<String> {
         let chrome_dir = Path::new(profile_path).join("chrome");
         let css_path = chrome_dir.join("userContent.css");
 
@@ -169,7 +185,10 @@ impl FirefoxManager {
 
         let backup_dir = Self::get_backup_dir(profile_path)?;
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-        let backup_name = format!("userContent_backup_{}.css", timestamp);
+        let backup_name = match kind {
+            "auto" => format!("{AUTO_BACKUP_PREFIX}{}.css", timestamp),
+            _ => format!("{MANUAL_BACKUP_PREFIX}{}.css", timestamp),
+        };
         let backup_path = backup_dir.join(&backup_name);
 
         fs::copy(&css_path, &backup_path)?;
@@ -195,7 +214,7 @@ impl FirefoxManager {
     }
 
     /// 获取备份列表
-    pub fn list_backups(profile_path: &str) -> Result<Vec<String>> {
+    pub fn list_backups(profile_path: &str) -> Result<Vec<BackupEntry>> {
         let backup_dir = Self::get_backup_dir(profile_path)?;
         let mut backups = Vec::new();
 
@@ -204,13 +223,13 @@ impl FirefoxManager {
                 let entry = entry?;
                 if entry.path().extension().map(|e| e == "css").unwrap_or(false) {
                     if let Some(name) = entry.file_name().to_str() {
-                        backups.push(name.to_string());
+                        backups.push(Self::build_backup_entry(name));
                     }
                 }
             }
         }
 
-        backups.sort_by(|a, b| b.cmp(a));
+        backups.sort_by(|a, b| b.name.cmp(&a.name));
         Ok(backups)
     }
 
@@ -236,6 +255,38 @@ impl FirefoxManager {
 
         fs::create_dir_all(&backup_dir)?;
         Ok(backup_dir)
+    }
+
+    fn build_backup_entry(name: &str) -> BackupEntry {
+        let timestamp = name
+            .strip_prefix(AUTO_BACKUP_PREFIX)
+            .or_else(|| name.strip_prefix(MANUAL_BACKUP_PREFIX))
+            .unwrap_or(name)
+            .strip_suffix(".css")
+            .unwrap_or(name);
+
+        let label = Self::format_backup_timestamp(timestamp);
+
+        BackupEntry {
+            name: name.to_string(),
+            label,
+            is_auto: name.starts_with(AUTO_BACKUP_PREFIX),
+        }
+    }
+
+    fn format_backup_timestamp(timestamp: &str) -> String {
+        if timestamp.len() >= 15 {
+            format!(
+                "{}/{}/{} {}:{}",
+                &timestamp[0..4],
+                &timestamp[4..6],
+                &timestamp[6..8],
+                &timestamp[9..11],
+                &timestamp[11..13]
+            )
+        } else {
+            timestamp.to_string()
+        }
     }
 
     fn parse_profiles_ini_content(firefox_dir: &Path, content: &str) -> Result<Vec<ProfileInfo>> {
@@ -413,5 +464,15 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", false);
         let second = FirefoxManager::profile_dir_key("C:/Users/test/AppData/Roaming/Mozilla/Firefox/Profiles/b.default-release");
 
         assert_ne!(first, second);
+    }
+
+    #[test]
+    fn backup_entries_mark_auto_backups() {
+        let auto = FirefoxManager::build_backup_entry("userContent_auto_20260412_141500.css");
+        let manual = FirefoxManager::build_backup_entry("userContent_manual_20260412_141510.css");
+
+        assert!(auto.is_auto);
+        assert!(!manual.is_auto);
+        assert_eq!(auto.label, "2026/04/12 14:15");
     }
 }

@@ -1,7 +1,7 @@
 <div align="center">
   <img src="src-tauri/icons/128x128.png" alt="BrowserBgSwap Logo" width="120" height="120" />
   <h1>BrowserBgSwap</h1>
-  <p><strong>✨ A visual GUI tool designed for Windows users to easily customize browser background images and homepage styles. ✨</strong></p>
+  <p><strong>✨ A Windows desktop tool built mainly for personal use, focused on quickly customizing Firefox / Chrome / Edge new-tab backgrounds and styling. ✨</strong></p>
 
   <p>
     <a href="README.md"><b>🇨🇳 中文版</b></a> •
@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/Tauri-2.0-24C8DB?style=for-the-badge&logo=tauri&logoColor=white" alt="Tauri">
     <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
     <img src="https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
-    <img src="https://img.shields.io/badge/License-MIT-success?style=for-the-badge" alt="License">
+    <img src="https://img.shields.io/badge/status-Personal%20Use-3B82F6?style=for-the-badge" alt="Personal Use">
   </p>
 </div>
 
@@ -89,14 +89,7 @@
 
 ## 🚀 Installation
 
-### 📦 Method 1: Prebuilt Version (✨ Recommended ✨)
-
-1. Visit the [Releases](https://github.com/yourusername/browser-bg-swap/releases) page.
-2. Download the latest `BrowserBgSwap_x.x.x_x64.msi`.
-3. Double-click the installer and follow the wizard.
-4. Launch from the Start Menu or desktop shortcut.
-
-### 🛠️ Method 2: Build from Source
+### 🛠️ Build from Source
 
 <details>
 <summary><b>Click to expand build steps</b></summary>
@@ -109,8 +102,7 @@
 #### Build Steps
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/browser-bg-swap.git
+# 1. Enter the project directory
 cd browser-bg-swap
 
 # 2. Install frontend dependencies
@@ -120,13 +112,14 @@ npm install
 cargo install tauri-cli
 
 # 4. Run in development mode
-cargo tauri dev
+npm run tauri:dev
 
 # 5. Build release version
-cargo tauri build
+npm run tauri build
 ```
 
 > 💡 After building, the installer can be found in the `src-tauri/target/release/bundle/msi/` directory.
+> 💡 This repository is currently documented as a local-build, personal-use project. There is no maintained public release URL yet.
 
 </details>
 
@@ -151,7 +144,7 @@ cargo tauri build
 > **Note:** Chrome/Edge customization works by generating a local browser extension stored in a persistent app-data directory by default.
 
 1. **Configure Background**: Switch to the **Chrome/Edge** tab and set the background image and display options.
-2. **Generate Extension**: Click **[Generate Extension]** to update the persistent extension bundle.
+2. **Generate Extension**: Click **[Save and apply]** to refresh the local extension bundle stored in app data.
 3. **Install Extension**:
    - 🔵 **Chrome**: Go to `chrome://extensions/` ➔ Enable **[Developer mode]** (top right) ➔ Click **[Load unpacked]** ➔ Select the generated `BrowserBgSwap_Extension` folder.
    - 🟢 **Edge**: Go to `edge://extensions/` ➔ Enable **[Developer mode]** (bottom left) ➔ Click **[Load unpacked]** ➔ Select the generated `BrowserBgSwap_Extension` folder.
@@ -261,6 +254,14 @@ cd src-tauri && cargo check  # Check Rust code
 cd src-tauri && cargo fmt    # Format Rust code
 ```
 
+### Local Data Directory
+```text
+%AppData%\BrowserBgSwap\
+├── config.json        # app config
+├── backups\           # Firefox backups
+└── Extension\         # Chrome / Edge extension bundle
+```
+
 </details>
 
 <details>
@@ -285,7 +286,7 @@ cd src-tauri && cargo fmt    # Format Rust code
 ---
 
 <div align="center">
-  <p>This project is licensed under the <a href="LICENSE">MIT License</a>.</p>
-  <p>Issues and Pull Requests are welcome! 💖</p>
+  <p>This README currently assumes local builds and personal-use workflows.</p>
+  <p>If you plan to publish it, add a real repository URL, release pipeline, and license file first.</p>
   <p><b>Acknowledgements:</b> <a href="https://tauri.app/">Tauri</a> • <a href="https://react.dev/">React</a> • <a href="https://tailwindcss.com/">Tailwind CSS</a></p>
 </div>

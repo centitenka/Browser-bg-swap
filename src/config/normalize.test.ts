@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG_VERSION, createDefaultAppConfig, createDefaultSettings } from './defaults';
+import type { AppConfig } from '../types';
 import {
   normalizeAppConfig,
   normalizeBrowserSettings,
@@ -60,6 +61,29 @@ describe('normalizeAppConfig', () => {
 
     expect(config.config_version).toBe(CONFIG_VERSION);
     expect(config.firefox.settings.show_clock).toBe(true);
+  });
+
+  it('drops deprecated config fields while keeping usable settings', () => {
+    const legacyConfig = {
+      ...createDefaultAppConfig(),
+      config_version: 2,
+      firefox: {
+        ...createDefaultAppConfig().firefox,
+        enabled: false,
+      },
+      chrome: {
+        ...createDefaultAppConfig().chrome,
+        enabled: false,
+        extension_output_path: 'C:/tmp/extension',
+      },
+    } as unknown as AppConfig;
+
+    const config = normalizeAppConfig(legacyConfig);
+
+    expect(config.config_version).toBe(CONFIG_VERSION);
+    expect('enabled' in config.firefox).toBe(false);
+    expect('enabled' in config.chrome).toBe(false);
+    expect('extension_output_path' in config.chrome).toBe(false);
   });
 
   it('keeps Chrome settings fully featured', () => {

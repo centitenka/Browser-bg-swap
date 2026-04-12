@@ -374,15 +374,12 @@ export function normalizeAppConfig(config: AppConfig | null | undefined): AppCon
     config_version: CONFIG_VERSION,
     firefox: {
       profile_path: input.firefox?.profile_path?.trim() || null,
-      enabled: input.firefox?.enabled ?? defaults.firefox.enabled,
       settings: projectSettingsForBrowser(
         'firefox',
         normalizeBrowserSettings(input.firefox?.settings)
       ),
     },
     chrome: {
-      extension_output_path: input.chrome?.extension_output_path?.trim() || null,
-      enabled: input.chrome?.enabled ?? defaults.chrome.enabled,
       settings: projectSettingsForBrowser(
         'chrome',
         normalizeBrowserSettings(input.chrome?.settings)

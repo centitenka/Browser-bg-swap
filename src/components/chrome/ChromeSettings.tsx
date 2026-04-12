@@ -14,7 +14,9 @@ interface ChromeSettingsProps {
 }
 
 export function ChromeSettings({ settings, onChange, onSelectImage }: ChromeSettingsProps) {
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    background: true,
+  });
 
   const toggleSection = (key: string) => {
     setExpandedSections((previous) => ({ ...previous, [key]: !previous[key] }));

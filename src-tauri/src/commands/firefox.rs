@@ -1,5 +1,5 @@
 use crate::browsers::FirefoxManager;
-use crate::core::config::{BrowserInfo, BrowserSettings, PrereqCheck};
+use crate::core::config::{ApplyResult, BackupEntry, BrowserInfo, BrowserSettings, PrereqCheck};
 use crate::core::error::Result;
 use crate::utils::css::CssGenerator;
 
@@ -12,7 +12,7 @@ pub async fn detect_firefox() -> Result<BrowserInfo> {
 pub async fn apply_firefox_settings(
     profile_path: String,
     settings: BrowserSettings,
-) -> Result<()> {
+) -> Result<ApplyResult> {
     let css = CssGenerator::generate_user_content_css(&settings);
     FirefoxManager::apply_css(&profile_path, &css)
 }
@@ -38,7 +38,7 @@ pub async fn restore_firefox(profile_path: String, backup_name: String) -> Resul
 }
 
 #[tauri::command]
-pub async fn list_firefox_backups(profile_path: String) -> Result<Vec<String>> {
+pub async fn list_firefox_backups(profile_path: String) -> Result<Vec<BackupEntry>> {
     FirefoxManager::list_backups(&profile_path)
 }
 

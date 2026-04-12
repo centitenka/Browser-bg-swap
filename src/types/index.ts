@@ -94,13 +94,10 @@ export interface NamedPreset {
 
 export interface FirefoxConfig {
   profile_path: string | null;
-  enabled: boolean;
   settings: BrowserSettings;
 }
 
 export interface ChromeConfig {
-  extension_output_path: string | null;
-  enabled: boolean;
   settings: BrowserSettings;
 }
 
@@ -137,9 +134,32 @@ export interface PrereqCheck {
   instructions: string[];
 }
 
+export interface BackupEntry {
+  name: string;
+  label: string;
+  is_auto: boolean;
+}
+
 export interface ChromeDetectResult {
   chrome_installed: boolean;
   edge_installed: boolean;
   extension_exists: boolean;
   extension_path: string;
+}
+
+export interface ApplyResult {
+  success: boolean;
+  output_path: string | null;
+  backup_name: string | null;
+  warnings: string[];
+}
+
+export type OperationStatus = 'idle' | 'pending' | 'success' | 'error';
+
+export interface ActionState {
+  actionId: string | null;
+  status: OperationStatus;
+  message: string | null;
+  warnings: string[];
+  updatedAt: number | null;
 }
