@@ -1,8 +1,22 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
-import type { AppConfig, BrowserSettings, BrowserInfo, PrereqCheck, ChromeDetectResult, NamedPreset } from '../types';
-
-type BrowserTab = 'firefox' | 'chrome';
+import { CONFIG_VERSION, createDefaultAppConfig, createDefaultSettings } from '../config/defaults';
+import {
+  normalizeAppConfig,
+  normalizeBrowserSettings,
+  normalizeImportedSettings,
+  projectSettingsForBrowser,
+} from '../config/normalize';
+import type {
+  AppConfig,
+  BrowserSettings,
+  BrowserInfo,
+  BrowserTab,
+  ChromeDetectResult,
+  NamedPreset,
+  PrereqCheck,
+  SettingsExchangeFile,
+} from '../types';
 
 interface ConfigState {
   config: AppConfig;
@@ -17,7 +31,6 @@ interface ConfigState {
   isLoading: boolean;
   error: string | null;
 
-  // Actions
   loadConfig: () => Promise<void>;
   saveConfig: () => Promise<void>;
   setActiveTab: (tab: BrowserTab) => void;
@@ -42,99 +55,16 @@ interface ConfigState {
   deletePreset: (index: number) => Promise<void>;
 }
 
-const defaultShortcuts = [
-  { title: 'GitHub', url: 'https://github.com', icon: '\uD83D\uDCBB', position: undefined },
-  { title: 'YouTube', url: 'https://youtube.com', icon: '\u25B6\uFE0F', position: undefined },
-  { title: 'Bilibili', url: 'https://bilibili.com', icon: '\uD83D\uDCFA', position: undefined },
-  { title: '\u77E5\u4E4E', url: 'https://zhihu.com', icon: '\u2753', position: undefined },
-];
+const defaultConfig = createDefaultAppConfig();
 
-export const defaultSettings: BrowserSettings = {
-  background_image: null,
-  overlay_opacity: 30,
-  show_clock: true,
-  clock_color: '#ffffff',
-  clock_size: 72,
-  show_search_box: true,
-  search_engine: 'google',
-  show_shortcuts: true,
-  shortcuts: defaultShortcuts,
-  clock_position: { x: 50, y: 30 },
-  search_position: { x: 50, y: 48 },
-  shortcuts_position: { x: 50, y: 68 },
-  // Background enhancements
-  background_color: '#1a1a2e',
-  background_fit: 'cover',
-  background_blur: 0,
-  background_brightness: 100,
-  // Clock enhancements
-  clock_format_24h: true,
-  clock_show_seconds: false,
-  clock_show_date: false,
-  clock_font_weight: 'light',
-  // Search box enhancements
-  search_bg_color: '#ffffff',
-  search_bg_opacity: 95,
-  search_border_radius: 28,
-  search_placeholder: '\u641C\u7D22...',
-  search_border_width: 0,
-  search_border_color: '#d4af37',
-  search_border_style: 'none',
-  search_shadow_color: '#000000',
-  search_shadow_blur: 20,
-  search_shadow_opacity: 15,
-  search_backdrop_blur: 0,
-  search_text_color: '#333333',
-  search_width: 560,
-  search_padding: 4,
-  // Shortcuts enhancements
-  shortcuts_bg_color: '#ffffff',
-  shortcuts_bg_opacity: 90,
-  shortcuts_border_radius: 12,
-  shortcuts_columns: 'auto',
-  shortcuts_gap: 12,
-  shortcuts_border_width: 0,
-  shortcuts_border_color: '#ffffff',
-  shortcuts_border_style: 'none',
-  shortcuts_shadow_color: '#000000',
-  shortcuts_shadow_blur: 0,
-  shortcuts_shadow_opacity: 0,
-  shortcuts_backdrop_blur: 0,
-  shortcuts_title_color: '#333333',
-  shortcuts_icon_size: 36,
-  shortcuts_padding_x: 8,
-  shortcuts_padding_y: 14,
-  shortcuts_shape: 'auto',
-  // Clock fine-grained
-  clock_shadow_color: '#000000',
-  clock_shadow_blur: 10,
-  clock_shadow_opacity: 30,
-  clock_letter_spacing: 0,
-  clock_font_family: 'system',
-  // Overlay
-  overlay_color: '#000000',
-  // Advanced
-  custom_css: '',
-};
-
-const defaultConfig: AppConfig = {
-  firefox: {
-    profile_path: null,
-    enabled: true,
-    settings: defaultSettings,
-  },
-  chrome: {
-    extension_output_path: null,
-    enabled: true,
-    settings: defaultSettings,
-  },
-  custom_presets: [],
-};
+function normalizeSettingsForTab(tab: BrowserTab, settings: Partial<BrowserSettings>): BrowserSettings {
+  return projectSettingsForBrowser(tab, normalizeBrowserSettings(settings));
+}
 
 export const useConfigStore = create<ConfigState>((set, get) => ({
   config: defaultConfig,
-  firefoxSettings: defaultSettings,
-  chromeSettings: defaultSettings,
+  firefoxSettings: createDefaultSettings(),
+  chromeSettings: createDefaultSettings(),
   activeTab: 'firefox',
   firefoxInfo: null,
   chromeInfo: null,
@@ -147,11 +77,11 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   loadConfig: async () => {
     set({ isLoading: true, error: null });
     try {
-      const config = await invoke<AppConfig>('load_app_config');
+      const config = normalizeAppConfig(await invoke<AppConfig>('load_app_config'));
       set({
         config,
-        firefoxSettings: { ...defaultSettings, ...config.firefox.settings },
-        chromeSettings: { ...defaultSettings, ...config.chrome.settings },
+        firefoxSettings: config.firefox.settings,
+        chromeSettings: config.chrome.settings,
         selectedProfile: config.firefox.profile_path || '',
         isLoading: false,
       });
@@ -163,8 +93,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   saveConfig: async () => {
     set({ error: null });
     const { config, firefoxSettings, chromeSettings, selectedProfile } = get();
-    const newConfig: AppConfig = {
+    const newConfig = normalizeAppConfig({
       ...config,
+      config_version: CONFIG_VERSION,
       firefox: {
         ...config.firefox,
         profile_path: selectedProfile || null,
@@ -174,7 +105,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         ...config.chrome,
         settings: chromeSettings,
       },
-    };
+    });
     await invoke('save_app_config', { config: newConfig });
     set({ config: newConfig });
   },
@@ -187,11 +118,17 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     const { activeTab } = get();
     if (activeTab === 'firefox') {
       set((state) => ({
-        firefoxSettings: { ...state.firefoxSettings, ...settings },
+        firefoxSettings: normalizeSettingsForTab('firefox', {
+          ...state.firefoxSettings,
+          ...settings,
+        }),
       }));
     } else {
       set((state) => ({
-        chromeSettings: { ...state.chromeSettings, ...settings },
+        chromeSettings: normalizeSettingsForTab('chrome', {
+          ...state.chromeSettings,
+          ...settings,
+        }),
       }));
     }
   },
@@ -205,7 +142,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       if (info.profile_paths.length > 0) {
         const { selectedProfile } = get();
         if (!selectedProfile) {
-          const defaultProfile = info.profile_paths.find((p) => p.is_default);
+          const defaultProfile = info.profile_paths.find((profile) => profile.is_default);
           set({
             selectedProfile: defaultProfile?.path || info.profile_paths[0].path,
           });
@@ -222,7 +159,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   checkPrerequisites: async () => {
     const { selectedProfile } = get();
-    if (!selectedProfile) return;
+    if (!selectedProfile) {
+      return;
+    }
 
     set({ error: null });
     try {
@@ -237,7 +176,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   applyFirefox: async () => {
     const { selectedProfile, firefoxSettings } = get();
-    if (!selectedProfile) return;
+    if (!selectedProfile) {
+      return;
+    }
 
     set({ isLoading: true, error: null });
     try {
@@ -254,7 +195,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   autoFixPrerequisites: async () => {
     const { selectedProfile } = get();
-    if (!selectedProfile) return;
+    if (!selectedProfile) {
+      return;
+    }
 
     set({ error: null });
     try {
@@ -269,7 +212,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   createBackup: async () => {
     const { selectedProfile } = get();
-    if (!selectedProfile) return;
+    if (!selectedProfile) {
+      return;
+    }
 
     set({ error: null });
     try {
@@ -282,7 +227,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   restoreBackup: async (name) => {
     const { selectedProfile } = get();
-    if (!selectedProfile) return;
+    if (!selectedProfile) {
+      return;
+    }
 
     set({ error: null });
     try {
@@ -296,27 +243,41 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   },
 
   loadBackups: async () => {
+    const { selectedProfile } = get();
+    if (!selectedProfile) {
+      set({ backups: [] });
+      return;
+    }
+
     set({ error: null });
     try {
-      const backups = await invoke<string[]>('list_firefox_backups');
+      const backups = await invoke<string[]>('list_firefox_backups', {
+        profilePath: selectedProfile,
+      });
       set({ backups });
     } catch (e) {
       set({ error: String(e) });
     }
   },
 
-  deleteBackup: async (name: string) => {
+  deleteBackup: async (name) => {
+    const { selectedProfile } = get();
+    if (!selectedProfile) {
+      return;
+    }
+
     set({ error: null });
     try {
-      await invoke('delete_firefox_backup', { backupName: name });
+      await invoke('delete_firefox_backup', {
+        profilePath: selectedProfile,
+        backupName: name,
+      });
       await get().loadBackups();
     } catch (e) {
       set({ error: String(e) });
       throw e;
     }
   },
-
-  // ── Chrome / Edge ──
 
   detectChrome: async () => {
     set({ error: null });
@@ -377,55 +338,74 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     const settings = activeTab === 'firefox' ? firefoxSettings : chromeSettings;
     set({ error: null });
     try {
-      await invoke('export_settings', { settings });
+      await invoke('export_settings', {
+        browser: activeTab,
+        settings,
+      });
     } catch (e) {
       set({ error: String(e) });
+      throw e;
     }
   },
 
   importSettings: async () => {
+    const { activeTab } = get();
     set({ error: null });
     try {
-      const settings = await invoke<BrowserSettings | null>('import_settings');
-      if (settings) {
-        const merged = { ...defaultSettings, ...settings };
-        const { activeTab } = get();
-        if (activeTab === 'firefox') {
-          set({ firefoxSettings: merged });
-        } else {
-          set({ chromeSettings: merged });
-        }
+      const payload = normalizeImportedSettings(
+        activeTab,
+        await invoke<SettingsExchangeFile | null>('import_settings')
+      );
+
+      if (!payload) {
+        return;
+      }
+
+      if (activeTab === 'firefox') {
+        set({ firefoxSettings: payload.settings });
+      } else {
+        set({ chromeSettings: payload.settings });
       }
     } catch (e) {
       set({ error: String(e) });
+      throw e;
     }
   },
 
   resetSettings: () => {
     const { activeTab } = get();
     if (activeTab === 'firefox') {
-      set({ firefoxSettings: { ...defaultSettings } });
+      set({ firefoxSettings: normalizeSettingsForTab('firefox', createDefaultSettings()) });
     } else {
-      set({ chromeSettings: { ...defaultSettings } });
+      set({ chromeSettings: normalizeSettingsForTab('chrome', createDefaultSettings()) });
     }
   },
 
-  savePreset: async (name: string) => {
-    const { activeTab, firefoxSettings, chromeSettings, config } = get();
-    const settings = activeTab === 'firefox' ? firefoxSettings : chromeSettings;
-    const preset: NamedPreset = { name, settings: { ...settings } };
-    const newConfig = {
+  savePreset: async (name) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return;
+    }
+
+    const { chromeSettings, config } = get();
+    const preset: NamedPreset = {
+      name: trimmedName,
+      settings: normalizeSettingsForTab('chrome', chromeSettings),
+    };
+    const newConfig = normalizeAppConfig({
       ...config,
       custom_presets: [...config.custom_presets, preset],
-    };
+    });
     set({ config: newConfig });
     await invoke('save_app_config', { config: newConfig });
   },
 
-  deletePreset: async (index: number) => {
+  deletePreset: async (index) => {
     const { config } = get();
-    const newPresets = config.custom_presets.filter((_, i) => i !== index);
-    const newConfig = { ...config, custom_presets: newPresets };
+    const newConfig = normalizeAppConfig({
+      ...config,
+      custom_presets: config.custom_presets.filter((_, presetIndex) => presetIndex !== index),
+    });
     set({ config: newConfig });
     await invoke('save_app_config', { config: newConfig });
   },

@@ -1,7 +1,15 @@
 use serde::{Deserialize, Serialize};
 
+pub const CONFIG_VERSION: u32 = 2;
+
+fn default_config_version() -> u32 {
+    CONFIG_VERSION
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
+    #[serde(default = "default_config_version")]
+    pub config_version: u32,
     pub firefox: FirefoxConfig,
     pub chrome: ChromeConfig,
     #[serde(default)]
@@ -17,6 +25,7 @@ pub struct FirefoxConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChromeConfig {
+    #[serde(default)]
     pub extension_output_path: Option<String>,
     pub enabled: bool,
     pub settings: BrowserSettings,
@@ -100,6 +109,15 @@ fn default_shortcuts() -> Vec<Shortcut> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NamedPreset {
     pub name: String,
+    pub settings: BrowserSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SettingsExchangeFile {
+    #[serde(default = "default_config_version")]
+    pub version: u32,
+    #[serde(default)]
+    pub browser: Option<String>,
     pub settings: BrowserSettings,
 }
 
@@ -303,6 +321,292 @@ impl Default for BrowserSettings {
             overlay_color: default_overlay_color(),
             custom_css: String::new(),
         }
+    }
+}
+
+impl Default for FirefoxConfig {
+    fn default() -> Self {
+        Self {
+            profile_path: None,
+            enabled: true,
+            settings: BrowserSettings::default(),
+        }
+    }
+}
+
+impl Default for ChromeConfig {
+    fn default() -> Self {
+        Self {
+            extension_output_path: None,
+            enabled: true,
+            settings: BrowserSettings::default(),
+        }
+    }
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            config_version: CONFIG_VERSION,
+            firefox: FirefoxConfig::default(),
+            chrome: ChromeConfig::default(),
+            custom_presets: Vec::new(),
+        }
+    }
+}
+
+impl SettingsExchangeFile {
+    pub fn normalized(self) -> Self {
+        let browser = self.browser.map(|browser| {
+            let normalized = browser.trim().to_ascii_lowercase();
+            if normalized.is_empty() {
+                "chrome".to_string()
+            } else {
+                normalized
+            }
+        });
+
+        Self {
+            version: CONFIG_VERSION,
+            browser,
+            settings: self.settings.normalized(),
+        }
+    }
+}
+
+impl AppConfig {
+    pub fn normalized(self) -> Self {
+        let firefox_presets = self
+            .custom_presets
+            .into_iter()
+            .filter_map(|preset| {
+                let name = preset.name.trim().to_string();
+                if name.is_empty() {
+                    None
+                } else {
+                    Some(NamedPreset {
+                        name,
+                        settings: preset.settings.normalized(),
+                    })
+                }
+            })
+            .collect();
+
+        Self {
+            config_version: CONFIG_VERSION,
+            firefox: FirefoxConfig {
+                profile_path: self.firefox.profile_path.and_then(normalize_optional_text),
+                enabled: self.firefox.enabled,
+                settings: self.firefox.settings.normalized(),
+            },
+            chrome: ChromeConfig {
+                extension_output_path: self.chrome.extension_output_path.and_then(normalize_optional_text),
+                enabled: self.chrome.enabled,
+                settings: self.chrome.settings.normalized(),
+            },
+            custom_presets: firefox_presets,
+        }
+    }
+}
+
+impl BrowserSettings {
+    pub fn normalized(mut self) -> Self {
+        let defaults = Self::default();
+
+        self.background_image = self.background_image.and_then(normalize_optional_text);
+        self.overlay_opacity = clamp_u32(self.overlay_opacity, 0, 100);
+        self.clock_color = normalize_hex_color(self.clock_color, defaults.clock_color.clone());
+        self.clock_size = clamp_u32(self.clock_size, 32, 120);
+        self.search_engine = normalize_enum(
+            self.search_engine,
+            &["google", "bing", "baidu", "duckduckgo"],
+            defaults.search_engine.clone(),
+        );
+        self.clock_position = normalize_position(self.clock_position, defaults.clock_position.clone());
+        self.search_position = normalize_position(self.search_position, defaults.search_position.clone());
+        self.shortcuts_position =
+            normalize_position(self.shortcuts_position, defaults.shortcuts_position.clone());
+
+        self.background_color =
+            normalize_hex_color(self.background_color, defaults.background_color.clone());
+        self.background_fit = normalize_enum(
+            self.background_fit,
+            &["cover", "contain", "center", "stretch"],
+            defaults.background_fit.clone(),
+        );
+        self.background_blur = clamp_u32(self.background_blur, 0, 20);
+        self.background_brightness = clamp_u32(self.background_brightness, 50, 150);
+
+        self.clock_font_weight = normalize_enum(
+            self.clock_font_weight,
+            &["light", "normal", "bold"],
+            defaults.clock_font_weight.clone(),
+        );
+
+        self.search_bg_color =
+            normalize_hex_color(self.search_bg_color, defaults.search_bg_color.clone());
+        self.search_bg_opacity = clamp_u32(self.search_bg_opacity, 0, 100);
+        self.search_border_radius = clamp_u32(self.search_border_radius, 0, 60);
+        self.search_placeholder = normalize_text(self.search_placeholder, defaults.search_placeholder.clone());
+        self.search_border_width = clamp_u32(self.search_border_width, 0, 5);
+        self.search_border_color =
+            normalize_hex_color(self.search_border_color, defaults.search_border_color.clone());
+        self.search_border_style = normalize_enum(
+            self.search_border_style,
+            &["none", "solid", "dashed", "double"],
+            defaults.search_border_style.clone(),
+        );
+        self.search_shadow_color =
+            normalize_hex_color(self.search_shadow_color, defaults.search_shadow_color.clone());
+        self.search_shadow_blur = clamp_u32(self.search_shadow_blur, 0, 40);
+        self.search_shadow_opacity = clamp_u32(self.search_shadow_opacity, 0, 100);
+        self.search_backdrop_blur = clamp_u32(self.search_backdrop_blur, 0, 20);
+        self.search_text_color =
+            normalize_hex_color(self.search_text_color, defaults.search_text_color.clone());
+        self.search_width = clamp_u32(self.search_width, 300, 800);
+        self.search_padding = clamp_u32(self.search_padding, 0, 20);
+
+        self.shortcuts_bg_color =
+            normalize_hex_color(self.shortcuts_bg_color, defaults.shortcuts_bg_color.clone());
+        self.shortcuts_bg_opacity = clamp_u32(self.shortcuts_bg_opacity, 0, 100);
+        self.shortcuts_border_radius = clamp_u32(self.shortcuts_border_radius, 0, 50);
+        self.shortcuts_columns = normalize_enum(
+            self.shortcuts_columns,
+            &["auto", "2", "3", "4", "5", "6"],
+            defaults.shortcuts_columns.clone(),
+        );
+        self.shortcuts_gap = clamp_u32(self.shortcuts_gap, 4, 32);
+        self.shortcuts_border_width = clamp_u32(self.shortcuts_border_width, 0, 5);
+        self.shortcuts_border_color = normalize_hex_color(
+            self.shortcuts_border_color,
+            defaults.shortcuts_border_color.clone(),
+        );
+        self.shortcuts_border_style = normalize_enum(
+            self.shortcuts_border_style,
+            &["none", "solid", "dashed", "double"],
+            defaults.shortcuts_border_style.clone(),
+        );
+        self.shortcuts_shadow_color = normalize_hex_color(
+            self.shortcuts_shadow_color,
+            defaults.shortcuts_shadow_color.clone(),
+        );
+        self.shortcuts_shadow_blur = clamp_u32(self.shortcuts_shadow_blur, 0, 40);
+        self.shortcuts_shadow_opacity = clamp_u32(self.shortcuts_shadow_opacity, 0, 100);
+        self.shortcuts_backdrop_blur = clamp_u32(self.shortcuts_backdrop_blur, 0, 20);
+        self.shortcuts_title_color = normalize_hex_color(
+            self.shortcuts_title_color,
+            defaults.shortcuts_title_color.clone(),
+        );
+        self.shortcuts_icon_size = clamp_u32(self.shortcuts_icon_size, 16, 64);
+        self.shortcuts_padding_x = clamp_u32(self.shortcuts_padding_x, 0, 30);
+        self.shortcuts_padding_y = clamp_u32(self.shortcuts_padding_y, 0, 30);
+        self.shortcuts_shape = normalize_enum(
+            self.shortcuts_shape,
+            &["auto", "square", "circle"],
+            defaults.shortcuts_shape.clone(),
+        );
+
+        self.clock_shadow_color =
+            normalize_hex_color(self.clock_shadow_color, defaults.clock_shadow_color.clone());
+        self.clock_shadow_blur = clamp_u32(self.clock_shadow_blur, 0, 30);
+        self.clock_shadow_opacity = clamp_u32(self.clock_shadow_opacity, 0, 100);
+        self.clock_letter_spacing = self.clock_letter_spacing.clamp(-10, 20);
+        self.clock_font_family = normalize_enum(
+            self.clock_font_family,
+            &["system", "serif", "mono"],
+            defaults.clock_font_family.clone(),
+        );
+
+        self.overlay_color = normalize_hex_color(self.overlay_color, defaults.overlay_color.clone());
+        self.custom_css = self.custom_css.trim().to_string();
+
+        self.shortcuts = normalize_shortcuts(self.shortcuts, &defaults.shortcuts);
+
+        self
+    }
+}
+
+fn clamp_u32(value: u32, min: u32, max: u32) -> u32 {
+    value.clamp(min, max)
+}
+
+fn normalize_text(value: String, fallback: String) -> String {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        fallback
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn normalize_optional_text(value: String) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn normalize_enum(value: String, allowed: &[&str], fallback: String) -> String {
+    let lowered = value.trim().to_ascii_lowercase();
+    if allowed.iter().any(|allowed| *allowed == lowered) {
+        lowered
+    } else {
+        fallback
+    }
+}
+
+fn normalize_hex_color(value: String, fallback: String) -> String {
+    let trimmed = value.trim();
+    let valid = trimmed.len() == 7
+        && trimmed.starts_with('#')
+        && trimmed.chars().skip(1).all(|ch| ch.is_ascii_hexdigit());
+
+    if valid {
+        trimmed.to_ascii_lowercase()
+    } else {
+        fallback
+    }
+}
+
+fn normalize_position(value: ElementPosition, fallback: ElementPosition) -> ElementPosition {
+    if !value.x.is_finite() || !value.y.is_finite() {
+        return fallback;
+    }
+
+    ElementPosition {
+        x: value.x.clamp(5.0, 95.0),
+        y: value.y.clamp(5.0, 95.0),
+    }
+}
+
+fn normalize_shortcuts(shortcuts: Vec<Shortcut>, fallback: &[Shortcut]) -> Vec<Shortcut> {
+    let normalized: Vec<Shortcut> = shortcuts
+        .into_iter()
+        .filter_map(|shortcut| {
+            let title = shortcut.title.trim().to_string();
+            let url = shortcut.url.trim().to_string();
+            let icon = shortcut.icon.trim().to_string();
+
+            if title.is_empty() || url.is_empty() {
+                return None;
+            }
+
+            Some(Shortcut {
+                title,
+                url,
+                icon: if icon.is_empty() { "🔗".to_string() } else { icon },
+                position: shortcut.position.map(|position| normalize_position(position, ElementPosition { x: 50.0, y: 68.0 })),
+            })
+        })
+        .take(8)
+        .collect();
+
+    if normalized.is_empty() {
+        fallback.to_vec()
+    } else {
+        normalized
     }
 }
 

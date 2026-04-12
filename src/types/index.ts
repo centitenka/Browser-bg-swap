@@ -1,3 +1,5 @@
+export type BrowserTab = 'firefox' | 'chrome';
+
 export interface ElementPosition {
   x: number;
   y: number;
@@ -103,9 +105,16 @@ export interface ChromeConfig {
 }
 
 export interface AppConfig {
+  config_version: number;
   firefox: FirefoxConfig;
   chrome: ChromeConfig;
   custom_presets: NamedPreset[];
+}
+
+export interface SettingsExchangeFile {
+  version: number;
+  browser?: BrowserTab | null;
+  settings: BrowserSettings;
 }
 
 export type BrowserType = 'Firefox' | 'Chrome' | 'Edge';

@@ -1,17 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useConfigStore } from './stores/configStore';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { FirefoxPanel } from './components/firefox/FirefoxPanel';
 import { ChromePanel } from './components/chrome/ChromePanel';
+import { I18nContext, createT, getSavedLang, saveLang, type Lang } from './i18n';
 
 export type Tab = 'firefox' | 'chrome';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('firefox');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [lang, setLangState] = useState<Lang>(getSavedLang);
   const loadConfig = useConfigStore((s) => s.loadConfig);
   const setStoreTab = useConfigStore((s) => s.setActiveTab);
+
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    saveLang(l);
+  };
+
+  const t = useMemo(() => createT(lang), [lang]);
+  const i18nValue = useMemo(() => ({ lang, setLang, t }), [lang, t]);
 
   useEffect(() => {
     loadConfig();
@@ -34,43 +44,45 @@ function App() {
       case 'chrome':
         return 'Chrome / Edge';
       default:
-        return 'Settings';
+        return t('nav.settings');
     }
   };
 
   const getBreadcrumbs = () => {
     return [
-      { label: 'Settings' },
+      { label: t('nav.settings') },
       { label: activeTab === 'firefox' ? 'Firefox' : 'Chrome / Edge' },
     ];
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
+    <I18nContext.Provider value={i18nValue}>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header
-          title={getTitle()}
-          breadcrumbs={getBreadcrumbs()}
-        />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header
+            title={getTitle()}
+            breadcrumbs={getBreadcrumbs()}
+          />
 
-        <main className="flex-1 overflow-y-auto bg-content scroll-smooth">
-          <div className="max-w-7xl mx-auto p-8 w-full">
-            <div
-              className={`transition-all duration-300 ease-in-out ${
-                isTransitioning
-                  ? 'opacity-0 translate-y-4'
-                  : 'opacity-100 translate-y-0'
-              }`}
-            >
-              {activeTab === 'firefox' && <FirefoxPanel />}
-              {activeTab === 'chrome' && <ChromePanel />}
+          <main className="flex-1 overflow-y-auto bg-content scroll-smooth">
+            <div className="max-w-7xl mx-auto p-4 lg:p-6 xl:p-8 w-full">
+              <div
+                className={`transition-all duration-300 ease-in-out ${
+                  isTransitioning
+                    ? 'opacity-0 translate-y-4'
+                    : 'opacity-100 translate-y-0'
+                }`}
+              >
+                {activeTab === 'firefox' && <FirefoxPanel />}
+                {activeTab === 'chrome' && <ChromePanel />}
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </I18nContext.Provider>
   );
 }
 

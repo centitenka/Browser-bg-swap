@@ -32,6 +32,7 @@ pub fn run() {
             get_downloads_dir,
             export_settings,
             import_settings,
+            save_cropped_image,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

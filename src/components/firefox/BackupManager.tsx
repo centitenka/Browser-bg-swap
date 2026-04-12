@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react';
 import {
   Archive,
-  RotateCcw,
-  Trash2,
   ChevronDown,
   ChevronUp,
   Clock,
   Plus,
+  RotateCcw,
+  Trash2,
 } from 'lucide-react';
+import { useT } from '../../i18n';
 import { useConfigStore } from '../../stores/configStore';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useToast } from '../../hooks/useToast';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { EmptyState } from '../common/EmptyState';
+import { ToastContainer } from '../common/Toast';
 
 function formatBackupTime(filename: string): string {
   const match = filename.match(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/);
-  if (!match) return filename;
+  if (!match) {
+    return filename;
+  }
 
   const [, year, month, day, hour, minute] = match;
   return `${year}/${month}/${day} ${hour}:${minute}`;
@@ -24,8 +28,9 @@ function formatBackupTime(filename: string): string {
 
 export function BackupManager() {
   const [showBackups, setShowBackups] = useState(false);
+  const t = useT();
   const { confirmState, confirm, onConfirm, onCancel } = useConfirm();
-  const { success, error: showError } = useToast();
+  const { toasts, removeToast, success, error: showError } = useToast();
 
   const {
     backups,
@@ -42,52 +47,57 @@ export function BackupManager() {
   const handleCreateBackup = async () => {
     try {
       await createBackup();
-      success('Backup created successfully');
+      success(t('backup.createdOk'));
     } catch (e) {
-      showError('Failed to create backup: ' + (e instanceof Error ? e.message : String(e)));
+      showError(`${t('backup.createFailed')}: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
   const handleRestore = async (name: string) => {
     const confirmed = await confirm({
-      title: 'Restore Backup',
-      message: `Are you sure you want to restore "${formatBackupTime(name)}"? This will overwrite your current settings.`,
-      confirmText: 'Restore',
-      cancelText: 'Cancel',
+      title: t('backup.restoreTitle'),
+      message: t('backup.restoreMessage', { name: formatBackupTime(name) }),
+      confirmText: t('backup.restoreConfirm'),
+      cancelText: t('common.cancel'),
       isDangerous: true,
     });
 
-    if (confirmed) {
-      try {
-        await restoreBackup(name);
-        success('Backup restored successfully');
-      } catch (e) {
-        showError('Failed to restore backup: ' + (e instanceof Error ? e.message : String(e)));
-      }
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await restoreBackup(name);
+      success(t('backup.restoredOk'));
+    } catch (e) {
+      showError(`${t('backup.restoreFailed')}: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
   const handleDelete = async (name: string) => {
     const confirmed = await confirm({
-      title: 'Delete Backup',
-      message: `Are you sure you want to delete "${formatBackupTime(name)}"? This cannot be undone.`,
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      title: t('backup.deleteTitle'),
+      message: t('backup.deleteMessage', { name: formatBackupTime(name) }),
+      confirmText: t('backup.deleteConfirm'),
+      cancelText: t('common.cancel'),
       isDangerous: true,
     });
 
-    if (confirmed) {
-      try {
-        await deleteBackup?.(name);
-        success('Backup deleted');
-      } catch (e) {
-        showError('Failed to delete: ' + (e instanceof Error ? e.message : String(e)));
-      }
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteBackup(name);
+      success(t('backup.deletedOk'));
+    } catch (e) {
+      showError(`${t('backup.deleteFailed')}: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
   return (
     <>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       <ConfirmDialog
         isOpen={confirmState.isOpen}
         title={confirmState.title}
@@ -102,24 +112,22 @@ export function BackupManager() {
       <div className="bg-card border border-border-subtle/50 rounded-xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Backups
+            {t('backup.title')}
           </h3>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">
-              {backups.length > 0 ? `${backups.length} saved` : 'No backups'}
+              {backups.length > 0
+                ? t('backup.savedCount', { count: String(backups.length) })
+                : t('backup.none')}
             </span>
             {backups.length > 0 && (
               <button
-                onClick={() => setShowBackups(!showBackups)}
+                onClick={() => setShowBackups((value) => !value)}
                 className="flex items-center gap-1 text-xs text-primary hover:text-primary-hover transition-colors px-2 py-1 rounded hover:bg-primary/10"
                 aria-expanded={showBackups}
               >
-                {showBackups ? 'Hide' : 'Show All'}
-                {showBackups ? (
-                  <ChevronUp size={14} />
-                ) : (
-                  <ChevronDown size={14} />
-                )}
+                {showBackups ? t('common.hide') : t('common.showAll')}
+                {showBackups ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
             )}
           </div>
@@ -128,12 +136,12 @@ export function BackupManager() {
         <button
           onClick={handleCreateBackup}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-sidebar border border-border-subtle hover:border-primary/50 text-gray-200 hover:text-primary rounded-lg transition-all duration-200 group"
-          aria-label="Create new backup"
+          aria-label={t('backup.create')}
         >
           <div className="p-1 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
-             <Plus size={16} className="group-hover:text-primary transition-colors" />
+            <Plus size={16} className="group-hover:text-primary transition-colors" />
           </div>
-          <span className="text-sm font-medium">Create New Backup</span>
+          <span className="text-sm font-medium">{t('backup.create')}</span>
         </button>
 
         {showBackups && backups.length > 0 && (
@@ -155,14 +163,14 @@ export function BackupManager() {
                   <button
                     onClick={() => handleRestore(backup)}
                     className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                    title="Restore"
+                    title={t('backup.restoreConfirm')}
                   >
                     <RotateCcw size={14} />
                   </button>
                   <button
                     onClick={() => handleDelete(backup)}
                     className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
-                    title="Delete"
+                    title={t('backup.deleteConfirm')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -176,8 +184,8 @@ export function BackupManager() {
           <div className="mt-6">
             <EmptyState
               icon={<Archive size={24} />}
-              title="No Backups Yet"
-              description="Create a backup to save your current configuration."
+              title={t('backup.emptyTitle')}
+              description={t('backup.emptyDesc')}
             />
           </div>
         )}

@@ -38,11 +38,11 @@ pub async fn restore_firefox(profile_path: String, backup_name: String) -> Resul
 }
 
 #[tauri::command]
-pub async fn list_firefox_backups() -> Result<Vec<String>> {
-    FirefoxManager::list_backups()
+pub async fn list_firefox_backups(profile_path: String) -> Result<Vec<String>> {
+    FirefoxManager::list_backups(&profile_path)
 }
 
 #[tauri::command]
-pub async fn delete_firefox_backup(backup_name: String) -> Result<()> {
-    FirefoxManager::delete_backup(&backup_name)
+pub async fn delete_firefox_backup(profile_path: String, backup_name: String) -> Result<()> {
+    FirefoxManager::delete_backup(&profile_path, &backup_name)
 }

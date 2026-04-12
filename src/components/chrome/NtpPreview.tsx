@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { Move } from 'lucide-react';
 import type { BrowserSettings, ElementPosition, Shortcut } from '../../types';
+import { useT } from '../../i18n';
 
 interface NtpPreviewProps {
   settings: BrowserSettings;
@@ -82,6 +83,7 @@ function getDefaultShortcutPositions(shortcuts: Shortcut[], center: ElementPosit
 }
 
 export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [clockText, setClockText] = useState('');
@@ -354,7 +356,7 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
       {/* Drag hint */}
       {!dragging && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white/70 text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none">
-          Drag elements to reposition
+          {t('preview.dragHint')}
         </div>
       )}
     </div>
