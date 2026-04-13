@@ -118,6 +118,36 @@ pub struct SettingsExchangeFile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppWarning {
+    pub code: String,
+    pub message: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub details: Vec<String>,
+}
+
+impl AppWarning {
+    pub fn new(code: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            code: code.into(),
+            message: message.into(),
+            details: Vec::new(),
+        }
+    }
+
+    pub fn with_details(
+        code: impl Into<String>,
+        message: impl Into<String>,
+        details: Vec<String>,
+    ) -> Self {
+        Self {
+            code: code.into(),
+            message: message.into(),
+            details,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrowserSettings {
     pub background_image: Option<String>,
 
@@ -640,5 +670,5 @@ pub struct ApplyResult {
     pub success: bool,
     pub output_path: Option<String>,
     pub backup_name: Option<String>,
-    pub warnings: Vec<String>,
+    pub warnings: Vec<AppWarning>,
 }

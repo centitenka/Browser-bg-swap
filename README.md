@@ -11,7 +11,7 @@
   <p>
     <img src="https://img.shields.io/badge/platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Platform Windows">
     <img src="https://img.shields.io/badge/Tauri-2.0-24C8DB?style=for-the-badge&logo=tauri&logoColor=white" alt="Tauri">
-    <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
+    <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
     <img src="https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
     <img src="https://img.shields.io/badge/status-Personal%20Use-3B82F6?style=for-the-badge" alt="Personal Use">
   </p>
@@ -40,7 +40,7 @@
   - [常用开发命令](#常用开发命令)
   - [注意事项](#注意事项)
   - [更新日志](#更新日志)
-    - [v1.0.0 (2026-02-24)](#v100-2026-02-24)
+    - [v0.1.0 (2026-02-24)](#v010-2026-02-24)
 
 ---
 
@@ -248,7 +248,7 @@ cd src-tauri && cargo fmt    # 格式化 Rust 代码
 - **扩展安全性**: 本工具不会收集任何用户数据，所有操作均在本地完成。
 
 ### 更新日志
-#### v1.0.0 (2026-02-24)
+#### v0.1.0 (2026-02-24)
 - 🎉 初始版本发布
 - ✨ 支持 Firefox 背景自定义及一键配置
 - 🧩 支持 Chrome/Edge 扩展生成

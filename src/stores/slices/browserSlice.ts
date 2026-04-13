@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { normalizeImportedSettings } from '../../config/normalize';
+import { createImportProjectionWarning, normalizeImportedSettings } from '../../config/normalize';
+import type { AppWarning } from '../../types';
 import type {
   ApplyResult,
   BackupEntry,
@@ -13,7 +14,7 @@ import { formatActionError, resolveSettingsForTab, type BrowserSlice, type Store
 
 interface SuccessState {
   message?: string | null;
-  warnings?: string[];
+  warnings?: AppWarning[];
 }
 
 export const createBrowserSlice: StoreSlice<BrowserSlice> = (set, get) => {
@@ -145,7 +146,12 @@ export const createBrowserSlice: StoreSlice<BrowserSlice> = (set, get) => {
         },
         () => ({
           message: 'Firefox prerequisite updated. Fully restart Firefox before testing changes.',
-          warnings: ['Firefox must be fully restarted after the prerequisite update.'],
+          warnings: [
+            {
+              code: 'firefox_restart_required',
+              message: 'Firefox must be fully restarted after the prerequisite update.',
+            },
+          ],
         })
       );
     },
@@ -262,6 +268,7 @@ export const createBrowserSlice: StoreSlice<BrowserSlice> = (set, get) => {
 
     applyChrome: async () => {
       const settings = resolveSettingsForTab('chrome', get());
+      const previousBundleExists = !!get().chromeInfo?.extension_exists;
 
       return runTrackedAction(
         'chrome',
@@ -278,7 +285,9 @@ export const createBrowserSlice: StoreSlice<BrowserSlice> = (set, get) => {
         },
         (result) => ({
           message: result.output_path
-            ? 'Extension bundle updated. Load or reload it in Chrome or Edge.'
+            ? previousBundleExists
+              ? 'Extension bundle updated. Reload it in Chrome or Edge.'
+              : 'Extension bundle generated. Load it in Chrome or Edge to activate the new tab page.'
             : 'Extension bundle updated.',
           warnings: result.warnings,
         })
@@ -355,10 +364,15 @@ export const createBrowserSlice: StoreSlice<BrowserSlice> = (set, get) => {
           if (payload) {
             get().replaceSettings(activeTab, payload.settings, true);
           }
+          return payload;
         },
-        () => ({
-          message: 'Settings imported. Review the preview, then apply them.',
-        })
+        (payload) => {
+          const projectionWarning = createImportProjectionWarning(activeTab, payload);
+          return {
+            message: 'Settings imported. Review the preview, then apply them.',
+            warnings: projectionWarning ? [projectionWarning] : [],
+          };
+        }
       );
     },
   };

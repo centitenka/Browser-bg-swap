@@ -145,13 +145,21 @@ export interface ChromeDetectResult {
   edge_installed: boolean;
   extension_exists: boolean;
   extension_path: string;
+  bundle_status: 'missing' | 'ready' | 'invalid';
+  bundle_status_message: string;
+}
+
+export interface AppWarning {
+  code: string;
+  message: string;
+  details?: string[];
 }
 
 export interface ApplyResult {
   success: boolean;
   output_path: string | null;
   backup_name: string | null;
-  warnings: string[];
+  warnings: AppWarning[];
 }
 
 export type OperationStatus = 'idle' | 'pending' | 'success' | 'error';
@@ -160,6 +168,6 @@ export interface ActionState {
   actionId: string | null;
   status: OperationStatus;
   message: string | null;
-  warnings: string[];
+  warnings: AppWarning[];
   updatedAt: number | null;
 }

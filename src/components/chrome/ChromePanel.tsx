@@ -136,6 +136,14 @@ export function ChromePanel() {
     }
   };
 
+  const handleOpenExtensionsPage = async (browser: 'chrome' | 'edge') => {
+    try {
+      await invoke('open_extensions_page', { browser });
+    } catch {
+      showError(t('chrome.openExtensionsFailed'));
+    }
+  };
+
   if (!chromeInfo) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -172,14 +180,14 @@ export function ChromePanel() {
   const sidebar = (
     <>
       <ActionStatusCard
-        title="Chrome / Edge workspace"
-        subtitle="Generate the local extension bundle, then load it manually in your browser."
+        title={t('chrome.workspaceTitle')}
+        subtitle={t('chrome.workspaceSubtitle')}
         dirty={isDirty}
         actionState={chromeAction}
       />
 
       <section className="rounded-2xl border border-border-subtle/50 bg-card/80 p-5 shadow-lg">
-        <p className="text-xs uppercase tracking-[0.24em] text-gray-500">Detected browsers</p>
+        <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('chrome.detectedBrowsers')}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {chromeInfo.chrome_installed && (
             <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 px-3 py-1.5 text-sm text-blue-100">
@@ -196,11 +204,17 @@ export function ChromePanel() {
         </div>
         <dl className="mt-5 space-y-3 text-sm text-gray-300">
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-gray-500">Bundle status</dt>
-            <dd>{chromeInfo.extension_exists ? 'Generated locally' : 'Not generated yet'}</dd>
+            <dt className="text-gray-500">{t('chrome.bundleStatus')}</dt>
+            <dd>
+              {chromeInfo.bundle_status === 'ready'
+                ? t('chrome.bundleReady')
+                : chromeInfo.bundle_status === 'invalid'
+                  ? t('chrome.bundleInvalid')
+                  : t('chrome.bundleMissing')}
+            </dd>
           </div>
           <div className="flex items-start justify-between gap-3">
-            <dt className="text-gray-500">Bundle folder</dt>
+            <dt className="text-gray-500">{t('chrome.bundleFolder')}</dt>
             <dd className="max-w-[220px] text-right text-xs text-gray-400">{chromeInfo.extension_path}</dd>
           </div>
         </dl>
@@ -210,8 +224,8 @@ export function ChromePanel() {
         settings={chromeSettings}
         onPositionChange={handlePositionChange}
         capabilities={browserCapabilities.chrome}
-        modeLabel="Live preview"
-        statusLabel={isDirty ? 'Preview differs from the installed bundle.' : 'Preview matches the saved settings.'}
+        modeLabel={t('chrome.livePreview')}
+        statusLabel={isDirty ? t('chrome.previewDirty') : t('chrome.previewSynced')}
       />
     </>
   );
@@ -236,16 +250,32 @@ export function ChromePanel() {
     <ActionBar
       summary={
         <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-gray-500">Chrome / Edge actions</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('chrome.actionsTitle')}</p>
           <p className="mt-1 text-sm text-gray-300">
             {isDirty
-              ? 'Review the preview, then save and apply to refresh the local extension bundle.'
-              : 'The local bundle is ready. Reload it in your browser if the page still shows an older version.'}
+              ? t('chrome.actionsDirty')
+              : t('chrome.actionsSynced')}
           </p>
         </div>
       }
       actions={
         <>
+          {chromeInfo.chrome_installed && (
+            <button
+              onClick={() => handleOpenExtensionsPage('chrome')}
+              className="rounded-xl border border-border-subtle/50 bg-white/5 px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/10"
+            >
+              {t('chrome.openChromeExtensions')}
+            </button>
+          )}
+          {chromeInfo.edge_installed && (
+            <button
+              onClick={() => handleOpenExtensionsPage('edge')}
+              className="rounded-xl border border-border-subtle/50 bg-white/5 px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/10"
+            >
+              {t('chrome.openEdgeExtensions')}
+            </button>
+          )}
           <button
             onClick={handleExport}
             className="rounded-xl border border-border-subtle/50 bg-white/5 px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/10"
@@ -295,7 +325,7 @@ export function ChromePanel() {
           >
             <span className="inline-flex items-center gap-2">
               <Save size={15} />
-              {isLoading ? t('chrome.applying') : 'Save and apply'}
+              {isLoading ? t('chrome.applying') : t('chrome.saveAndApply')}
             </span>
           </button>
         </>

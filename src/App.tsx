@@ -72,7 +72,7 @@ function App() {
                     dirtyByTab[activeTab] ? 'bg-amber-400' : 'bg-green-400'
                   }`}
                 />
-                {dirtyByTab[activeTab] ? 'Pending changes' : 'Workspace synced'}
+                {dirtyByTab[activeTab] ? t('preview.pendingChanges') : t('preview.workspaceSynced')}
               </div>
             }
           />

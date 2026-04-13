@@ -1,4 +1,5 @@
 import { CheckCircle2, Copy, ExternalLink } from 'lucide-react';
+import { useT } from '../../i18n';
 import type { ChromeDetectResult } from '../../types';
 
 interface ChromeSetupGuideProps {
@@ -8,15 +9,17 @@ interface ChromeSetupGuideProps {
 }
 
 export function ChromeSetupGuide({ chromeInfo, copied, onCopy }: ChromeSetupGuideProps) {
+  const t = useT();
+
   return (
     <section className="rounded-2xl border border-border-subtle/50 bg-card/80 p-6 shadow-lg">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-gray-500">Install status</p>
-          <h3 className="mt-2 text-lg font-semibold text-gray-50">Chrome / Edge setup</h3>
+          <p className="text-xs uppercase tracking-[0.28em] text-gray-500">{t('setup.installStatus')}</p>
+          <h3 className="mt-2 text-lg font-semibold text-gray-50">{t('setup.chromeSetup')}</h3>
         </div>
         <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-100">
-          Manual browser step required
+          {t('setup.manualStep')}
         </span>
       </div>
 
@@ -24,7 +27,7 @@ export function ChromeSetupGuide({ chromeInfo, copied, onCopy }: ChromeSetupGuid
         <div className="flex items-start gap-3">
           <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-white">1</span>
           <div className="space-y-2">
-            <p>Open the extensions page in the browser you use for the new tab page.</p>
+            <p>{t('setup.step1Detail')}</p>
             <div className="flex flex-wrap gap-2">
               {chromeInfo.chrome_installed && (
                 <button
@@ -51,7 +54,7 @@ export function ChromeSetupGuide({ chromeInfo, copied, onCopy }: ChromeSetupGuid
         <div className="flex items-start gap-3">
           <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-white">2</span>
           <div className="space-y-2">
-            <p>Enable Developer mode, choose “Load unpacked”, then select the generated bundle folder.</p>
+            <p>{t('setup.step2Detail')}</p>
             <div className="flex items-center gap-2 rounded-xl border border-border-subtle/50 bg-sidebar/70 px-3 py-2">
               <code className="min-w-0 flex-1 truncate text-[11px] text-gray-300">{chromeInfo.extension_path}</code>
               <button
@@ -59,7 +62,7 @@ export function ChromeSetupGuide({ chromeInfo, copied, onCopy }: ChromeSetupGuid
                 className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20"
               >
                 {copied === 'Path' ? <CheckCircle2 size={12} /> : <Copy size={12} />}
-                Copy
+                {t('setup.copyPath')}
               </button>
             </div>
           </div>
@@ -68,9 +71,9 @@ export function ChromeSetupGuide({ chromeInfo, copied, onCopy }: ChromeSetupGuid
         <div className="flex items-start gap-3">
           <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-[11px] font-semibold text-white">3</span>
           <div>
-            <p>Open a new tab. After the first install, future changes only need “Save and apply” plus a new tab refresh.</p>
+            <p>{t('setup.step3Detail')}</p>
             <p className="mt-2 inline-flex items-center gap-2 text-xs text-gray-400">
-              The app updates the local bundle. The browser still requires your manual load or reload action.
+              {t('setup.step3Footnote')}
               <ExternalLink size={12} />
             </p>
           </div>

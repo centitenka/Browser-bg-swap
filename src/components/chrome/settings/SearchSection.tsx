@@ -1,6 +1,6 @@
 import { useT } from '../../../i18n';
 import type { BrowserSettings } from '../../../types';
-import { borderStyleOptions, searchEngines } from './Options';
+import { getBorderStyleOptions, getSearchEngines } from './Options';
 import {
   AdvancedToggle,
   ColorField,
@@ -23,6 +23,8 @@ export function SearchSection({
   onChange,
 }: SearchSectionProps) {
   const t = useT();
+  const borderStyleOptions = getBorderStyleOptions(t);
+  const searchEngines = getSearchEngines(t);
 
   return (
     <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">

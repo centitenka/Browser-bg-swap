@@ -23,6 +23,8 @@ vi.mock('../../stores/configStore', () => ({
       edge_installed: false,
       extension_exists: false,
       extension_path: 'C:/tmp/BrowserBgSwap/Extension',
+      bundle_status: 'missing',
+      bundle_status_message: 'Extension bundle has not been generated yet.',
     },
     isLoading: false,
     dirtyByTab: { chrome: false, firefox: false },

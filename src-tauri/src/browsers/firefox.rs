@@ -1,5 +1,6 @@
-use crate::core::config::{ApplyResult, BackupEntry, BrowserInfo, BrowserType, PrereqCheck, ProfileInfo};
+use crate::core::config::{AppWarning, ApplyResult, BackupEntry, BrowserInfo, BrowserType, PrereqCheck, ProfileInfo};
 use crate::core::error::{AppError, Result};
+use crate::utils::fs::{copy_atomic, write_atomic_string};
 use regex::Regex;
 use std::collections::hash_map::DefaultHasher;
 use std::fs;
@@ -109,13 +110,16 @@ impl FirefoxManager {
         } else {
             None
         };
-        fs::write(&css_path, css)?;
+        write_atomic_string(&css_path, css)?;
 
         Ok(ApplyResult {
             success: true,
             output_path: Some(css_path.to_string_lossy().to_string()),
             backup_name,
-            warnings: vec![],
+            warnings: vec![AppWarning::new(
+                "firefox_restart_required",
+                "Fully restart Firefox after writing CSS to the profile.",
+            )],
         })
     }
 
@@ -166,7 +170,7 @@ impl FirefoxManager {
             Self::backup_user_js(profile_path, &existing_content)?;
         }
 
-        fs::write(&user_js_path, merged)?;
+        write_atomic_string(&user_js_path, &merged)?;
         Ok(())
     }
 
@@ -209,7 +213,7 @@ impl FirefoxManager {
         if let Some(parent) = css_path.parent() {
             fs::create_dir_all(parent)?;
         }
-        fs::copy(&backup_path, &css_path)?;
+        copy_atomic(&backup_path, &css_path)?;
         Ok(())
     }
 
@@ -394,7 +398,7 @@ impl FirefoxManager {
         fs::create_dir_all(&backup_dir)?;
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
         let backup_path = backup_dir.join(format!("user_js_backup_{}.js", timestamp));
-        fs::write(backup_path, content)?;
+        write_atomic_string(&backup_path, content)?;
         Ok(())
     }
 

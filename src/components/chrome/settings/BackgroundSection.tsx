@@ -1,7 +1,7 @@
 import type { BrowserSettings } from '../../../types';
 import { useT } from '../../../i18n';
 import { ImagePicker } from '../../common/ImagePicker';
-import { backgroundFitOptions } from './Options';
+import { getBackgroundFitOptions } from './Options';
 import { AdvancedToggle, ColorField, OptionButtons, RangeField } from './Shared';
 
 interface BackgroundSectionProps {
@@ -20,6 +20,7 @@ export function BackgroundSection({
   onSelectImage,
 }: BackgroundSectionProps) {
   const t = useT();
+  const backgroundFitOptions = getBackgroundFitOptions(t);
 
   return (
     <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">

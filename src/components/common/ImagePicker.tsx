@@ -51,13 +51,13 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
         const filePath = (file as unknown as { path?: string }).path;
         if (filePath && onDropPath) {
           onDropPath(filePath);
-          setFeedback({ type: 'success', message: 'Image ready. Review the preview, then apply it.' });
+          setFeedback({ type: 'success', message: t('image.readyToApply') });
         } else {
           onSelect();
         }
       }
     },
-    [onSelect, onDropPath]
+    [onSelect, onDropPath, t]
   );
 
   const handleCropDone = async (dataUrl: string) => {
@@ -65,12 +65,12 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
       const savedPath = await invoke<string>('save_cropped_image', { dataUrl });
       if (onDropPath) {
         onDropPath(savedPath);
-        setFeedback({ type: 'success', message: 'Cropped image saved and selected.' });
+        setFeedback({ type: 'success', message: t('image.croppedSaved') });
       }
     } catch (e) {
       setFeedback({
         type: 'error',
-        message: e instanceof Error ? e.message : 'Failed to save the cropped image.',
+        message: e instanceof Error ? e.message : t('image.cropSaveFailed'),
       });
     } finally {
       setIsCropping(false);
@@ -201,7 +201,7 @@ export function ImagePicker({ path, onSelect, onClear, onDropPath }: ImagePicker
               <div className="space-y-1">
                 <p className="text-sm font-medium text-gray-200">{t('image.upload')}</p>
                 <p className="text-xs text-gray-500">
-                  {isDragging ? 'Drop the image to replace the current background.' : t('image.formats')}
+                  {isDragging ? t('image.dropReplace') : t('image.formats')}
                 </p>
               </div>
             </div>

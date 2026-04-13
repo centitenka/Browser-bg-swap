@@ -1,5 +1,6 @@
 use crate::core::config::{AppConfig, BrowserSettings, SettingsExchangeFile, CONFIG_VERSION};
 use crate::core::error::{AppError, Result};
+use crate::utils::fs::{write_atomic, write_atomic_string};
 use base64::Engine;
 use std::fs;
 use tauri::AppHandle;
@@ -57,7 +58,7 @@ pub async fn save_app_config(config: AppConfig) -> Result<()> {
 
     let config_path = config_dir.join("config.json");
     let config_json = serde_json::to_string_pretty(&config.normalized())?;
-    fs::write(&config_path, config_json)?;
+    write_atomic_string(&config_path, &config_json)?;
 
     Ok(())
 }
@@ -100,7 +101,7 @@ pub async fn export_settings(
             settings: settings.normalized(),
         };
         let json = serde_json::to_string_pretty(&payload)?;
-        fs::write(p.to_string(), json)?;
+        write_atomic_string(std::path::Path::new(&p.to_string()), &json)?;
     }
 
     Ok(file_path.map(|p| p.to_string()))
@@ -157,7 +158,7 @@ pub async fn save_cropped_image(data_url: String) -> Result<String> {
 
     let filename = format!("cropped_{}.png", chrono::Local::now().format("%Y%m%d_%H%M%S"));
     let save_path = save_dir.join(&filename);
-    fs::write(&save_path, bytes)?;
+    write_atomic(&save_path, &bytes)?;
 
     Ok(save_path.to_string_lossy().to_string())
 }

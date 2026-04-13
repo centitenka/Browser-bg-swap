@@ -1,8 +1,15 @@
-use crate::core::config::{ApplyResult, BrowserSettings};
+use crate::core::config::{AppWarning, ApplyResult, BrowserSettings};
 use crate::core::error::{AppError, Result};
+use crate::utils::fs::{copy_atomic, write_atomic, write_atomic_string};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+const REQUIRED_BUNDLE_FILES: [&str; 4] = ["manifest.json", "newtab.html", "styles.css", "newtab.js"];
+const REQUIRED_ICON_FILES: [&str; 3] = ["icon16.png", "icon48.png", "icon128.png"];
+const SHORTCUTS_PER_ROW: usize = 6;
+const SHORTCUTS_H_SPACING: usize = 8;
+const SHORTCUTS_V_SPACING: usize = 10;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChromeDetectResult {
@@ -10,6 +17,8 @@ pub struct ChromeDetectResult {
     pub edge_installed: bool,
     pub extension_exists: bool,
     pub extension_path: String,
+    pub bundle_status: String,
+    pub bundle_status_message: String,
 }
 
 pub struct ChromeManager;
@@ -36,13 +45,16 @@ impl ChromeManager {
     /// Detect Chrome/Edge installations and extension status
     pub fn detect() -> Result<ChromeDetectResult> {
         let ext_dir = Self::get_extension_dir()?;
-        let extension_exists = ext_dir.join("manifest.json").exists();
+        let (bundle_status, bundle_status_message) = Self::bundle_status(&ext_dir);
+        let extension_exists = bundle_status == "ready";
 
         Ok(ChromeDetectResult {
             chrome_installed: Self::is_chrome_installed(),
             edge_installed: Self::is_edge_installed(),
             extension_exists,
             extension_path: ext_dir.to_string_lossy().to_string(),
+            bundle_status,
+            bundle_status_message,
         })
     }
 
@@ -52,6 +64,7 @@ impl ChromeManager {
         image_path: Option<&str>,
     ) -> Result<ApplyResult> {
         let ext_dir = Self::get_extension_dir()?;
+        let was_ready = Self::bundle_status(&ext_dir).0 == "ready";
         fs::create_dir_all(&ext_dir)?;
         fs::create_dir_all(ext_dir.join("icons"))?;
         fs::create_dir_all(ext_dir.join("images"))?;
@@ -63,24 +76,43 @@ impl ChromeManager {
         Self::reset_images_dir(&ext_dir.join("images"))?;
 
         if let (Some(img), Some(name)) = (image_path, bg_file_name.as_deref()) {
-            fs::copy(img, ext_dir.join("images").join(name))?;
+            copy_atomic(Path::new(img), &ext_dir.join("images").join(name))?;
         }
 
-        fs::write(ext_dir.join("manifest.json"), Self::generate_manifest())?;
-        fs::write(
-            ext_dir.join("newtab.html"),
-            Self::generate_html(settings, bg_file_name.as_deref()),
+        write_atomic_string(&ext_dir.join("manifest.json"), &Self::generate_manifest())?;
+        write_atomic_string(
+            &ext_dir.join("newtab.html"),
+            &Self::generate_html(settings, bg_file_name.as_deref()),
         )?;
-        fs::write(ext_dir.join("styles.css"), Self::generate_css(settings))?;
-        fs::write(ext_dir.join("newtab.js"), Self::generate_js(settings))?;
+        write_atomic_string(&ext_dir.join("styles.css"), &Self::generate_css(settings))?;
+        write_atomic_string(&ext_dir.join("newtab.js"), &Self::generate_js(settings))?;
         Self::write_embedded_icons(&ext_dir.join("icons"))?;
         Self::validate_bundle(&ext_dir, bg_file_name.as_deref())?;
+
+        let mut warnings = Vec::new();
+        if image_path.is_some() {
+            warnings.push(AppWarning::new(
+                "background_image_copied",
+                "The selected background image was copied into the generated extension bundle.",
+            ));
+        }
+        warnings.push(if was_ready {
+            AppWarning::new(
+                "extension_reload_required",
+                "Reload the installed extension or refresh a new tab to pick up the updated bundle.",
+            )
+        } else {
+            AppWarning::new(
+                "extension_manual_install_required",
+                "Load the generated extension bundle manually the first time.",
+            )
+        });
 
         Ok(ApplyResult {
             success: true,
             output_path: Some(ext_dir.to_string_lossy().to_string()),
             backup_name: None,
-            warnings: vec![],
+            warnings,
         })
     }
 
@@ -157,6 +189,25 @@ impl ChromeManager {
         Self::find_edge_exe().is_some()
     }
 
+    fn bundle_status(ext_dir: &Path) -> (String, String) {
+        if !ext_dir.exists() {
+            return ("missing".into(), "Extension bundle has not been generated yet.".into());
+        }
+
+        let missing_required = REQUIRED_BUNDLE_FILES
+            .iter()
+            .any(|name| !ext_dir.join(name).exists())
+            || REQUIRED_ICON_FILES
+                .iter()
+                .any(|name| !ext_dir.join("icons").join(name).exists());
+
+        if missing_required {
+            return ("invalid".into(), "Extension bundle is incomplete and should be regenerated.".into());
+        }
+
+        ("ready".into(), "Extension bundle is ready to load in the browser.".into())
+    }
+
     // ── File generation ────────────────────────────────────────────
 
     fn background_file_name(image_path: &str) -> Option<String> {
@@ -167,7 +218,7 @@ impl ChromeManager {
     }
 
     fn cleanup_controlled_files(ext_dir: &Path) -> Result<()> {
-        for relative in ["manifest.json", "newtab.html", "styles.css", "newtab.js"] {
+        for relative in REQUIRED_BUNDLE_FILES {
             let path = ext_dir.join(relative);
             if path.exists() {
                 fs::remove_file(path)?;
@@ -195,7 +246,7 @@ impl ChromeManager {
         serde_json::json!({
             "manifest_version": 3,
             "name": "BrowserBgSwap - 新标签页自定义",
-            "version": "1.0.0",
+            "version": env!("CARGO_PKG_VERSION"),
             "description": "自定义新标签页背景图片和样式",
             "chrome_url_overrides": {
                 "newtab": "newtab.html"
@@ -596,9 +647,9 @@ updateClock();
     if (!container) return;
     var list = (typeof SHORTCUTS !== 'undefined' && SHORTCUTS.length) ? SHORTCUTS : [];
     var defaultPos = (typeof SHORTCUTS_POSITION !== 'undefined') ? SHORTCUTS_POSITION : {{ x: 50, y: 68 }};
-    var perRow = 6;
-    var hSpacing = 8;
-    var vSpacing = 10;
+    var perRow = {per_row};
+    var hSpacing = {h_spacing};
+    var vSpacing = {v_spacing};
 
     function getDomain(url) {{
         try {{
@@ -660,6 +711,9 @@ updateClock();
             format_24h = format_24h,
             show_seconds = show_seconds,
             show_date = show_date,
+            per_row = SHORTCUTS_PER_ROW,
+            h_spacing = SHORTCUTS_H_SPACING,
+            v_spacing = SHORTCUTS_V_SPACING,
         )
     }
 
@@ -673,21 +727,21 @@ updateClock();
             ("icon48.png", ICON_48),
             ("icon128.png", ICON_128),
         ] {
-            fs::write(icons_dir.join(name), bytes)?;
+            write_atomic(&icons_dir.join(name), bytes)?;
         }
 
         Ok(())
     }
 
     fn validate_bundle(ext_dir: &Path, bg_file_name: Option<&str>) -> Result<()> {
-        for required in ["manifest.json", "newtab.html", "styles.css", "newtab.js"] {
+        for required in REQUIRED_BUNDLE_FILES {
             let path = ext_dir.join(required);
             if !path.exists() {
                 return Err(AppError::Io(format!("生成扩展缺少文件: {}", required)));
             }
         }
 
-        for icon in ["icon16.png", "icon48.png", "icon128.png"] {
+        for icon in REQUIRED_ICON_FILES {
             let path = ext_dir.join("icons").join(icon);
             if !path.exists() {
                 return Err(AppError::Io(format!("生成扩展缺少图标: {}", icon)));
@@ -716,6 +770,7 @@ mod tests {
 
         assert!(manifest.contains("\"manifest_version\":3"));
         assert!(manifest.contains("\"newtab\":\"newtab.html\""));
+        assert!(manifest.contains(env!("CARGO_PKG_VERSION")));
     }
 
     #[test]
@@ -738,5 +793,14 @@ mod tests {
 
         assert!(html.contains("\\\" autofocus onfocus=alert(1)"));
         assert!(!html.contains("placeholder=\"\" autofocus"));
+    }
+
+    #[test]
+    fn generated_js_uses_shared_shortcut_layout_constants() {
+        let js = ChromeManager::generate_js(&BrowserSettings::default());
+
+        assert!(js.contains("var perRow = 6;"));
+        assert!(js.contains("var hSpacing = 8;"));
+        assert!(js.contains("var vSpacing = 10;"));
     }
 }

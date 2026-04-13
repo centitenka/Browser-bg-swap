@@ -155,7 +155,7 @@ npm run tauri build
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│ ✦ BrowserBgSwap                                   [v1.0.0]  │
+│ ✦ BrowserBgSwap                                   [v0.1.0]  │
 │   Browser Background Customization Tool                     │
 ├──────────┬──────────────────────────────────────────────────┤
 │          │                                                  │
@@ -274,7 +274,7 @@ cd src-tauri && cargo fmt    # Format Rust code
 - **Security**: This tool collects no user data; all operations are local.
 
 ### Changelog
-#### v1.0.0 (2026-02-24)
+#### v0.1.0 (2026-02-24)
 - 🎉 Initial release
 - ✨ Firefox background customization & auto-setup
 - 🧩 Chrome/Edge extension generation

@@ -20,3 +20,8 @@ pub async fn apply_chrome_settings(
 pub async fn remove_chrome_settings() -> Result<()> {
     ChromeManager::remove()
 }
+
+#[tauri::command]
+pub async fn open_extensions_page(browser: String) -> Result<()> {
+    ChromeManager::open_extensions_page(browser.trim().to_ascii_lowercase().as_str())
+}

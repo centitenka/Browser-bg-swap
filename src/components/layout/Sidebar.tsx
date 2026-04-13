@@ -11,8 +11,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const t = useT();
 
   const tabs = [
-    { id: 'firefox' as Tab, label: 'Firefox', icon: FileCode },
-    { id: 'chrome' as Tab, label: 'Chrome/Edge', icon: Chrome },
+    { id: 'firefox' as Tab, label: t('sidebar.firefox'), icon: FileCode },
+    { id: 'chrome' as Tab, label: t('sidebar.chrome'), icon: Chrome },
   ];
 
   const handleKeyDown = (e: React.KeyboardEvent, tabId: Tab) => {

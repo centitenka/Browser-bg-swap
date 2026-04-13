@@ -1,6 +1,6 @@
 import { useT } from '../../../i18n';
 import type { BrowserSettings } from '../../../types';
-import { fontFamilyOptions, fontWeightOptions } from './Options';
+import { getFontFamilyOptions, getFontWeightOptions } from './Options';
 import {
   AdvancedToggle,
   ColorField,
@@ -23,6 +23,8 @@ export function ClockSection({
   onChange,
 }: ClockSectionProps) {
   const t = useT();
+  const fontFamilyOptions = getFontFamilyOptions(t);
+  const fontWeightOptions = getFontWeightOptions(t);
 
   return (
     <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">

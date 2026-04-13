@@ -75,8 +75,8 @@ export function FirefoxPanel() {
 
   const handleReset = async () => {
     const confirmed = await confirm({
-      title: 'Reset Firefox workspace',
-      message: 'Reset the Firefox-facing settings back to their default values?',
+      title: t('firefox.resetTitle'),
+      message: t('firefox.resetMessage'),
       confirmText: t('common.reset'),
       cancelText: t('common.cancel'),
       isDangerous: true,
@@ -124,29 +124,29 @@ export function FirefoxPanel() {
   const sidebar = (
     <>
       <ActionStatusCard
-        title="Firefox workspace"
-        subtitle="Pick a profile, satisfy the prerequisite, then write CSS to the Firefox profile folder."
+        title={t('firefox.workspaceTitle')}
+        subtitle={t('firefox.workspaceSubtitle')}
         dirty={isDirty}
         actionState={firefoxAction}
       />
 
       <section className="rounded-2xl border border-border-subtle/50 bg-card/80 p-5 shadow-lg">
-        <p className="text-xs uppercase tracking-[0.24em] text-gray-500">Browser status</p>
+        <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('firefox.browserStatus')}</p>
         <div className="mt-4 space-y-4 text-sm text-gray-300">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-gray-500">Detected profiles</span>
+            <span className="text-gray-500">{t('firefox.detectedProfiles')}</span>
             <span>{firefoxInfo.profile_paths.length}</span>
           </div>
           <div className="flex items-start justify-between gap-3">
-            <span className="text-gray-500">Selected profile</span>
+            <span className="text-gray-500">{t('firefox.selectedProfile')}</span>
             <span className="max-w-[220px] text-right text-xs text-gray-400">
-              {selectedProfile || 'None selected'}
+              {selectedProfile || t('firefox.noneSelected')}
             </span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-gray-500">Prerequisite</span>
+            <span className="text-gray-500">{t('firefox.prerequisite')}</span>
             <span className={prereqReady ? 'text-green-300' : 'text-yellow-200'}>
-              {prereqReady ? 'Ready to write CSS' : 'Needs one-time setup'}
+              {prereqReady ? t('firefox.prereqReady') : t('firefox.prereqNeedsSetup')}
             </span>
           </div>
         </div>
@@ -158,11 +158,11 @@ export function FirefoxPanel() {
           // Firefox preview is read-only for positioning.
         }}
         capabilities={browserCapabilities.firefox}
-        modeLabel="Firefox preview"
+        modeLabel={t('firefox.previewTitle')}
         statusLabel={
           isDirty
-            ? 'Preview differs from the profile CSS until you save and apply.'
-            : 'Preview reflects the current Firefox-facing settings.'
+            ? t('firefox.previewDirty')
+            : t('firefox.previewSynced')
         }
       />
     </>
@@ -193,13 +193,13 @@ export function FirefoxPanel() {
               <ShieldCheck size={18} />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-gray-500">Prerequisite flow</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('firefox.prereqFlow')}</p>
               <h3 className="mt-2 text-lg font-semibold text-gray-50">
-                {prereqReady ? 'Firefox is ready for custom CSS' : t('firefox.configRequired')}
+                {prereqReady ? t('firefox.readyForCss') : t('firefox.configRequired')}
               </h3>
               <p className="mt-2 text-sm leading-6 text-gray-300">
                 {prereqReady
-                  ? 'The required Firefox preference is already enabled. You can write or restore styles safely.'
+                  ? t('firefox.readyForCssDesc')
                   : t('firefox.configRequiredDesc')}
               </p>
             </div>
@@ -251,11 +251,11 @@ export function FirefoxPanel() {
     <ActionBar
       summary={
         <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-gray-500">Firefox actions</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('firefox.actionsTitle')}</p>
           <p className="mt-1 text-sm text-gray-300">
             {isDirty
-              ? 'Save and apply writes CSS into the selected Firefox profile and creates a restore point first.'
-              : 'The selected profile is in sync. You can still inspect the profile folder or restore a backup.'}
+              ? t('firefox.actionsDirty')
+              : t('firefox.actionsSynced')}
           </p>
         </div>
       }
@@ -287,7 +287,7 @@ export function FirefoxPanel() {
           >
             <span className="inline-flex items-center gap-2">
               <Save size={15} />
-              {isLoading ? t('firefox.applying') : 'Save and apply'}
+              {isLoading ? t('firefox.applying') : t('firefox.saveAndApply')}
             </span>
           </button>
         </>

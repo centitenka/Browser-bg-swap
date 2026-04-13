@@ -109,8 +109,8 @@ export function NtpPreview({
   const previewSupportsShortcuts = capabilities?.supportsShortcutsVisibility ?? true;
   const allowPositionDrag =
     (capabilities?.supportsClock ?? true) ||
-    (capabilities?.supportsSearchCustomization ?? true) ||
-    (capabilities?.supportsShortcutsCustomization ?? true);
+    (capabilities?.supportsSearchPositioning ?? true) ||
+    (capabilities?.supportsShortcutsPositioning ?? true);
 
   useEffect(() => {
     const update = () => {
@@ -464,7 +464,7 @@ export function NtpPreview({
 
         {!dragging && (
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white/70 text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none">
-            {allowPositionDrag ? t('preview.dragHint') : 'Preview only'}
+            {allowPositionDrag ? t('preview.dragHint') : t('common.previewOnly')}
           </div>
         )}
       </div>

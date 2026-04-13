@@ -1,6 +1,7 @@
 import { browserCapabilities } from './capabilities';
 import { CONFIG_VERSION, createDefaultAppConfig, createDefaultSettings } from './defaults';
 import type {
+  AppWarning,
   AppConfig,
   BrowserSettings,
   BrowserTab,
@@ -259,107 +260,107 @@ export function projectSettingsForBrowser(browser: BrowserTab, settings: Browser
     clock_font_family: capabilities.supportsClock
       ? settings.clock_font_family
       : defaults.clock_font_family,
-    search_engine: capabilities.supportsSearchCustomization
+    search_engine: capabilities.supportsSearchEngine
       ? settings.search_engine
       : defaults.search_engine,
-    search_bg_color: capabilities.supportsSearchCustomization
+    search_bg_color: capabilities.supportsSearchStyling
       ? settings.search_bg_color
       : defaults.search_bg_color,
-    search_bg_opacity: capabilities.supportsSearchCustomization
+    search_bg_opacity: capabilities.supportsSearchStyling
       ? settings.search_bg_opacity
       : defaults.search_bg_opacity,
-    search_border_radius: capabilities.supportsSearchCustomization
+    search_border_radius: capabilities.supportsSearchStyling
       ? settings.search_border_radius
       : defaults.search_border_radius,
-    search_placeholder: capabilities.supportsSearchCustomization
+    search_placeholder: capabilities.supportsSearchEngine
       ? settings.search_placeholder
       : defaults.search_placeholder,
-    search_border_width: capabilities.supportsSearchCustomization
+    search_border_width: capabilities.supportsSearchStyling
       ? settings.search_border_width
       : defaults.search_border_width,
-    search_border_color: capabilities.supportsSearchCustomization
+    search_border_color: capabilities.supportsSearchStyling
       ? settings.search_border_color
       : defaults.search_border_color,
-    search_border_style: capabilities.supportsSearchCustomization
+    search_border_style: capabilities.supportsSearchStyling
       ? settings.search_border_style
       : defaults.search_border_style,
-    search_shadow_color: capabilities.supportsSearchCustomization
+    search_shadow_color: capabilities.supportsSearchStyling
       ? settings.search_shadow_color
       : defaults.search_shadow_color,
-    search_shadow_blur: capabilities.supportsSearchCustomization
+    search_shadow_blur: capabilities.supportsSearchStyling
       ? settings.search_shadow_blur
       : defaults.search_shadow_blur,
-    search_shadow_opacity: capabilities.supportsSearchCustomization
+    search_shadow_opacity: capabilities.supportsSearchStyling
       ? settings.search_shadow_opacity
       : defaults.search_shadow_opacity,
-    search_backdrop_blur: capabilities.supportsSearchCustomization
+    search_backdrop_blur: capabilities.supportsSearchStyling
       ? settings.search_backdrop_blur
       : defaults.search_backdrop_blur,
-    search_text_color: capabilities.supportsSearchCustomization
+    search_text_color: capabilities.supportsSearchStyling
       ? settings.search_text_color
       : defaults.search_text_color,
-    search_width: capabilities.supportsSearchCustomization
+    search_width: capabilities.supportsSearchPositioning
       ? settings.search_width
       : defaults.search_width,
-    search_padding: capabilities.supportsSearchCustomization
+    search_padding: capabilities.supportsSearchPositioning
       ? settings.search_padding
       : defaults.search_padding,
-    search_position: capabilities.supportsSearchCustomization
+    search_position: capabilities.supportsSearchPositioning
       ? settings.search_position
       : defaults.search_position,
-    shortcuts: capabilities.supportsShortcutsCustomization ? settings.shortcuts : defaults.shortcuts,
-    shortcuts_position: capabilities.supportsShortcutsCustomization
+    shortcuts: capabilities.supportsShortcutsEditing ? settings.shortcuts : defaults.shortcuts,
+    shortcuts_position: capabilities.supportsShortcutsPositioning
       ? settings.shortcuts_position
       : defaults.shortcuts_position,
-    shortcuts_bg_color: capabilities.supportsShortcutsCustomization
+    shortcuts_bg_color: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_bg_color
       : defaults.shortcuts_bg_color,
-    shortcuts_bg_opacity: capabilities.supportsShortcutsCustomization
+    shortcuts_bg_opacity: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_bg_opacity
       : defaults.shortcuts_bg_opacity,
-    shortcuts_border_radius: capabilities.supportsShortcutsCustomization
+    shortcuts_border_radius: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_border_radius
       : defaults.shortcuts_border_radius,
-    shortcuts_columns: capabilities.supportsShortcutsCustomization
+    shortcuts_columns: capabilities.supportsShortcutsPositioning
       ? settings.shortcuts_columns
       : defaults.shortcuts_columns,
-    shortcuts_gap: capabilities.supportsShortcutsCustomization
+    shortcuts_gap: capabilities.supportsShortcutsPositioning
       ? settings.shortcuts_gap
       : defaults.shortcuts_gap,
-    shortcuts_border_width: capabilities.supportsShortcutsCustomization
+    shortcuts_border_width: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_border_width
       : defaults.shortcuts_border_width,
-    shortcuts_border_color: capabilities.supportsShortcutsCustomization
+    shortcuts_border_color: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_border_color
       : defaults.shortcuts_border_color,
-    shortcuts_border_style: capabilities.supportsShortcutsCustomization
+    shortcuts_border_style: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_border_style
       : defaults.shortcuts_border_style,
-    shortcuts_shadow_color: capabilities.supportsShortcutsCustomization
+    shortcuts_shadow_color: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_shadow_color
       : defaults.shortcuts_shadow_color,
-    shortcuts_shadow_blur: capabilities.supportsShortcutsCustomization
+    shortcuts_shadow_blur: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_shadow_blur
       : defaults.shortcuts_shadow_blur,
-    shortcuts_shadow_opacity: capabilities.supportsShortcutsCustomization
+    shortcuts_shadow_opacity: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_shadow_opacity
       : defaults.shortcuts_shadow_opacity,
-    shortcuts_backdrop_blur: capabilities.supportsShortcutsCustomization
+    shortcuts_backdrop_blur: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_backdrop_blur
       : defaults.shortcuts_backdrop_blur,
-    shortcuts_title_color: capabilities.supportsShortcutsCustomization
+    shortcuts_title_color: capabilities.supportsShortcutsStyling
       ? settings.shortcuts_title_color
       : defaults.shortcuts_title_color,
-    shortcuts_icon_size: capabilities.supportsShortcutsCustomization
+    shortcuts_icon_size: capabilities.supportsShortcutsEditing
       ? settings.shortcuts_icon_size
       : defaults.shortcuts_icon_size,
-    shortcuts_padding_x: capabilities.supportsShortcutsCustomization
+    shortcuts_padding_x: capabilities.supportsShortcutsEditing
       ? settings.shortcuts_padding_x
       : defaults.shortcuts_padding_x,
-    shortcuts_padding_y: capabilities.supportsShortcutsCustomization
+    shortcuts_padding_y: capabilities.supportsShortcutsEditing
       ? settings.shortcuts_padding_y
       : defaults.shortcuts_padding_y,
-    shortcuts_shape: capabilities.supportsShortcutsCustomization
+    shortcuts_shape: capabilities.supportsShortcutsEditing
       ? settings.shortcuts_shape
       : defaults.shortcuts_shape,
     custom_css: capabilities.supportsCustomCss ? settings.custom_css : defaults.custom_css,
@@ -411,5 +412,66 @@ export function normalizeImportedSettings(
     version: payload.version || CONFIG_VERSION,
     browser: payload.browser ?? null,
     settings: normalizedSettings,
+  };
+}
+
+const projectionComparableFields = [
+  'show_clock',
+  'clock_color',
+  'clock_size',
+  'clock_format_24h',
+  'clock_show_seconds',
+  'clock_show_date',
+  'clock_font_weight',
+  'clock_shadow_color',
+  'clock_shadow_blur',
+  'clock_shadow_opacity',
+  'clock_letter_spacing',
+  'clock_font_family',
+  'search_engine',
+  'search_placeholder',
+  'search_width',
+  'search_padding',
+  'search_position',
+  'shortcuts',
+  'shortcuts_columns',
+  'shortcuts_gap',
+  'shortcuts_icon_size',
+  'shortcuts_padding_x',
+  'shortcuts_padding_y',
+  'shortcuts_shape',
+  'shortcuts_position',
+  'custom_css',
+] as const satisfies ReadonlyArray<keyof BrowserSettings>;
+
+export function getProjectedSettingKeys(
+  targetBrowser: BrowserTab,
+  settings: BrowserSettings
+): string[] {
+  const normalized = normalizeBrowserSettings(settings);
+  const projected = projectSettingsForBrowser(targetBrowser, normalized);
+
+  return projectionComparableFields.filter((key) => {
+    return JSON.stringify(normalized[key]) !== JSON.stringify(projected[key]);
+  });
+}
+
+export function createImportProjectionWarning(
+  targetBrowser: BrowserTab,
+  payload: SettingsExchangeFile | null | undefined
+): AppWarning | null {
+  if (!payload) {
+    return null;
+  }
+
+  const details = getProjectedSettingKeys(targetBrowser, payload.settings);
+  if (details.length === 0) {
+    return null;
+  }
+
+  return {
+    code: 'import_trimmed_fields',
+    message: 'Some imported settings are not supported for this browser and were reset.',
+    details,
   };
 }

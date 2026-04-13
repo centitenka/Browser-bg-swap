@@ -24,6 +24,7 @@ pub fn run() {
             detect_chrome,
             apply_chrome_settings,
             remove_chrome_settings,
+            open_extensions_page,
             // Common commands
             select_image,
             save_app_config,

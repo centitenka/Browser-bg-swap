@@ -1,17 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { createT } from './index';
+import en from './en';
+import zh from './zh';
 
 describe('createT', () => {
   it('switches between English and Chinese locales', () => {
-    const en = createT('en');
-    const zh = createT('zh');
+    const tEn = createT('en');
+    const tZh = createT('zh');
 
-    expect(en('common.confirm')).toBe('Confirm');
-    expect(zh('common.confirm')).toBe('确认');
+    expect(tEn('nav.settings')).toBe('Settings');
+    expect(tZh('nav.settings')).toBe('\u8BBE\u7F6E');
   });
 
   it('interpolates variables in translated strings', () => {
-    const t = createT('en');
-    expect(t('backup.savedCount', { count: '3' })).toBe('3 saved');
+    const tEn = createT('en');
+
+    expect(tEn('common.copied', { label: 'Path' })).toBe('Path copied!');
+  });
+
+  it('keeps English and Chinese locale keys aligned', () => {
+    expect(Object.keys(zh).sort()).toEqual(Object.keys(en).sort());
   });
 });

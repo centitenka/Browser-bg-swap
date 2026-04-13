@@ -1,8 +1,12 @@
+import { APP_VERSION } from '../config/appMeta';
+
 const en = {
   // Sidebar
   'sidebar.title': 'BrowserSwap',
   'sidebar.subtitle': 'Background Tools',
-  'sidebar.version': 'Version 1.0.0',
+  'sidebar.version': `Version ${APP_VERSION}`,
+  'sidebar.firefox': 'Firefox',
+  'sidebar.chrome': 'Chrome / Edge',
 
   // Header / Breadcrumbs
   'nav.settings': 'Settings',
@@ -22,6 +26,9 @@ const en = {
   'common.copied': '{label} copied!',
   'common.hide': 'Hide',
   'common.showAll': 'Show all',
+  'common.close': 'Close',
+  'common.open': 'Open',
+  'common.previewOnly': 'Preview only',
 
   // Image Picker
   'image.upload': 'Click to upload or drag and drop',
@@ -31,6 +38,10 @@ const en = {
   'image.crop': 'Crop',
   'image.change': 'Change Image',
   'image.remove': 'Remove Image',
+  'image.readyToApply': 'Image ready. Review the preview, then apply it.',
+  'image.croppedSaved': 'Cropped image saved and selected.',
+  'image.cropSaveFailed': 'Failed to save the cropped image.',
+  'image.dropReplace': 'Drop the image to replace the current background.',
 
   // Image Cropper
   'cropper.apply': 'Apply Crop',
@@ -64,14 +75,43 @@ const en = {
   'chrome.resetOk': 'Settings reset to defaults.',
   'chrome.copyFailed': 'Failed to copy',
   'chrome.folderFailed': 'Could not open folder',
+  'chrome.workspaceTitle': 'Chrome / Edge workspace',
+  'chrome.workspaceSubtitle': 'Generate the local extension bundle, then load or reload it in your browser.',
+  'chrome.detectedBrowsers': 'Detected browsers',
+  'chrome.bundleStatus': 'Bundle status',
+  'chrome.bundleFolder': 'Bundle folder',
+  'chrome.bundleMissing': 'Not generated yet',
+  'chrome.bundleReady': 'Generated locally',
+  'chrome.bundleInvalid': 'Needs regeneration',
+  'chrome.livePreview': 'Live preview',
+  'chrome.previewDirty': 'Preview differs from the generated bundle.',
+  'chrome.previewSynced': 'Preview matches the saved bundle settings.',
+  'chrome.actionsTitle': 'Chrome / Edge actions',
+  'chrome.actionsDirty': 'Review the preview, then save and apply to refresh the local extension bundle.',
+  'chrome.actionsSynced': 'The local bundle is ready. Reload it in your browser if the new tab still shows an older version.',
+  'chrome.saveAndApply': 'Save and apply',
+  'chrome.openChromeExtensions': 'Open Chrome extensions',
+  'chrome.openEdgeExtensions': 'Open Edge extensions',
+  'chrome.openExtensionsFailed': 'Could not open the browser extensions page.',
+  'chrome.appliedFirstInstall': 'Extension bundle generated. Load it once in Chrome or Edge to activate the new tab page.',
+  'chrome.appliedUpdate': 'Extension bundle updated. Reload the extension or refresh a new tab in Chrome or Edge.',
 
   // Setup guide
   'setup.title': 'First-time Setup',
+  'setup.installStatus': 'Install status',
+  'setup.chromeSetup': 'Chrome / Edge setup',
+  'setup.manualStep': 'Manual browser step required',
   'setup.step1': 'Open extensions page in your browser:',
   'setup.step2html': 'Enable <strong>Developer mode</strong>, click <strong>"Load unpacked"</strong>, select:',
   'setup.done': 'Done! Open a new tab to see your background.',
   'setup.tip': 'Tip:',
   'setup.tipText': 'After first-time setup, just click "Update Extension" and open a new tab — no need to reload the extension.',
+  'setup.step1Detail': 'Open the extensions page in the browser you use for the new tab page.',
+  'setup.step2Detail': 'Enable Developer mode, choose "Load unpacked", then select the generated bundle folder.',
+  'setup.step3Detail': 'Open a new tab. After the first install, later changes only need "Save and apply" plus a tab refresh.',
+  'setup.step3Footnote': 'The app updates the local bundle. The browser still requires your manual load or reload action.',
+  'setup.pathLabel': 'Bundle path',
+  'setup.copyPath': 'Copy path',
 
   // Firefox
   'firefox.detecting': 'Detecting Firefox...',
@@ -90,7 +130,32 @@ const en = {
   'firefox.restartTipTitle': 'Restart required:',
   'firefox.restartTipText': 'Close every Firefox window and background process before reopening the browser.',
   'firefox.supportedTitle': 'Firefox support boundary',
-  'firefox.supportedDesc': 'Firefox currently supports background image or color, fit, blur, brightness, overlay, and search or shortcut visibility. Chrome-only advanced styling stays hidden here.',
+  'firefox.supportedDesc': 'Firefox currently supports background image or color, fit, blur, brightness, overlay, search-box styling, shortcut-card styling, and visibility toggles. Clock controls, custom shortcut data, and Chrome-only advanced layout stay hidden here.',
+  'firefox.resetTitle': 'Reset Firefox workspace',
+  'firefox.resetMessage': 'Reset the Firefox-facing settings back to their default values?',
+  'firefox.workspaceTitle': 'Firefox workspace',
+  'firefox.workspaceSubtitle': 'Pick a profile, satisfy the prerequisite, then write CSS to the Firefox profile folder.',
+  'firefox.browserStatus': 'Browser status',
+  'firefox.detectedProfiles': 'Detected profiles',
+  'firefox.selectedProfile': 'Selected profile',
+  'firefox.noneSelected': 'None selected',
+  'firefox.prerequisite': 'Prerequisite',
+  'firefox.prereqReady': 'Ready to write CSS',
+  'firefox.prereqNeedsSetup': 'Needs one-time setup',
+  'firefox.previewTitle': 'Firefox preview',
+  'firefox.previewDirty': 'Preview differs from the profile CSS until you save and apply.',
+  'firefox.previewSynced': 'Preview reflects the current Firefox-facing settings.',
+  'firefox.prereqFlow': 'Prerequisite flow',
+  'firefox.readyForCss': 'Firefox is ready for custom CSS',
+  'firefox.readyForCssDesc': 'The required Firefox preference is already enabled. You can write or restore styles safely.',
+  'firefox.actionsTitle': 'Firefox actions',
+  'firefox.actionsDirty': 'Save and apply writes CSS into the selected Firefox profile and creates a restore point first.',
+  'firefox.actionsSynced': 'The selected profile is in sync. You can still inspect the profile folder or restore a backup.',
+  'firefox.saveAndApply': 'Save and apply',
+  'firefox.searchStyleTitle': 'Search box style',
+  'firefox.searchStyleDesc': 'These controls affect Firefox’s built-in new tab search area without changing its position or search provider.',
+  'firefox.shortcutsStyleTitle': 'Shortcut style',
+  'firefox.shortcutsStyleDesc': 'These controls style Firefox’s shortcut cards without replacing Firefox’s own shortcut data.',
 
   // Firefox profile
   'profile.noneTitle': 'No Firefox profiles found',
@@ -122,6 +187,8 @@ const en = {
 
   // Preview
   'preview.dragHint': 'Drag elements to reposition',
+  'preview.workspaceSynced': 'Workspace synced',
+  'preview.pendingChanges': 'Pending changes',
 
   // Settings sections
   'settings.presets': 'Presets',
@@ -175,6 +242,61 @@ const en = {
   'settings.customCss': 'Custom CSS',
   'settings.customCssHint': 'Advanced: appended to the generated styles',
   'settings.bgColorLabel': 'Background Color',
+  'settings.shadow': 'Shadow',
+  'settings.border': 'Border',
+  'shortcut.defaultTitle': 'New',
+  'shortcut.titlePlaceholder': 'Title',
+  'shortcut.urlPlaceholder': 'https://...',
+
+  // Action state
+  'action.workspaceState': 'Workspace state',
+  'action.ready': 'Ready',
+  'action.working': 'Working',
+  'action.upToDate': 'Up to date',
+  'action.needsAttention': 'Needs attention',
+  'action.pendingChanges': 'Pending changes',
+  'action.dirtyDescription': 'You have unapplied changes in this browser workspace.',
+
+  // Warning / status labels
+  'warning.firefoxRestartRequired': 'Fully restart Firefox after writing CSS or prerequisite changes.',
+  'warning.extensionManualInstallRequired': 'Load the generated extension bundle manually the first time.',
+  'warning.extensionReloadRequired': 'Reload the installed extension or refresh a new tab to pick up the updated bundle.',
+  'warning.backgroundImageCopied': 'The selected background image was copied into the generated extension bundle.',
+  'warning.bundleInvalid': 'The existing extension bundle is incomplete. Regenerate it before loading it in the browser.',
+  'warning.importTrimmedFields': 'Unsupported imported settings were reset for this browser: {fields}.',
+  'warning.field.showClock': 'Clock',
+  'warning.field.clock': 'Clock settings',
+  'warning.field.searchEngine': 'Search engine',
+  'warning.field.searchAppearance': 'Search box advanced layout',
+  'warning.field.searchPosition': 'Search position',
+  'warning.field.shortcutsItems': 'Shortcut items',
+  'warning.field.shortcutsAppearance': 'Shortcut advanced layout',
+  'warning.field.shortcutsPosition': 'Shortcut position',
+  'warning.field.customCss': 'Custom CSS',
+  'warning.field.unsupportedSettings': 'Unsupported settings',
+
+  // Option labels
+  'option.fit.cover': 'Cover',
+  'option.fit.contain': 'Contain',
+  'option.fit.center': 'Center',
+  'option.fit.stretch': 'Stretch',
+  'option.search.google': 'Google',
+  'option.search.bing': 'Bing',
+  'option.search.baidu': 'Baidu',
+  'option.search.duckduckgo': 'DuckDuckGo',
+  'option.weight.light': 'Light',
+  'option.weight.normal': 'Normal',
+  'option.weight.bold': 'Bold',
+  'option.border.none': 'None',
+  'option.border.solid': 'Solid',
+  'option.border.dashed': 'Dashed',
+  'option.border.double': 'Double',
+  'option.shape.auto': 'Auto',
+  'option.shape.square': 'Square',
+  'option.shape.circle': 'Circle',
+  'option.font.system': 'System',
+  'option.font.serif': 'Serif',
+  'option.font.mono': 'Mono',
 } as const;
 
 export default en;

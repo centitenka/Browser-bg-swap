@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { useT } from '../../../i18n';
 import type { BrowserSettings, Shortcut } from '../../../types';
-import { borderStyleOptions, columnsOptions, shapeOptions } from './Options';
+import { getBorderStyleOptions, getColumnsOptions, getShapeOptions } from './Options';
 import {
   AdvancedToggle,
   ColorField,
@@ -25,6 +25,9 @@ export function ShortcutsSection({
   onChange,
 }: ShortcutsSectionProps) {
   const t = useT();
+  const borderStyleOptions = getBorderStyleOptions(t);
+  const columnsOptions = getColumnsOptions(t);
+  const shapeOptions = getShapeOptions(t);
   const [editingShortcut, setEditingShortcut] = useState<number | null>(null);
 
   const updateShortcut = (index: number, field: keyof Shortcut, value: string) => {
@@ -35,7 +38,7 @@ export function ShortcutsSection({
 
   const addShortcut = () => {
     onChange({
-      shortcuts: [...settings.shortcuts, { title: 'New', url: 'https://', icon: '\uD83D\uDD17' }],
+      shortcuts: [...settings.shortcuts, { title: t('shortcut.defaultTitle'), url: 'https://', icon: '\uD83D\uDD17' }],
     });
     setEditingShortcut(settings.shortcuts.length);
   };
@@ -77,13 +80,13 @@ export function ShortcutsSection({
                       value={shortcut.title}
                       onChange={(e) => updateShortcut(index, 'title', e.target.value)}
                       className="flex-1 px-2 py-1 bg-sidebar border border-border-subtle/50 rounded text-xs text-gray-200"
-                      placeholder="Title"
+                      placeholder={t('shortcut.titlePlaceholder')}
                     />
                     <input
                       value={shortcut.url}
                       onChange={(e) => updateShortcut(index, 'url', e.target.value)}
                       className="flex-[2] px-2 py-1 bg-sidebar border border-border-subtle/50 rounded text-xs text-gray-200 font-mono"
-                      placeholder="https://..."
+                      placeholder={t('shortcut.urlPlaceholder')}
                     />
                     <button
                       onClick={() => setEditingShortcut(null)}
