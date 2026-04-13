@@ -718,9 +718,10 @@ updateClock();
     }
 
     fn write_embedded_icons(icons_dir: &Path) -> Result<()> {
-        const ICON_16: &[u8] = include_bytes!("../../../BrowserBgSwap_Extension/icons/icon16.png");
-        const ICON_48: &[u8] = include_bytes!("../../../BrowserBgSwap_Extension/icons/icon48.png");
-        const ICON_128: &[u8] = include_bytes!("../../../BrowserBgSwap_Extension/icons/icon128.png");
+        // Keep embedded extension icons in a tracked path so CI and local builds resolve them identically.
+        const ICON_16: &[u8] = include_bytes!("../../icons/32x32.png");
+        const ICON_48: &[u8] = include_bytes!("../../icons/Square44x44Logo.png");
+        const ICON_128: &[u8] = include_bytes!("../../icons/128x128.png");
 
         for (name, bytes) in [
             ("icon16.png", ICON_16),
