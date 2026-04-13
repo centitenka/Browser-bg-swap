@@ -13,7 +13,7 @@ export function ChromeSetupGuide({ chromeInfo, copied, onCopy }: ChromeSetupGuid
 
   return (
     <section className="rounded-2xl border border-border-subtle/50 bg-card/80 p-6 shadow-lg">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-gray-500">{t('setup.installStatus')}</p>
           <h3 className="mt-2 text-lg font-semibold text-gray-50">{t('setup.chromeSetup')}</h3>
@@ -53,13 +53,13 @@ export function ChromeSetupGuide({ chromeInfo, copied, onCopy }: ChromeSetupGuid
 
         <div className="flex items-start gap-3">
           <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-white">2</span>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <p>{t('setup.step2Detail')}</p>
-            <div className="flex items-center gap-2 rounded-xl border border-border-subtle/50 bg-sidebar/70 px-3 py-2">
+            <div className="flex flex-col gap-2 rounded-xl border border-border-subtle/50 bg-sidebar/70 px-3 py-2 sm:flex-row sm:items-center">
               <code className="min-w-0 flex-1 truncate text-[11px] text-gray-300">{chromeInfo.extension_path}</code>
               <button
                 onClick={() => onCopy(chromeInfo.extension_path, 'Path')}
-                className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20"
+                className="inline-flex shrink-0 items-center gap-1 self-start rounded-lg bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20"
               >
                 {copied === 'Path' ? <CheckCircle2 size={12} /> : <Copy size={12} />}
                 {t('setup.copyPath')}

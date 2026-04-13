@@ -215,7 +215,7 @@ export function ChromePanel() {
           </div>
           <div className="flex items-start justify-between gap-3">
             <dt className="text-gray-500">{t('chrome.bundleFolder')}</dt>
-            <dd className="max-w-[220px] text-right text-xs text-gray-400">{chromeInfo.extension_path}</dd>
+            <dd className="max-w-[220px] break-all text-right text-xs text-gray-400">{chromeInfo.extension_path}</dd>
           </div>
         </dl>
       </section>

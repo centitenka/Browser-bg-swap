@@ -6,14 +6,14 @@ interface BrowserWorkspaceProps {
 
 export function BrowserWorkspace({ sidebar, content, actionBar }: BrowserWorkspaceProps) {
   return (
-    <div className="pb-28">
+    <div className="space-y-6 pb-6">
       <div className="grid gap-6 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] items-start">
         <aside className="space-y-4 xl:sticky xl:top-24">{sidebar}</aside>
         <section className="min-w-0 space-y-6">{content}</section>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border-subtle/60 bg-content/92 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">{actionBar}</div>
+      <div className="sticky bottom-0 z-30 -mx-4 bg-gradient-to-t from-content via-content/95 to-transparent px-4 pt-6 lg:-mx-6 lg:px-6 xl:-mx-8 xl:px-8">
+        {actionBar}
       </div>
     </div>
   );

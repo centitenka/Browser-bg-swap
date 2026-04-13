@@ -139,7 +139,7 @@ export function FirefoxPanel() {
           </div>
           <div className="flex items-start justify-between gap-3">
             <span className="text-gray-500">{t('firefox.selectedProfile')}</span>
-            <span className="max-w-[220px] text-right text-xs text-gray-400">
+            <span className="max-w-[220px] break-all text-right text-xs text-gray-400">
               {selectedProfile || t('firefox.noneSelected')}
             </span>
           </div>
@@ -183,8 +183,8 @@ export function FirefoxPanel() {
             : 'border-yellow-500/20 bg-yellow-500/10'
         }`}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
             <div
               className={`mt-1 flex h-10 w-10 items-center justify-center rounded-2xl ${
                 prereqReady ? 'bg-green-500/15 text-green-200' : 'bg-yellow-500/15 text-yellow-200'
@@ -208,7 +208,7 @@ export function FirefoxPanel() {
             <button
               onClick={autoFixPrerequisites}
               disabled={isLoading}
-              className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-yellow-500 disabled:opacity-50"
+              className="w-full shrink-0 rounded-xl bg-yellow-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-yellow-500 disabled:opacity-50 sm:w-auto"
             >
               {t('firefox.autoConfigure')}
             </button>

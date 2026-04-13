@@ -55,7 +55,7 @@ export function ColorField({
   return (
     <div>
       <label className="text-xs text-gray-400 block mb-1">{label}</label>
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <input
           type="color"
           value={value}
@@ -66,7 +66,7 @@ export function ColorField({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-3 py-1.5 bg-sidebar/50 border border-border-subtle/50 rounded-lg text-gray-200 text-xs font-mono"
+          className="min-w-0 flex-1 px-3 py-1.5 bg-sidebar/50 border border-border-subtle/50 rounded-lg text-gray-200 text-xs font-mono"
         />
       </div>
     </div>
@@ -126,7 +126,7 @@ export function OptionButtons({
         <button
           key={option.id}
           onClick={() => onChange(option.id)}
-          className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+          className={`min-w-0 rounded-lg px-2 py-1.5 text-center text-xs font-medium leading-5 whitespace-normal break-words transition-colors ${
             value === option.id
               ? 'bg-primary text-white'
               : 'bg-sidebar border border-border-subtle/50 text-gray-300 hover:bg-white/5'

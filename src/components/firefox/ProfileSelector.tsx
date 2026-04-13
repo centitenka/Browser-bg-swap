@@ -28,7 +28,7 @@ export function ProfileSelector({
 
   return (
     <div className="bg-card border border-border-subtle/50 rounded-xl p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
           {t('profile.title')}
         </h3>

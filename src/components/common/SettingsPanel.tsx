@@ -198,7 +198,7 @@ export function SettingsPanel({
 
       {capabilities.supportsSearchStyling && settings.show_search_box && (
         <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 {t('firefox.searchStyleTitle')}
@@ -302,7 +302,7 @@ export function SettingsPanel({
 
       {capabilities.supportsShortcutsStyling && settings.show_shortcuts && (
         <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 {t('firefox.shortcutsStyleTitle')}

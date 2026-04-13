@@ -65,7 +65,7 @@ export function ShortcutsSection({
             {settings.shortcuts.map((shortcut, index) => (
               <div
                 key={`${shortcut.title}-${index}`}
-                className="flex items-center gap-2 p-2 rounded-lg bg-sidebar/50 border border-border-subtle/30 group"
+                className="group flex flex-wrap items-center gap-2 rounded-lg border border-border-subtle/30 bg-sidebar/50 p-2"
               >
                 <GripVertical size={14} className="text-gray-600 shrink-0" />
                 {editingShortcut === index ? (
@@ -73,44 +73,44 @@ export function ShortcutsSection({
                     <input
                       value={shortcut.icon}
                       onChange={(e) => updateShortcut(index, 'icon', e.target.value)}
-                      className="w-10 px-1 py-1 bg-sidebar border border-border-subtle/50 rounded text-center text-sm"
+                      className="w-10 shrink-0 rounded border border-border-subtle/50 bg-sidebar px-1 py-1 text-center text-sm"
                       maxLength={2}
                     />
                     <input
                       value={shortcut.title}
                       onChange={(e) => updateShortcut(index, 'title', e.target.value)}
-                      className="flex-1 px-2 py-1 bg-sidebar border border-border-subtle/50 rounded text-xs text-gray-200"
+                      className="min-w-0 basis-full rounded border border-border-subtle/50 bg-sidebar px-2 py-1 text-xs text-gray-200 sm:basis-[180px] sm:flex-1"
                       placeholder={t('shortcut.titlePlaceholder')}
                     />
                     <input
                       value={shortcut.url}
                       onChange={(e) => updateShortcut(index, 'url', e.target.value)}
-                      className="flex-[2] px-2 py-1 bg-sidebar border border-border-subtle/50 rounded text-xs text-gray-200 font-mono"
+                      className="min-w-0 basis-full rounded border border-border-subtle/50 bg-sidebar px-2 py-1 font-mono text-xs text-gray-200 lg:basis-[220px] lg:flex-[2]"
                       placeholder={t('shortcut.urlPlaceholder')}
                     />
                     <button
                       onClick={() => setEditingShortcut(null)}
-                      className="text-xs text-primary px-2 py-1 hover:bg-primary/10 rounded"
+                      className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
                     >
                       {t('common.done')}
                     </button>
                   </>
                 ) : (
                   <>
-                    <span className="text-sm w-6 text-center">{shortcut.icon}</span>
-                    <span className="flex-1 text-xs text-gray-300 truncate">{shortcut.title}</span>
-                    <span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">
+                    <span className="w-6 shrink-0 text-center text-sm">{shortcut.icon}</span>
+                    <span className="min-w-0 flex-1 basis-[120px] truncate text-xs text-gray-300">{shortcut.title}</span>
+                    <span className="min-w-0 basis-full truncate font-mono text-[10px] text-gray-500 sm:basis-[140px] sm:flex-1">
                       {shortcut.url}
                     </span>
                     <button
                       onClick={() => setEditingShortcut(index)}
-                      className="text-xs text-gray-400 hover:text-primary px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="rounded px-1.5 py-0.5 text-xs text-gray-400 opacity-100 transition-opacity hover:text-primary sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       {t('common.edit')}
                     </button>
                     <button
                       onClick={() => removeShortcut(index)}
-                      className="text-gray-400 hover:text-red-400 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="p-0.5 text-gray-400 opacity-100 transition-opacity hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       <Trash2 size={12} />
                     </button>

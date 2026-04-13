@@ -62,12 +62,12 @@ export function ActionStatusCard({
 
   return (
     <section className={`rounded-2xl border bg-card/80 p-5 shadow-lg ${tone.borderClass}`}>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('action.workspaceState')}</p>
           <h3 className="text-lg font-semibold text-gray-50">{title}</h3>
         </div>
-        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${tone.badgeClass}`}>
+        <span className={`inline-flex self-start items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${tone.badgeClass}`}>
           <Icon size={14} className={tone.iconClass} />
           {dirty ? t('action.pendingChanges') : tone.label}
         </span>

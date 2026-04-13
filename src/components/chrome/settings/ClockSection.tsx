@@ -34,15 +34,15 @@ export function ClockSection({
       </div>
       {settings.show_clock && (
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="min-w-0">
               <ColorField
                 label={t('settings.color')}
                 value={settings.clock_color}
                 onChange={(value) => onChange({ clock_color: value })}
               />
             </div>
-            <div className="flex-1">
+            <div className="min-w-0">
               <RangeField
                 label={t('settings.size')}
                 value={settings.clock_size}
