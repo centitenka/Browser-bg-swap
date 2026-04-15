@@ -11,8 +11,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const t = useT();
 
   const tabs = [
-    { id: 'firefox' as Tab, label: 'Firefox', icon: FileCode },
-    { id: 'chrome' as Tab, label: 'Chrome/Edge', icon: Chrome },
+    { id: 'firefox' as Tab, label: t('sidebar.firefox'), icon: FileCode },
+    { id: 'chrome' as Tab, label: t('sidebar.chrome'), icon: Chrome },
   ];
 
   const handleKeyDown = (e: React.KeyboardEvent, tabId: Tab) => {
@@ -23,21 +23,24 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   };
 
   return (
-    <aside className="w-52 xl:w-64 bg-sidebar flex flex-col border-r border-border-subtle/50 h-screen select-none shrink-0">
-      <div className="p-4 xl:p-6 pb-4">
-        <div className="flex items-center gap-2.5 px-1.5 xl:px-2 mb-5 xl:mb-6">
+    <aside className="w-full shrink-0 select-none border-b border-border-subtle/50 bg-sidebar lg:h-screen lg:w-52 lg:border-b-0 lg:border-r xl:w-64">
+      <div className="p-4 pb-4 xl:p-6 lg:h-full">
+        <div className="mb-5 flex items-center justify-between gap-3 px-1.5 xl:mb-6 xl:px-2">
           <div className="p-1.5 bg-primary/20 rounded-lg">
             <Layers size={20} className="text-primary" />
           </div>
-          <div>
-            <h1 className="text-base font-semibold text-gray-100 tracking-tight leading-none">
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base font-semibold leading-none tracking-tight text-gray-100">
               {t('sidebar.title')}
             </h1>
-            <p className="text-xs text-gray-500 mt-1 font-medium">{t('sidebar.subtitle')}</p>
+            <p className="mt-1 truncate text-xs font-medium text-gray-500">{t('sidebar.subtitle')}</p>
+          </div>
+          <div className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500 lg:hidden">
+            {t('sidebar.version')}
           </div>
         </div>
 
-        <nav className="space-y-1" role="tablist" aria-label="Main Navigation">
+        <nav className="flex flex-wrap gap-2 lg:flex-col lg:gap-1" role="tablist" aria-label="Main Navigation">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -50,7 +53,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 role="tab"
                 aria-selected={isActive}
                 tabIndex={isActive ? 0 : -1}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                className={`flex min-w-[140px] flex-1 items-center gap-3 rounded-lg px-3 py-2 transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 lg:w-full ${
                   isActive
                     ? 'bg-primary/15 text-primary'
                     : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
@@ -68,7 +71,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         </nav>
       </div>
 
-      <div className="mt-auto p-6 pt-0">
+      <div className="mt-auto hidden p-6 pt-0 lg:block">
         <div className="px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-default">
           <p className="text-[10px] uppercase tracking-wider text-gray-600 font-semibold">
             {t('sidebar.version')}

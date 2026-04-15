@@ -10,9 +10,13 @@ export interface BrowserCapabilities {
   supportsOverlayOpacity: boolean;
   supportsClock: boolean;
   supportsSearchVisibility: boolean;
-  supportsSearchCustomization: boolean;
+  supportsSearchStyling: boolean;
+  supportsSearchEngine: boolean;
+  supportsSearchPositioning: boolean;
   supportsShortcutsVisibility: boolean;
-  supportsShortcutsCustomization: boolean;
+  supportsShortcutsStyling: boolean;
+  supportsShortcutsEditing: boolean;
+  supportsShortcutsPositioning: boolean;
   supportsCustomCss: boolean;
   supportsPresets: boolean;
 }
@@ -28,11 +32,15 @@ export const browserCapabilities: Record<BrowserTab, BrowserCapabilities> = {
     supportsOverlayOpacity: true,
     supportsClock: false,
     supportsSearchVisibility: true,
-    supportsSearchCustomization: false,
+    supportsSearchStyling: true,
+    supportsSearchEngine: false,
+    supportsSearchPositioning: true,
     supportsShortcutsVisibility: true,
-    supportsShortcutsCustomization: false,
+    supportsShortcutsStyling: true,
+    supportsShortcutsEditing: false,
+    supportsShortcutsPositioning: true,
     supportsCustomCss: false,
-    supportsPresets: false,
+    supportsPresets: true,
   },
   chrome: {
     supportsBackgroundImage: true,
@@ -44,9 +52,13 @@ export const browserCapabilities: Record<BrowserTab, BrowserCapabilities> = {
     supportsOverlayOpacity: true,
     supportsClock: true,
     supportsSearchVisibility: true,
-    supportsSearchCustomization: true,
+    supportsSearchStyling: true,
+    supportsSearchEngine: true,
+    supportsSearchPositioning: true,
     supportsShortcutsVisibility: true,
-    supportsShortcutsCustomization: true,
+    supportsShortcutsStyling: true,
+    supportsShortcutsEditing: true,
+    supportsShortcutsPositioning: true,
     supportsCustomCss: true,
     supportsPresets: true,
   },

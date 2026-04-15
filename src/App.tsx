@@ -14,6 +14,7 @@ function App() {
   const [lang, setLangState] = useState<Lang>(getSavedLang);
   const loadConfig = useConfigStore((s) => s.loadConfig);
   const setStoreTab = useConfigStore((s) => s.setActiveTab);
+  const dirtyByTab = useConfigStore((s) => s.dirtyByTab);
 
   const setLang = (l: Lang) => {
     setLangState(l);
@@ -57,17 +58,27 @@ function App() {
 
   return (
     <I18nContext.Provider value={i18nValue}>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex min-h-screen flex-col overflow-hidden lg:h-screen lg:flex-row">
         <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex min-w-0 flex-1 flex-col">
           <Header
             title={getTitle()}
             breadcrumbs={getBreadcrumbs()}
+            actions={
+              <div className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-border-subtle/50 bg-white/5 px-3 py-1.5 text-xs text-gray-300">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    dirtyByTab[activeTab] ? 'bg-amber-400' : 'bg-green-400'
+                  }`}
+                />
+                {dirtyByTab[activeTab] ? t('preview.pendingChanges') : t('preview.workspaceSynced')}
+              </div>
+            }
           />
 
-          <main className="flex-1 overflow-y-auto bg-content scroll-smooth">
-            <div className="max-w-7xl mx-auto p-4 lg:p-6 xl:p-8 w-full">
+          <main className="min-h-0 flex-1 overflow-y-auto bg-content scroll-smooth">
+            <div className="mx-auto w-full max-w-7xl p-4 lg:p-6 xl:p-8">
               <div
                 className={`transition-all duration-300 ease-in-out ${
                   isTransitioning

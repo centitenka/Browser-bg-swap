@@ -1,6 +1,6 @@
 import type { AppConfig, BrowserSettings, Shortcut } from '../types';
 
-export const CONFIG_VERSION = 2;
+export const CONFIG_VERSION = 7;
 
 export function createDefaultShortcuts(): Shortcut[] {
   return [
@@ -14,12 +14,14 @@ export function createDefaultShortcuts(): Shortcut[] {
 export function createDefaultSettings(): BrowserSettings {
   return {
     background_image: null,
+    background_image_mode: 'managed',
     overlay_opacity: 30,
     show_clock: true,
     clock_color: '#ffffff',
     clock_size: 72,
     show_search_box: true,
     search_engine: 'google',
+    search_url_template: '',
     show_shortcuts: true,
     shortcuts: createDefaultShortcuts(),
     clock_position: { x: 50, y: 30 },
@@ -78,15 +80,16 @@ export function createDefaultAppConfig(): AppConfig {
   return {
     config_version: CONFIG_VERSION,
     firefox: {
-      profile_path: null,
-      enabled: true,
-      settings: createDefaultSettings(),
+      selected_profile_path: null,
+      profile_settings_by_key: {},
+      last_applied_by_profile_key: {},
     },
     chrome: {
-      extension_output_path: null,
-      enabled: true,
       settings: createDefaultSettings(),
+      last_applied: null,
     },
     custom_presets: [],
+    recent_background_images: [],
+    favorite_background_images: [],
   };
 }

@@ -1,36 +1,62 @@
-import { useEffect, useState } from 'react';
-import { AlertCircle, ArrowRight, CheckCircle, FolderOpen, Save } from 'lucide-react';
+import { useEffect } from 'react';
+import { AlertCircle, FileSearch, FolderOpen, RefreshCcw, Save, ShieldCheck, Trash2 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { browserCapabilities } from '../../config/capabilities';
 import { useT } from '../../i18n';
 import { useConfigStore } from '../../stores/configStore';
+import { useConfirm } from '../../hooks/useConfirm';
 import { useToast } from '../../hooks/useToast';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ToastContainer } from '../common/Toast';
+import { NtpPreview } from '../chrome/NtpPreview';
+import { ActionBar } from '../workspace/ActionBar';
+import { ActionStatusCard } from '../workspace/ActionStatusCard';
+import { BrowserWorkspace } from '../workspace/BrowserWorkspace';
+import { RecoveryCenter } from '../workspace/RecoveryCenter';
 import { SettingsPanel } from '../common/SettingsPanel';
-import { BackupManager } from './BackupManager';
 import { ProfileSelector } from './ProfileSelector';
+import { PresetsSection } from '../chrome/settings/PresetsSection';
 
 export function FirefoxPanel() {
-  const [hasApplied, setHasApplied] = useState(false);
   const t = useT();
+  const { confirmState, confirm, onConfirm, onCancel } = useConfirm();
   const { toasts, removeToast, success, error: showError } = useToast();
 
   const {
+    config,
     firefoxInfo,
     selectedProfile,
+    selectedProfileKey,
     firefoxSettings,
     prereqCheck,
     isLoading,
-    error,
+    dirtyByTab,
+    actionState,
     detectFirefox,
     selectProfile,
     updateSettings,
+    validateFirefox,
     checkPrerequisites,
     applyFirefox,
+    removeFirefox,
     autoFixPrerequisites,
     selectImage,
+    resetSettings,
+    backups,
+    loadBackups,
+    createBackup,
+    restoreBackup,
+    deleteBackup,
+    exportDiagnostics,
   } = useConfigStore();
+
+  const firefoxAction = actionState.firefox;
+  const isDirty = dirtyByTab.firefox;
+  const lastAppliedAt =
+    selectedProfileKey
+      ? config.firefox.last_applied_by_profile_key[selectedProfileKey]?.applied_at ?? null
+      : null;
 
   useEffect(() => {
     detectFirefox();
@@ -39,23 +65,27 @@ export function FirefoxPanel() {
   useEffect(() => {
     if (selectedProfile) {
       checkPrerequisites();
+      loadBackups();
     }
-  }, [selectedProfile, checkPrerequisites]);
+  }, [selectedProfile, checkPrerequisites, loadBackups]);
 
   useEffect(() => {
-    if (error) {
-      showError(error);
+    if (!selectedProfile) {
+      return;
     }
-  }, [error, showError]);
+
+    const timeoutId = window.setTimeout(() => {
+      void validateFirefox();
+    }, 180);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [selectedProfile, firefoxSettings, validateFirefox]);
 
   const handleApply = async () => {
     try {
       await applyFirefox();
-      setHasApplied(true);
-      success(t('firefox.appliedOk'));
-      setTimeout(() => setHasApplied(false), 3000);
     } catch {
-      showError(t('firefox.applyFailed'));
+      // Action state already carries the error.
     }
   };
 
@@ -71,16 +101,106 @@ export function FirefoxPanel() {
     }
   };
 
+  const handleReset = async () => {
+    const confirmed = await confirm({
+      title: t('firefox.resetTitle'),
+      message: t('firefox.resetMessage'),
+      confirmText: t('common.reset'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    resetSettings();
+  };
+
+  const handleRemove = async () => {
+    const confirmed = await confirm({
+      title: t('firefox.removeTitle'),
+      message: t('firefox.removeMessage'),
+      confirmText: t('firefox.removeAction'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await removeFirefox();
+    } catch {
+      // Action state already carries the error.
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    try {
+      await createBackup();
+      success(t('backup.createdOk'));
+    } catch (error) {
+      showError(`${t('backup.createFailed')}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleExportDiagnostics = async () => {
+    try {
+      await exportDiagnostics('firefox');
+      success(t('diagnostics.exported'));
+    } catch {
+      showError(t('diagnostics.exportFailed'));
+    }
+  };
+
+  const handleRestoreBackup = async (backupName: string, label: string) => {
+    const confirmed = await confirm({
+      title: t('backup.restoreTitle'),
+      message: t('backup.restoreMessage', { name: label }),
+      confirmText: t('backup.restoreConfirm'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await restoreBackup(backupName);
+      success(t('backup.restoredOk'));
+    } catch (error) {
+      showError(`${t('backup.restoreFailed')}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleDeleteBackup = async (backupName: string, label: string) => {
+    const confirmed = await confirm({
+      title: t('backup.deleteTitle'),
+      message: t('backup.deleteMessage', { name: label }),
+      confirmText: t('backup.deleteConfirm'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteBackup(backupName);
+      success(t('backup.deletedOk'));
+    } catch (error) {
+      showError(`${t('backup.deleteFailed')}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
   if (!firefoxInfo) {
     return (
-      <div className="max-w-3xl mx-auto">
-        <div className="flex flex-col items-center justify-center py-12">
-          <LoadingSpinner text={t('firefox.detecting')} />
-        </div>
-        <div className="space-y-6 opacity-50">
-          <div className="h-32 bg-white/5 rounded-xl w-full animate-pulse" />
-          <div className="h-48 bg-white/5 rounded-xl w-full animate-pulse" />
-        </div>
+      <div className="flex flex-col items-center justify-center py-16">
+        <LoadingSpinner text={t('firefox.detecting')} />
       </div>
     );
   }
@@ -90,17 +210,15 @@ export function FirefoxPanel() {
       <>
         <ToastContainer toasts={toasts} onRemove={removeToast} />
         <div className="max-w-3xl mx-auto">
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-8 text-center">
-            <div className="w-16 h-16 bg-yellow-500/20 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-500">
               <AlertCircle size={32} />
             </div>
-            <h3 className="text-xl font-semibold text-yellow-100 mb-2">{t('firefox.noBrowser')}</h3>
-            <p className="text-yellow-200/70 max-w-md mx-auto mb-6">
-              {t('firefox.noBrowserDesc')}
-            </p>
+            <h3 className="mb-2 text-xl font-semibold text-yellow-100">{t('firefox.noBrowser')}</h3>
+            <p className="mx-auto mb-6 max-w-md text-yellow-200/70">{t('firefox.noBrowserDesc')}</p>
             <button
               onClick={detectFirefox}
-              className="px-6 py-2.5 bg-yellow-600/80 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
+              className="rounded-xl bg-yellow-600/80 px-6 py-2.5 font-medium text-white transition-colors hover:bg-yellow-600"
             >
               {t('common.retry')}
             </button>
@@ -110,100 +228,250 @@ export function FirefoxPanel() {
     );
   }
 
-  return (
+  const prereqReady = !!prereqCheck?.all_ok;
+  const hasBlocking = firefoxAction.blocking.length > 0;
+  const sidebar = (
     <>
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="space-y-8 max-w-3xl mx-auto animate-fade-in pb-12">
-        {prereqCheck && !prereqCheck.all_ok && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-500 shrink-0">
-                <AlertCircle size={20} />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-yellow-100 font-medium text-base mb-1">{t('firefox.configRequired')}</h4>
-                <p className="text-yellow-200/70 text-sm mb-3">{t('firefox.configRequiredDesc')}</p>
-                <ul className="space-y-1.5 text-sm text-yellow-200/80 mb-4" role="list">
-                  {prereqCheck.instructions.map((instruction, index) => (
-                    <li key={`${instruction}-${index}`} className="flex items-start gap-2">
-                      <span className="mt-1.5 w-1 h-1 rounded-full bg-yellow-500" aria-hidden="true" />
-                      <span>{instruction}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={autoFixPrerequisites}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-yellow-600/90 hover:bg-yellow-600 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500/50 disabled:opacity-50"
-                >
-                  {t('firefox.autoConfigure')}
-                </button>
-              </div>
+      <ActionStatusCard
+        title={t('firefox.workspaceTitle')}
+        subtitle={t('firefox.workspaceSubtitle')}
+        dirty={isDirty}
+        actionState={firefoxAction}
+      />
+
+      <section className="rounded-2xl border border-border-subtle/50 bg-card/80 p-5 shadow-lg">
+        <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('firefox.browserStatus')}</p>
+        <div className="mt-4 space-y-4 text-sm text-gray-300">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-gray-500">{t('firefox.detectedProfiles')}</span>
+            <span>{firefoxInfo.profile_paths.length}</span>
+          </div>
+          <div className="flex items-start justify-between gap-3">
+            <span className="text-gray-500">{t('firefox.selectedProfile')}</span>
+            <span className="max-w-[220px] break-all text-right text-xs text-gray-400">
+              {selectedProfile || t('firefox.noneSelected')}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-gray-500">{t('firefox.prerequisite')}</span>
+            <span className={prereqReady ? 'text-green-300' : 'text-yellow-200'}>
+              {prereqReady ? t('firefox.prereqReady') : t('firefox.prereqNeedsSetup')}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-gray-500">{t('status.lastApplied')}</span>
+            <span className="text-right text-xs text-gray-400">
+              {lastAppliedAt ? new Date(lastAppliedAt).toLocaleString() : t('status.notApplied')}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <NtpPreview
+        settings={firefoxSettings}
+        onPositionChange={() => {
+          // Firefox positioning is now handled through generated CSS.
+        }}
+        capabilities={browserCapabilities.firefox}
+        modeLabel={t('firefox.previewTitle')}
+        statusLabel={
+          isDirty
+            ? t('firefox.previewDirty')
+            : t('firefox.previewSynced')
+        }
+      />
+    </>
+  );
+
+  const content = (
+    <>
+      <ProfileSelector
+        profiles={firefoxInfo.profile_paths}
+        selected={selectedProfile}
+        onSelect={selectProfile}
+      />
+
+      <section
+        className={`rounded-2xl border p-6 shadow-lg ${
+          prereqReady
+            ? 'border-green-500/20 bg-green-500/8'
+            : 'border-yellow-500/20 bg-yellow-500/10'
+        }`}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div
+              className={`mt-1 flex h-10 w-10 items-center justify-center rounded-2xl ${
+                prereqReady ? 'bg-green-500/15 text-green-200' : 'bg-yellow-500/15 text-yellow-200'
+              }`}
+            >
+              <ShieldCheck size={18} />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('firefox.prereqFlow')}</p>
+              <h3 className="mt-2 text-lg font-semibold text-gray-50">
+                {prereqReady ? t('firefox.readyForCss') : t('firefox.configRequired')}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-gray-300">
+                {prereqReady
+                  ? t('firefox.readyForCssDesc')
+                  : t('firefox.configRequiredDesc')}
+              </p>
             </div>
           </div>
-        )}
-
-        <ProfileSelector
-          profiles={firefoxInfo.profile_paths}
-          selected={selectedProfile}
-          onSelect={selectProfile}
-        />
-
-        <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4">
-          <h4 className="text-sm font-medium text-blue-200 mb-2">{t('firefox.supportedTitle')}</h4>
-          <p className="text-sm text-blue-200/80">{t('firefox.supportedDesc')}</p>
+          {!prereqReady && (
+            <button
+              onClick={autoFixPrerequisites}
+              disabled={isLoading}
+              className="w-full shrink-0 rounded-xl bg-yellow-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-yellow-500 disabled:opacity-50 sm:w-auto"
+            >
+              {t('firefox.autoConfigure')}
+            </button>
+          )}
         </div>
 
-        <SettingsPanel
-          settings={firefoxSettings}
-          onChange={updateSettings}
-          onSelectImage={selectImage}
-          capabilities={browserCapabilities.firefox}
+        {prereqCheck && prereqCheck.instructions.length > 0 && (
+          <ul className="mt-4 space-y-2 text-sm text-gray-200">
+            {prereqCheck.instructions.map((instruction, index) => (
+              <li key={`${instruction}-${index}`} className="flex items-start gap-2">
+                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                <span>{instruction}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-4 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
+          {t('firefox.restartTipTitle')} {t('firefox.restartTipText')}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-blue-500/15 bg-blue-500/5 p-5 text-sm text-blue-100 shadow-lg">
+        <p className="text-xs uppercase tracking-[0.24em] text-blue-200/80">{t('firefox.supportedTitle')}</p>
+        <p className="mt-3 leading-6">{t('firefox.supportedDesc')}</p>
+      </section>
+
+      <PresetsSection browser="firefox" onChange={updateSettings} />
+
+      <SettingsPanel
+        settings={firefoxSettings}
+        onChange={updateSettings}
+        onSelectImage={() => void selectImage(firefoxSettings.background_image_mode !== 'direct')}
+        capabilities={browserCapabilities.firefox}
+      />
+
+      {selectedProfile && (
+        <RecoveryCenter
+          title={t('recovery.title')}
+          subtitle={t('recovery.firefoxDesc')}
+          countLabel={
+            backups.length > 0
+              ? t('backup.savedCount', { count: String(backups.length) })
+              : t('backup.none')
+          }
+          emptyTitle={t('backup.emptyTitle')}
+          emptyDesc={t('backup.emptyDesc')}
+          createLabel={t('backup.create')}
+          createIconLabel={t('backup.create')}
+          showAllLabel={t('common.showAll')}
+          hideLabel={t('common.hide')}
+          restoreLabel={t('backup.restoreConfirm')}
+          deleteLabel={t('backup.deleteConfirm')}
+          entries={backups.map((backup) => ({
+            id: backup.name,
+            label: backup.label,
+            detail: backup.name,
+            badge: backup.source,
+          }))}
+          onCreate={handleCreateBackup}
+          onRestore={(entry) => handleRestoreBackup(entry.id, entry.label)}
+          onDelete={(entry) => handleDeleteBackup(entry.id, entry.label)}
         />
+      )}
+    </>
+  );
 
-        {selectedProfile && <BackupManager />}
-
-        <div className="flex items-center gap-4 pt-4 border-t border-border-subtle/30">
+  const actionBar = (
+    <ActionBar
+      summary={
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{t('firefox.actionsTitle')}</p>
+          <p className="mt-1 text-sm text-gray-300">
+            {isDirty
+              ? t('firefox.actionsDirty')
+              : t('firefox.actionsSynced')}
+          </p>
+        </div>
+      }
+      actions={
+        <>
           <button
-            onClick={handleApply}
-            disabled={isLoading || !prereqCheck?.all_ok}
-            className="flex-1 flex items-center justify-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary-hover disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg shadow-primary/25 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
+            onClick={handleExportDiagnostics}
+            className="rounded-xl border border-border-subtle/50 bg-white/5 px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/10"
           >
-            {isLoading ? (
-              <LoadingSpinner size="sm" />
-            ) : hasApplied ? (
-              <CheckCircle size={20} className="animate-scale-in" />
-            ) : (
-              <Save size={20} />
-            )}
-            <span>
-              {isLoading
-                ? t('firefox.applying')
-                : hasApplied
-                  ? t('firefox.appliedAction')
-                  : t('firefox.applyAction')}
+            <span className="inline-flex items-center gap-2">
+              <FileSearch size={15} />
+              {t('diagnostics.export')}
             </span>
           </button>
-
+          <button
+            onClick={handleReset}
+            className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-200 transition-colors hover:bg-red-500/20"
+          >
+            <span className="inline-flex items-center gap-2">
+              <RefreshCcw size={15} />
+              {t('common.reset')}
+            </span>
+          </button>
           <button
             onClick={handleOpenProfile}
             disabled={!selectedProfile}
-            className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white/5 hover:bg-white/10 border border-border-subtle/50 text-gray-200 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-border-subtle"
-            title={t('firefox.openProfile')}
+            className="rounded-xl border border-border-subtle/50 bg-white/5 px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/10 disabled:opacity-50"
           >
-            <FolderOpen size={20} />
+            <span className="inline-flex items-center gap-2">
+              <FolderOpen size={15} />
+              {t('firefox.openProfile')}
+            </span>
           </button>
-        </div>
+          <button
+            onClick={handleRemove}
+            disabled={!selectedProfile || isLoading}
+            className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-200 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Trash2 size={15} />
+              {t('firefox.removeAction')}
+            </span>
+          </button>
+          <button
+            onClick={handleApply}
+            disabled={isLoading || !prereqReady || hasBlocking}
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary-hover disabled:opacity-50"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Save size={15} />
+              {isLoading ? t('firefox.applying') : t('firefox.saveAndApply')}
+            </span>
+          </button>
+        </>
+      }
+    />
+  );
 
-        <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 flex items-start gap-3">
-          <div className="mt-0.5 text-blue-400">
-            <ArrowRight size={18} />
-          </div>
-          <p className="text-sm text-blue-200/80 leading-relaxed">
-            <span className="font-medium text-blue-200">{t('firefox.restartTipTitle')}</span> {t('firefox.restartTipText')}
-          </p>
-        </div>
-      </div>
+  return (
+    <>
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        isDangerous={confirmState.isDangerous}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <BrowserWorkspace sidebar={sidebar} content={content} actionBar={actionBar} />
     </>
   );
 }

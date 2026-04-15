@@ -1,8 +1,9 @@
 import type { BrowserSettings } from '../../../types';
 import { useT } from '../../../i18n';
+import { useConfigStore } from '../../../stores/configStore';
 import { ImagePicker } from '../../common/ImagePicker';
-import { backgroundFitOptions } from './Options';
-import { AdvancedToggle, ColorField, OptionButtons, RangeField } from './Shared';
+import { getBackgroundFitOptions } from './Options';
+import { AdvancedToggle, ColorField, OptionButtons, RangeField, ToggleSwitch } from './Shared';
 
 interface BackgroundSectionProps {
   settings: BrowserSettings;
@@ -10,6 +11,9 @@ interface BackgroundSectionProps {
   onToggle: (key: string) => void;
   onChange: (settings: Partial<BrowserSettings>) => void;
   onSelectImage: () => void;
+  onPrepareImage: (path: string) => void | Promise<void>;
+  recentImages: string[];
+  onUseRecent: (path: string) => void | Promise<void>;
 }
 
 export function BackgroundSection({
@@ -18,19 +22,43 @@ export function BackgroundSection({
   onToggle,
   onChange,
   onSelectImage,
+  onPrepareImage,
+  recentImages,
+  onUseRecent,
 }: BackgroundSectionProps) {
   const t = useT();
+  const backgroundFitOptions = getBackgroundFitOptions(t);
+  const favoriteImages = useConfigStore((s) => s.config.favorite_background_images);
+  const managedImages = useConfigStore((s) => s.managedImages);
+  const toggleFavoriteImage = useConfigStore((s) => s.toggleFavoriteImage);
 
   return (
     <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
       <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
         {t('settings.background')}
       </h3>
+      <div className="mb-4 flex items-center justify-between rounded-xl border border-border-subtle/30 bg-sidebar/30 px-3 py-2">
+        <div>
+          <p className="text-xs text-gray-300">{t('settings.managedImageMode')}</p>
+          <p className="text-[11px] text-gray-500">{t('settings.managedImageModeDesc')}</p>
+        </div>
+        <ToggleSwitch
+          checked={settings.background_image_mode !== 'direct'}
+          onChange={(checked) =>
+            onChange({ background_image_mode: checked ? 'managed' : 'direct' })
+          }
+        />
+      </div>
       <ImagePicker
         path={settings.background_image}
         onSelect={onSelectImage}
         onClear={() => onChange({ background_image: null })}
-        onDropPath={(path) => onChange({ background_image: path })}
+        onDropPath={onPrepareImage}
+        recentPaths={recentImages}
+        onUseRecent={onUseRecent}
+        favoritePaths={favoriteImages}
+        libraryEntries={managedImages}
+        onToggleFavorite={(path) => void toggleFavoriteImage(path)}
       />
       {settings.background_image && (
         <div className="mt-4 space-y-4">

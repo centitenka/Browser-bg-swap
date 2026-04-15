@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Archive,
+  BadgeCheck,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -15,16 +16,6 @@ import { useToast } from '../../hooks/useToast';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { EmptyState } from '../common/EmptyState';
 import { ToastContainer } from '../common/Toast';
-
-function formatBackupTime(filename: string): string {
-  const match = filename.match(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/);
-  if (!match) {
-    return filename;
-  }
-
-  const [, year, month, day, hour, minute] = match;
-  return `${year}/${month}/${day} ${hour}:${minute}`;
-}
 
 export function BackupManager() {
   const [showBackups, setShowBackups] = useState(false);
@@ -53,10 +44,10 @@ export function BackupManager() {
     }
   };
 
-  const handleRestore = async (name: string) => {
+  const handleRestore = async (name: string, label: string) => {
     const confirmed = await confirm({
       title: t('backup.restoreTitle'),
-      message: t('backup.restoreMessage', { name: formatBackupTime(name) }),
+      message: t('backup.restoreMessage', { name: label }),
       confirmText: t('backup.restoreConfirm'),
       cancelText: t('common.cancel'),
       isDangerous: true,
@@ -74,10 +65,10 @@ export function BackupManager() {
     }
   };
 
-  const handleDelete = async (name: string) => {
+  const handleDelete = async (name: string, label: string) => {
     const confirmed = await confirm({
       title: t('backup.deleteTitle'),
-      message: t('backup.deleteMessage', { name: formatBackupTime(name) }),
+      message: t('backup.deleteMessage', { name: label }),
       confirmText: t('backup.deleteConfirm'),
       cancelText: t('common.cancel'),
       isDangerous: true,
@@ -148,27 +139,36 @@ export function BackupManager() {
           <div className="mt-4 border-t border-border-subtle/30 divide-y divide-border-subtle/30">
             {backups.map((backup) => (
               <div
-                key={backup}
+                key={backup.name}
                 className="flex items-center justify-between py-3 px-2 group hover:bg-white/5 rounded-lg -mx-2 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="p-1.5 rounded-full bg-sidebar border border-border-subtle text-gray-400">
                     <Clock size={14} />
                   </div>
-                  <span className="text-sm text-gray-300 font-mono truncate">
-                    {formatBackupTime(backup)}
-                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-300 font-mono truncate">
+                        {backup.label}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-200">
+                        <BadgeCheck size={10} />
+                        {backup.source}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 truncate">{backup.name}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={() => handleRestore(backup)}
+                    onClick={() => handleRestore(backup.name, backup.label)}
                     className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
                     title={t('backup.restoreConfirm')}
                   >
                     <RotateCcw size={14} />
                   </button>
                   <button
-                    onClick={() => handleDelete(backup)}
+                    onClick={() => handleDelete(backup.name, backup.label)}
                     className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
                     title={t('backup.deleteConfirm')}
                   >

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { GripVertical, Plus, Trash2 } from 'lucide-react';
+import { GripVertical, Import, Plus, Trash2 } from 'lucide-react';
 import { useT } from '../../../i18n';
 import type { BrowserSettings, Shortcut } from '../../../types';
-import { borderStyleOptions, columnsOptions, shapeOptions } from './Options';
+import { useConfigStore } from '../../../stores/configStore';
+import { getBorderStyleOptions, getColumnsOptions, getShapeOptions } from './Options';
 import {
   AdvancedToggle,
   ColorField,
@@ -18,6 +19,59 @@ interface ShortcutsSectionProps {
   onChange: (settings: Partial<BrowserSettings>) => void;
 }
 
+function inferTitleFromUrl(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./i, '');
+    return hostname.split('.')[0] || hostname;
+  } catch {
+    return 'Shortcut';
+  }
+}
+
+function parseShortcutLines(raw: string): Shortcut[] {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => ({
+          title: String(item.title ?? '').trim(),
+          url: String(item.url ?? '').trim(),
+          icon: String(item.icon ?? '\uD83D\uDD17').trim() || '\uD83D\uDD17',
+        }))
+        .filter((item) => item.title && item.url);
+    }
+  } catch {
+    // Fallback to line parsing.
+  }
+
+  return trimmed
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split('|').map((part) => part.trim());
+      if (parts.length >= 2) {
+        return {
+          title: parts[0] || inferTitleFromUrl(parts[1]),
+          url: parts[1],
+          icon: parts[2] || '\uD83D\uDD17',
+        };
+      }
+
+      return {
+        title: inferTitleFromUrl(parts[0]),
+        url: parts[0],
+        icon: '\uD83D\uDD17',
+      };
+    })
+    .filter((item) => item.title && item.url);
+}
+
 export function ShortcutsSection({
   settings,
   expanded,
@@ -25,7 +79,17 @@ export function ShortcutsSection({
   onChange,
 }: ShortcutsSectionProps) {
   const t = useT();
+  const borderStyleOptions = getBorderStyleOptions(t);
+  const columnsOptions = getColumnsOptions(t);
+  const shapeOptions = getShapeOptions(t);
   const [editingShortcut, setEditingShortcut] = useState<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [showBatchImport, setShowBatchImport] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const importBrowserShortcuts = useConfigStore((s) => s.importBrowserShortcuts);
+
+  const isValidUrl = (value: string) => /^https?:\/\//i.test(value.trim());
 
   const updateShortcut = (index: number, field: keyof Shortcut, value: string) => {
     const updated = [...settings.shortcuts];
@@ -35,7 +99,7 @@ export function ShortcutsSection({
 
   const addShortcut = () => {
     onChange({
-      shortcuts: [...settings.shortcuts, { title: 'New', url: 'https://', icon: '\uD83D\uDD17' }],
+      shortcuts: [...settings.shortcuts, { title: t('shortcut.defaultTitle'), url: 'https://', icon: '\uD83D\uDD17' }],
     });
     setEditingShortcut(settings.shortcuts.length);
   };
@@ -43,6 +107,62 @@ export function ShortcutsSection({
   const removeShortcut = (index: number) => {
     onChange({ shortcuts: settings.shortcuts.filter((_, shortcutIndex) => shortcutIndex !== index) });
     setEditingShortcut(null);
+  };
+
+  const moveShortcut = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || toIndex < 0 || toIndex >= settings.shortcuts.length) {
+      return;
+    }
+
+    const updated = [...settings.shortcuts];
+    const [item] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, item);
+    onChange({ shortcuts: updated });
+  };
+
+  const importShortcuts = (mode: 'append' | 'replace') => {
+    const imported = parseShortcutLines(importText).filter((shortcut) => isValidUrl(shortcut.url));
+    if (imported.length === 0) {
+      setImportFeedback(t('settings.shortcutsImportEmpty'));
+      return;
+    }
+
+    const shortcuts =
+      mode === 'replace'
+        ? imported.slice(0, 8)
+        : [...settings.shortcuts, ...imported].slice(0, 8);
+
+    onChange({ shortcuts });
+    setImportText('');
+    setShowBatchImport(false);
+    setImportFeedback(t('settings.shortcutsImportApplied', { count: String(imported.length) }));
+  };
+
+  const importBookmarks = async (browser: 'chrome' | 'edge', mode: 'append' | 'replace') => {
+    try {
+      const imported = (await importBrowserShortcuts(browser)).filter((shortcut) => isValidUrl(shortcut.url));
+      if (imported.length === 0) {
+        setImportFeedback(t('settings.shortcutsImportEmpty'));
+        return;
+      }
+
+      const shortcuts =
+        mode === 'replace'
+          ? imported.slice(0, 8)
+          : [...settings.shortcuts, ...imported].slice(0, 8);
+
+      onChange({ shortcuts });
+      setImportFeedback(
+        t(
+          browser === 'chrome'
+            ? 'settings.shortcutsImportedChrome'
+            : 'settings.shortcutsImportedEdge',
+          { count: String(imported.length) }
+        )
+      );
+    } catch (error) {
+      setImportFeedback(error instanceof Error ? error.message : String(error));
+    }
   };
 
   return (
@@ -59,10 +179,74 @@ export function ShortcutsSection({
       {settings.show_shortcuts && (
         <div className="space-y-3">
           <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-gray-500">{t('settings.shortcutsImportHint')}</p>
+              <button
+                onClick={() => setShowBatchImport((value) => !value)}
+                className="inline-flex items-center gap-1 rounded-lg border border-border-subtle/50 bg-white/5 px-2.5 py-1.5 text-xs text-gray-300 transition-colors hover:bg-white/10"
+              >
+                <Import size={12} />
+                {t('settings.importShortcuts')}
+              </button>
+            </div>
+
+            {showBatchImport && (
+              <div className="rounded-xl border border-border-subtle/40 bg-sidebar/40 p-3">
+                <textarea
+                  value={importText}
+                  onChange={(event) => setImportText(event.target.value)}
+                  placeholder={t('settings.shortcutsImportPlaceholder')}
+                  className="min-h-28 w-full rounded-lg border border-border-subtle/50 bg-sidebar/60 px-3 py-2 text-xs font-mono text-gray-200"
+                />
+                <p className="mt-2 text-[11px] leading-5 text-gray-500">
+                  {t('settings.shortcutsImportFormat')}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => importShortcuts('append')}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary/80"
+                  >
+                    {t('settings.shortcutsImportAppend')}
+                  </button>
+                  <button
+                    onClick={() => importShortcuts('replace')}
+                    className="rounded-lg border border-border-subtle/50 bg-white/5 px-3 py-1.5 text-xs text-gray-200 transition-colors hover:bg-white/10"
+                  >
+                    {t('settings.shortcutsImportReplace')}
+                  </button>
+                  <button
+                    onClick={() => void importBookmarks('chrome', 'append')}
+                    className="rounded-lg border border-border-subtle/50 bg-white/5 px-3 py-1.5 text-xs text-gray-200 transition-colors hover:bg-white/10"
+                  >
+                    {t('settings.shortcutsImportChrome')}
+                  </button>
+                  <button
+                    onClick={() => void importBookmarks('edge', 'append')}
+                    className="rounded-lg border border-border-subtle/50 bg-white/5 px-3 py-1.5 text-xs text-gray-200 transition-colors hover:bg-white/10"
+                  >
+                    {t('settings.shortcutsImportEdge')}
+                  </button>
+                </div>
+                {importFeedback && (
+                  <p className="mt-3 text-[11px] text-gray-400">{importFeedback}</p>
+                )}
+              </div>
+            )}
+
             {settings.shortcuts.map((shortcut, index) => (
               <div
                 key={`${shortcut.title}-${index}`}
-                className="flex items-center gap-2 p-2 rounded-lg bg-sidebar/50 border border-border-subtle/30 group"
+                className="group flex flex-wrap items-center gap-2 rounded-lg border border-border-subtle/30 bg-sidebar/50 p-2"
+                draggable
+                onDragStart={() => setDragIndex(index)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => {
+                  if (dragIndex !== null) {
+                    moveShortcut(dragIndex, index);
+                    setDragIndex(null);
+                  }
+                }}
+                onDragEnd={() => setDragIndex(null)}
               >
                 <GripVertical size={14} className="text-gray-600 shrink-0" />
                 {editingShortcut === index ? (
@@ -70,47 +254,53 @@ export function ShortcutsSection({
                     <input
                       value={shortcut.icon}
                       onChange={(e) => updateShortcut(index, 'icon', e.target.value)}
-                      className="w-10 px-1 py-1 bg-sidebar border border-border-subtle/50 rounded text-center text-sm"
+                      className="w-10 shrink-0 rounded border border-border-subtle/50 bg-sidebar px-1 py-1 text-center text-sm"
                       maxLength={2}
                     />
                     <input
                       value={shortcut.title}
                       onChange={(e) => updateShortcut(index, 'title', e.target.value)}
-                      className="flex-1 px-2 py-1 bg-sidebar border border-border-subtle/50 rounded text-xs text-gray-200"
-                      placeholder="Title"
+                      className="min-w-0 basis-full rounded border border-border-subtle/50 bg-sidebar px-2 py-1 text-xs text-gray-200 sm:basis-[180px] sm:flex-1"
+                      placeholder={t('shortcut.titlePlaceholder')}
                     />
                     <input
                       value={shortcut.url}
                       onChange={(e) => updateShortcut(index, 'url', e.target.value)}
-                      className="flex-[2] px-2 py-1 bg-sidebar border border-border-subtle/50 rounded text-xs text-gray-200 font-mono"
-                      placeholder="https://..."
+                      className="min-w-0 basis-full rounded border border-border-subtle/50 bg-sidebar px-2 py-1 font-mono text-xs text-gray-200 lg:basis-[220px] lg:flex-[2]"
+                      placeholder={t('shortcut.urlPlaceholder')}
                     />
                     <button
                       onClick={() => setEditingShortcut(null)}
-                      className="text-xs text-primary px-2 py-1 hover:bg-primary/10 rounded"
+                      className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
                     >
                       {t('common.done')}
                     </button>
+                    {!isValidUrl(shortcut.url) && (
+                      <p className="basis-full text-[11px] text-red-300">{t('shortcut.invalidUrl')}</p>
+                    )}
                   </>
                 ) : (
                   <>
-                    <span className="text-sm w-6 text-center">{shortcut.icon}</span>
-                    <span className="flex-1 text-xs text-gray-300 truncate">{shortcut.title}</span>
-                    <span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">
+                    <span className="w-6 shrink-0 text-center text-sm">{shortcut.icon}</span>
+                    <span className="min-w-0 flex-1 basis-[120px] truncate text-xs text-gray-300">{shortcut.title}</span>
+                    <span className="min-w-0 basis-full truncate font-mono text-[10px] text-gray-500 sm:basis-[140px] sm:flex-1">
                       {shortcut.url}
                     </span>
                     <button
                       onClick={() => setEditingShortcut(index)}
-                      className="text-xs text-gray-400 hover:text-primary px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="rounded px-1.5 py-0.5 text-xs text-gray-400 opacity-100 transition-opacity hover:text-primary sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       {t('common.edit')}
                     </button>
                     <button
                       onClick={() => removeShortcut(index)}
-                      className="text-gray-400 hover:text-red-400 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="p-0.5 text-gray-400 opacity-100 transition-opacity hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       <Trash2 size={12} />
                     </button>
+                    {!isValidUrl(shortcut.url) && (
+                      <p className="basis-full text-[11px] text-red-300">{t('shortcut.invalidUrl')}</p>
+                    )}
                   </>
                 )}
               </div>

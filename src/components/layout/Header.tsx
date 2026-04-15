@@ -16,12 +16,12 @@ export function Header({ title, breadcrumbs = [], actions }: HeaderProps) {
   const { lang, setLang } = useI18n();
 
   return (
-    <header className="sticky top-0 z-10 bg-content/80 backdrop-blur-md border-b border-border-subtle/30 px-4 lg:px-8 py-3 lg:py-5 transition-all">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <div className="flex flex-col gap-1">
+    <header className="sticky top-0 z-10 border-b border-border-subtle/30 bg-content/80 px-4 py-3 backdrop-blur-md transition-all lg:px-8 lg:py-5">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 flex flex-col gap-1">
           {breadcrumbs.length > 0 && (
             <nav
-              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1"
+              className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-gray-500"
               aria-label="Breadcrumb"
             >
               {breadcrumbs.map((item, index) => (
@@ -46,7 +46,7 @@ export function Header({ title, breadcrumbs = [], actions }: HeaderProps) {
           <h2 className="text-xl lg:text-2xl font-bold text-gray-50 tracking-tight">{title}</h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
           {actions}
 
           {/* Language toggle */}
