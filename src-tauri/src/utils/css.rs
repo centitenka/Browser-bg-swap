@@ -33,25 +33,54 @@ impl CssGenerator {
             .unwrap_or_default();
 
         let overlay_alpha = settings.overlay_opacity as f64 / 100.0;
-        let search_display = if settings.show_search_box { "flex" } else { "none" };
-        let shortcuts_display = if settings.show_shortcuts { "block" } else { "none" };
+        let search_display = if settings.show_search_box {
+            "flex"
+        } else {
+            "none"
+        };
+        let shortcuts_display = if settings.show_shortcuts {
+            "block"
+        } else {
+            "none"
+        };
         let overlay_color = hex_to_rgba(&settings.overlay_color, overlay_alpha);
-        let search_background = hex_to_rgba(&settings.search_bg_color, settings.search_bg_opacity as f64 / 100.0);
-        let search_shadow = hex_to_rgba(&settings.search_shadow_color, settings.search_shadow_opacity as f64 / 100.0);
-        let shortcut_background = hex_to_rgba(&settings.shortcuts_bg_color, settings.shortcuts_bg_opacity as f64 / 100.0);
-        let shortcut_shadow = hex_to_rgba(&settings.shortcuts_shadow_color, settings.shortcuts_shadow_opacity as f64 / 100.0);
+        let search_background = hex_to_rgba(
+            &settings.search_bg_color,
+            settings.search_bg_opacity as f64 / 100.0,
+        );
+        let search_shadow = hex_to_rgba(
+            &settings.search_shadow_color,
+            settings.search_shadow_opacity as f64 / 100.0,
+        );
+        let shortcut_background = hex_to_rgba(
+            &settings.shortcuts_bg_color,
+            settings.shortcuts_bg_opacity as f64 / 100.0,
+        );
+        let shortcut_shadow = hex_to_rgba(
+            &settings.shortcuts_shadow_color,
+            settings.shortcuts_shadow_opacity as f64 / 100.0,
+        );
+        let search_left = settings.search_position.x;
+        let search_top = settings.search_position.y;
+        let shortcuts_left = settings.shortcuts_position.x;
+        let shortcuts_top = settings.shortcuts_position.y;
 
         let search_border = if settings.search_border_style != "none" {
             format!(
                 "border: {}px {} {} !important;",
-                settings.search_border_width, settings.search_border_style, settings.search_border_color
+                settings.search_border_width,
+                settings.search_border_style,
+                settings.search_border_color
             )
         } else {
             "border: none !important;".to_string()
         };
 
         let search_backdrop = if settings.search_backdrop_blur > 0 {
-            format!("backdrop-filter: blur({}px) !important;", settings.search_backdrop_blur)
+            format!(
+                "backdrop-filter: blur({}px) !important;",
+                settings.search_backdrop_blur
+            )
         } else {
             "backdrop-filter: none !important;".to_string()
         };
@@ -59,16 +88,31 @@ impl CssGenerator {
         let shortcut_border = if settings.shortcuts_border_style != "none" {
             format!(
                 "border: {}px {} {} !important;",
-                settings.shortcuts_border_width, settings.shortcuts_border_style, settings.shortcuts_border_color
+                settings.shortcuts_border_width,
+                settings.shortcuts_border_style,
+                settings.shortcuts_border_color
             )
         } else {
             "border: none !important;".to_string()
         };
 
         let shortcut_backdrop = if settings.shortcuts_backdrop_blur > 0 {
-            format!("backdrop-filter: blur({}px) !important;", settings.shortcuts_backdrop_blur)
+            format!(
+                "backdrop-filter: blur({}px) !important;",
+                settings.shortcuts_backdrop_blur
+            )
         } else {
             "backdrop-filter: none !important;".to_string()
+        };
+
+        let shortcut_columns = match settings.shortcuts_columns.as_str() {
+            "2" | "3" | "4" | "5" | "6" => format!(
+                "grid-template-columns: repeat({}, minmax(72px, 1fr)) !important;",
+                settings.shortcuts_columns
+            ),
+            _ => {
+                "grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)) !important;".to_string()
+            }
         };
 
         let bg_size = match settings.background_fit.as_str() {
@@ -139,6 +183,15 @@ impl CssGenerator {
     /* 搜索框 */
     .search-wrapper {{
         display: {search_display} !important;
+        position: fixed !important;
+        left: {search_left}% !important;
+        top: {search_top}% !important;
+        transform: translate(-50%, -50%) !important;
+        width: min(90vw, {search_width}px) !important;
+        max-width: min(90vw, {search_width}px) !important;
+        margin: 0 !important;
+        align-items: center !important;
+        z-index: 3 !important;
     }}
 
     /* 搜索框样式优化 */
@@ -146,6 +199,8 @@ impl CssGenerator {
         background: {search_background} !important;
         border-radius: {search_border_radius}px !important;
         box-shadow: 0 4px {search_shadow_blur}px {search_shadow} !important;
+        padding: {search_padding}px !important;
+        width: 100% !important;
         {search_border}
         {search_backdrop}
     }}
@@ -156,9 +211,24 @@ impl CssGenerator {
         color: {search_text_color} !important;
     }}
 
+    .top-sites {{
+        position: fixed !important;
+        left: {shortcuts_left}% !important;
+        top: {shortcuts_top}% !important;
+        transform: translate(-50%, -50%) !important;
+        width: min(92vw, 880px) !important;
+        max-width: min(92vw, 880px) !important;
+        margin: 0 !important;
+        z-index: 2 !important;
+    }}
+
     /* 快捷方式/最近访问 */
     .top-sites-list {{
         display: {shortcuts_display} !important;
+        width: 100% !important;
+        justify-content: center !important;
+        gap: {shortcuts_gap}px !important;
+        {shortcut_columns}
     }}
 
     /* 快捷方式卡片样式 */
@@ -204,7 +274,15 @@ impl CssGenerator {
             filter_css = filter_css,
             overlay_color = overlay_color,
             search_display = search_display,
+            search_left = search_left,
+            search_top = search_top,
+            search_width = settings.search_width,
+            search_padding = settings.search_padding,
             shortcuts_display = shortcuts_display,
+            shortcuts_left = shortcuts_left,
+            shortcuts_top = shortcuts_top,
+            shortcuts_gap = settings.shortcuts_gap,
+            shortcut_columns = shortcut_columns,
             search_background = search_background,
             search_border_radius = settings.search_border_radius,
             search_shadow_blur = settings.search_shadow_blur,
@@ -264,5 +342,29 @@ mod tests {
         assert!(css.contains("background: rgba(34, 68, 102, 0.70)"));
         assert!(css.contains("box-shadow: 0 8px 18px"));
         assert!(css.contains("color: #f0e0d0 !important;"));
+    }
+
+    #[test]
+    fn firefox_css_positions_search_and_shortcuts_from_settings() {
+        let mut settings = BrowserSettings::default();
+        settings.search_position.x = 58.0;
+        settings.search_position.y = 42.0;
+        settings.shortcuts_position.x = 52.0;
+        settings.shortcuts_position.y = 70.0;
+        settings.search_width = 640;
+        settings.search_padding = 6;
+        settings.shortcuts_gap = 18;
+        settings.shortcuts_columns = "4".into();
+
+        let css = CssGenerator::generate_user_content_css(&settings);
+
+        assert!(css.contains("left: 58% !important;"));
+        assert!(css.contains("top: 42% !important;"));
+        assert!(css.contains("width: min(90vw, 640px) !important;"));
+        assert!(css.contains("padding: 6px !important;"));
+        assert!(css.contains("left: 52% !important;"));
+        assert!(css.contains("top: 70% !important;"));
+        assert!(css.contains("gap: 18px !important;"));
+        assert!(css.contains("grid-template-columns: repeat(4, minmax(72px, 1fr)) !important;"));
     }
 }

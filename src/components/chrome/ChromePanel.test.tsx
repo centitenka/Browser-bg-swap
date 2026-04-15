@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { createDefaultSettings } from '../../config/defaults';
+import { createDefaultAppConfig, createDefaultSettings } from '../../config/defaults';
 import { I18nContext, createT } from '../../i18n';
 import type { ActionState } from '../../types';
 import { ChromePanel } from './ChromePanel';
@@ -12,11 +12,15 @@ const idleActionState: ActionState = {
   status: 'idle',
   message: null,
   warnings: [],
+  blocking: [],
+  targetSummary: [],
+  verification: null,
   updatedAt: null,
 };
 
 vi.mock('../../stores/configStore', () => ({
   useConfigStore: () => ({
+    config: createDefaultAppConfig(),
     chromeSettings: createDefaultSettings(),
     chromeInfo: {
       chrome_installed: true,
@@ -32,8 +36,12 @@ vi.mock('../../stores/configStore', () => ({
     updateSettings: vi.fn(),
     selectImage: vi.fn(),
     detectChrome,
+    validateChrome: vi.fn(),
     applyChrome: vi.fn(),
     removeChrome: vi.fn(),
+    chromeSnapshots: [],
+    exportChromeSnapshot: vi.fn(),
+    restoreChromeSnapshot: vi.fn(),
     exportSettings: vi.fn(),
     importSettings: vi.fn(),
     resetSettings,

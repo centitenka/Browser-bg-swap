@@ -8,7 +8,11 @@ interface ChromeSetupGuideProps {
   onCopy: (text: string, label: string) => Promise<void>;
 }
 
-export function ChromeSetupGuide({ chromeInfo, copied, onCopy }: ChromeSetupGuideProps) {
+export function ChromeSetupGuide({
+  chromeInfo,
+  copied,
+  onCopy,
+}: ChromeSetupGuideProps) {
   const t = useT();
 
   return (

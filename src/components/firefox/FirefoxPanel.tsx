@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AlertCircle, FolderOpen, RefreshCcw, Save, ShieldCheck } from 'lucide-react';
+import { AlertCircle, FileSearch, FolderOpen, RefreshCcw, Save, ShieldCheck, Trash2 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { browserCapabilities } from '../../config/capabilities';
 import { useT } from '../../i18n';
@@ -13,18 +13,21 @@ import { NtpPreview } from '../chrome/NtpPreview';
 import { ActionBar } from '../workspace/ActionBar';
 import { ActionStatusCard } from '../workspace/ActionStatusCard';
 import { BrowserWorkspace } from '../workspace/BrowserWorkspace';
+import { RecoveryCenter } from '../workspace/RecoveryCenter';
 import { SettingsPanel } from '../common/SettingsPanel';
-import { BackupManager } from './BackupManager';
 import { ProfileSelector } from './ProfileSelector';
+import { PresetsSection } from '../chrome/settings/PresetsSection';
 
 export function FirefoxPanel() {
   const t = useT();
   const { confirmState, confirm, onConfirm, onCancel } = useConfirm();
-  const { toasts, removeToast, error: showError } = useToast();
+  const { toasts, removeToast, success, error: showError } = useToast();
 
   const {
+    config,
     firefoxInfo,
     selectedProfile,
+    selectedProfileKey,
     firefoxSettings,
     prereqCheck,
     isLoading,
@@ -33,15 +36,27 @@ export function FirefoxPanel() {
     detectFirefox,
     selectProfile,
     updateSettings,
+    validateFirefox,
     checkPrerequisites,
     applyFirefox,
+    removeFirefox,
     autoFixPrerequisites,
     selectImage,
     resetSettings,
+    backups,
+    loadBackups,
+    createBackup,
+    restoreBackup,
+    deleteBackup,
+    exportDiagnostics,
   } = useConfigStore();
 
   const firefoxAction = actionState.firefox;
   const isDirty = dirtyByTab.firefox;
+  const lastAppliedAt =
+    selectedProfileKey
+      ? config.firefox.last_applied_by_profile_key[selectedProfileKey]?.applied_at ?? null
+      : null;
 
   useEffect(() => {
     detectFirefox();
@@ -50,8 +65,21 @@ export function FirefoxPanel() {
   useEffect(() => {
     if (selectedProfile) {
       checkPrerequisites();
+      loadBackups();
     }
-  }, [selectedProfile, checkPrerequisites]);
+  }, [selectedProfile, checkPrerequisites, loadBackups]);
+
+  useEffect(() => {
+    if (!selectedProfile) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void validateFirefox();
+    }, 180);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [selectedProfile, firefoxSettings, validateFirefox]);
 
   const handleApply = async () => {
     try {
@@ -89,6 +117,86 @@ export function FirefoxPanel() {
     resetSettings();
   };
 
+  const handleRemove = async () => {
+    const confirmed = await confirm({
+      title: t('firefox.removeTitle'),
+      message: t('firefox.removeMessage'),
+      confirmText: t('firefox.removeAction'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await removeFirefox();
+    } catch {
+      // Action state already carries the error.
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    try {
+      await createBackup();
+      success(t('backup.createdOk'));
+    } catch (error) {
+      showError(`${t('backup.createFailed')}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleExportDiagnostics = async () => {
+    try {
+      await exportDiagnostics('firefox');
+      success(t('diagnostics.exported'));
+    } catch {
+      showError(t('diagnostics.exportFailed'));
+    }
+  };
+
+  const handleRestoreBackup = async (backupName: string, label: string) => {
+    const confirmed = await confirm({
+      title: t('backup.restoreTitle'),
+      message: t('backup.restoreMessage', { name: label }),
+      confirmText: t('backup.restoreConfirm'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await restoreBackup(backupName);
+      success(t('backup.restoredOk'));
+    } catch (error) {
+      showError(`${t('backup.restoreFailed')}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleDeleteBackup = async (backupName: string, label: string) => {
+    const confirmed = await confirm({
+      title: t('backup.deleteTitle'),
+      message: t('backup.deleteMessage', { name: label }),
+      confirmText: t('backup.deleteConfirm'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteBackup(backupName);
+      success(t('backup.deletedOk'));
+    } catch (error) {
+      showError(`${t('backup.deleteFailed')}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
   if (!firefoxInfo) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -121,6 +229,7 @@ export function FirefoxPanel() {
   }
 
   const prereqReady = !!prereqCheck?.all_ok;
+  const hasBlocking = firefoxAction.blocking.length > 0;
   const sidebar = (
     <>
       <ActionStatusCard
@@ -149,13 +258,19 @@ export function FirefoxPanel() {
               {prereqReady ? t('firefox.prereqReady') : t('firefox.prereqNeedsSetup')}
             </span>
           </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-gray-500">{t('status.lastApplied')}</span>
+            <span className="text-right text-xs text-gray-400">
+              {lastAppliedAt ? new Date(lastAppliedAt).toLocaleString() : t('status.notApplied')}
+            </span>
+          </div>
         </div>
       </section>
 
       <NtpPreview
         settings={firefoxSettings}
         onPositionChange={() => {
-          // Firefox preview is read-only for positioning.
+          // Firefox positioning is now handled through generated CSS.
         }}
         capabilities={browserCapabilities.firefox}
         modeLabel={t('firefox.previewTitle')}
@@ -236,14 +351,43 @@ export function FirefoxPanel() {
         <p className="mt-3 leading-6">{t('firefox.supportedDesc')}</p>
       </section>
 
+      <PresetsSection browser="firefox" onChange={updateSettings} />
+
       <SettingsPanel
         settings={firefoxSettings}
         onChange={updateSettings}
-        onSelectImage={selectImage}
+        onSelectImage={() => void selectImage(firefoxSettings.background_image_mode !== 'direct')}
         capabilities={browserCapabilities.firefox}
       />
 
-      {selectedProfile && <BackupManager />}
+      {selectedProfile && (
+        <RecoveryCenter
+          title={t('recovery.title')}
+          subtitle={t('recovery.firefoxDesc')}
+          countLabel={
+            backups.length > 0
+              ? t('backup.savedCount', { count: String(backups.length) })
+              : t('backup.none')
+          }
+          emptyTitle={t('backup.emptyTitle')}
+          emptyDesc={t('backup.emptyDesc')}
+          createLabel={t('backup.create')}
+          createIconLabel={t('backup.create')}
+          showAllLabel={t('common.showAll')}
+          hideLabel={t('common.hide')}
+          restoreLabel={t('backup.restoreConfirm')}
+          deleteLabel={t('backup.deleteConfirm')}
+          entries={backups.map((backup) => ({
+            id: backup.name,
+            label: backup.label,
+            detail: backup.name,
+            badge: backup.source,
+          }))}
+          onCreate={handleCreateBackup}
+          onRestore={(entry) => handleRestoreBackup(entry.id, entry.label)}
+          onDelete={(entry) => handleDeleteBackup(entry.id, entry.label)}
+        />
+      )}
     </>
   );
 
@@ -261,6 +405,15 @@ export function FirefoxPanel() {
       }
       actions={
         <>
+          <button
+            onClick={handleExportDiagnostics}
+            className="rounded-xl border border-border-subtle/50 bg-white/5 px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/10"
+          >
+            <span className="inline-flex items-center gap-2">
+              <FileSearch size={15} />
+              {t('diagnostics.export')}
+            </span>
+          </button>
           <button
             onClick={handleReset}
             className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-200 transition-colors hover:bg-red-500/20"
@@ -281,8 +434,18 @@ export function FirefoxPanel() {
             </span>
           </button>
           <button
+            onClick={handleRemove}
+            disabled={!selectedProfile || isLoading}
+            className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-200 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Trash2 size={15} />
+              {t('firefox.removeAction')}
+            </span>
+          </button>
+          <button
             onClick={handleApply}
-            disabled={isLoading || !prereqReady}
+            disabled={isLoading || !prereqReady || hasBlocking}
             className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             <span className="inline-flex items-center gap-2">

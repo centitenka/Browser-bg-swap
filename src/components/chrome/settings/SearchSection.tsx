@@ -43,9 +43,25 @@ export function SearchSection({
               value={settings.search_engine}
               options={searchEngines}
               onChange={(value) => onChange({ search_engine: value })}
-              columns="grid grid-cols-2 lg:grid-cols-4 gap-1.5"
+              columns="grid grid-cols-2 lg:grid-cols-5 gap-1.5"
             />
           </div>
+
+          {settings.search_engine === 'custom' && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/8 p-4">
+              <label className="mb-2 block text-xs text-amber-100">{t('settings.searchUrlTemplate')}</label>
+              <input
+                type="text"
+                value={settings.search_url_template}
+                onChange={(e) => onChange({ search_url_template: e.target.value })}
+                placeholder={t('settings.searchUrlTemplatePlaceholder')}
+                className="w-full rounded-lg border border-border-subtle/50 bg-sidebar/50 px-3 py-2 text-xs font-mono text-gray-200"
+              />
+              <p className="mt-2 text-[11px] leading-5 text-amber-100/80">
+                {t('settings.searchUrlTemplateHint')}
+              </p>
+            </div>
+          )}
 
           <AdvancedToggle sectionKey="search" expanded={expanded} onToggle={onToggle} />
           {expanded && (

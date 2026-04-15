@@ -151,12 +151,10 @@ export function BackupManager() {
                       <span className="text-sm text-gray-300 font-mono truncate">
                         {backup.label}
                       </span>
-                      {backup.is_auto && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-200">
-                          <BadgeCheck size={10} />
-                          Auto
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-200">
+                        <BadgeCheck size={10} />
+                        {backup.source}
+                      </span>
                     </div>
                     <p className="text-[11px] text-gray-500 truncate">{backup.name}</p>
                   </div>

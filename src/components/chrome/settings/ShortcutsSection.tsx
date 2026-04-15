@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { GripVertical, Plus, Trash2 } from 'lucide-react';
+import { GripVertical, Import, Plus, Trash2 } from 'lucide-react';
 import { useT } from '../../../i18n';
 import type { BrowserSettings, Shortcut } from '../../../types';
+import { useConfigStore } from '../../../stores/configStore';
 import { getBorderStyleOptions, getColumnsOptions, getShapeOptions } from './Options';
 import {
   AdvancedToggle,
@@ -18,6 +19,59 @@ interface ShortcutsSectionProps {
   onChange: (settings: Partial<BrowserSettings>) => void;
 }
 
+function inferTitleFromUrl(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./i, '');
+    return hostname.split('.')[0] || hostname;
+  } catch {
+    return 'Shortcut';
+  }
+}
+
+function parseShortcutLines(raw: string): Shortcut[] {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => ({
+          title: String(item.title ?? '').trim(),
+          url: String(item.url ?? '').trim(),
+          icon: String(item.icon ?? '\uD83D\uDD17').trim() || '\uD83D\uDD17',
+        }))
+        .filter((item) => item.title && item.url);
+    }
+  } catch {
+    // Fallback to line parsing.
+  }
+
+  return trimmed
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split('|').map((part) => part.trim());
+      if (parts.length >= 2) {
+        return {
+          title: parts[0] || inferTitleFromUrl(parts[1]),
+          url: parts[1],
+          icon: parts[2] || '\uD83D\uDD17',
+        };
+      }
+
+      return {
+        title: inferTitleFromUrl(parts[0]),
+        url: parts[0],
+        icon: '\uD83D\uDD17',
+      };
+    })
+    .filter((item) => item.title && item.url);
+}
+
 export function ShortcutsSection({
   settings,
   expanded,
@@ -29,6 +83,13 @@ export function ShortcutsSection({
   const columnsOptions = getColumnsOptions(t);
   const shapeOptions = getShapeOptions(t);
   const [editingShortcut, setEditingShortcut] = useState<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [showBatchImport, setShowBatchImport] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const importBrowserShortcuts = useConfigStore((s) => s.importBrowserShortcuts);
+
+  const isValidUrl = (value: string) => /^https?:\/\//i.test(value.trim());
 
   const updateShortcut = (index: number, field: keyof Shortcut, value: string) => {
     const updated = [...settings.shortcuts];
@@ -48,6 +109,62 @@ export function ShortcutsSection({
     setEditingShortcut(null);
   };
 
+  const moveShortcut = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || toIndex < 0 || toIndex >= settings.shortcuts.length) {
+      return;
+    }
+
+    const updated = [...settings.shortcuts];
+    const [item] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, item);
+    onChange({ shortcuts: updated });
+  };
+
+  const importShortcuts = (mode: 'append' | 'replace') => {
+    const imported = parseShortcutLines(importText).filter((shortcut) => isValidUrl(shortcut.url));
+    if (imported.length === 0) {
+      setImportFeedback(t('settings.shortcutsImportEmpty'));
+      return;
+    }
+
+    const shortcuts =
+      mode === 'replace'
+        ? imported.slice(0, 8)
+        : [...settings.shortcuts, ...imported].slice(0, 8);
+
+    onChange({ shortcuts });
+    setImportText('');
+    setShowBatchImport(false);
+    setImportFeedback(t('settings.shortcutsImportApplied', { count: String(imported.length) }));
+  };
+
+  const importBookmarks = async (browser: 'chrome' | 'edge', mode: 'append' | 'replace') => {
+    try {
+      const imported = (await importBrowserShortcuts(browser)).filter((shortcut) => isValidUrl(shortcut.url));
+      if (imported.length === 0) {
+        setImportFeedback(t('settings.shortcutsImportEmpty'));
+        return;
+      }
+
+      const shortcuts =
+        mode === 'replace'
+          ? imported.slice(0, 8)
+          : [...settings.shortcuts, ...imported].slice(0, 8);
+
+      onChange({ shortcuts });
+      setImportFeedback(
+        t(
+          browser === 'chrome'
+            ? 'settings.shortcutsImportedChrome'
+            : 'settings.shortcutsImportedEdge',
+          { count: String(imported.length) }
+        )
+      );
+    } catch (error) {
+      setImportFeedback(error instanceof Error ? error.message : String(error));
+    }
+  };
+
   return (
     <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
@@ -62,10 +179,74 @@ export function ShortcutsSection({
       {settings.show_shortcuts && (
         <div className="space-y-3">
           <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-gray-500">{t('settings.shortcutsImportHint')}</p>
+              <button
+                onClick={() => setShowBatchImport((value) => !value)}
+                className="inline-flex items-center gap-1 rounded-lg border border-border-subtle/50 bg-white/5 px-2.5 py-1.5 text-xs text-gray-300 transition-colors hover:bg-white/10"
+              >
+                <Import size={12} />
+                {t('settings.importShortcuts')}
+              </button>
+            </div>
+
+            {showBatchImport && (
+              <div className="rounded-xl border border-border-subtle/40 bg-sidebar/40 p-3">
+                <textarea
+                  value={importText}
+                  onChange={(event) => setImportText(event.target.value)}
+                  placeholder={t('settings.shortcutsImportPlaceholder')}
+                  className="min-h-28 w-full rounded-lg border border-border-subtle/50 bg-sidebar/60 px-3 py-2 text-xs font-mono text-gray-200"
+                />
+                <p className="mt-2 text-[11px] leading-5 text-gray-500">
+                  {t('settings.shortcutsImportFormat')}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => importShortcuts('append')}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary/80"
+                  >
+                    {t('settings.shortcutsImportAppend')}
+                  </button>
+                  <button
+                    onClick={() => importShortcuts('replace')}
+                    className="rounded-lg border border-border-subtle/50 bg-white/5 px-3 py-1.5 text-xs text-gray-200 transition-colors hover:bg-white/10"
+                  >
+                    {t('settings.shortcutsImportReplace')}
+                  </button>
+                  <button
+                    onClick={() => void importBookmarks('chrome', 'append')}
+                    className="rounded-lg border border-border-subtle/50 bg-white/5 px-3 py-1.5 text-xs text-gray-200 transition-colors hover:bg-white/10"
+                  >
+                    {t('settings.shortcutsImportChrome')}
+                  </button>
+                  <button
+                    onClick={() => void importBookmarks('edge', 'append')}
+                    className="rounded-lg border border-border-subtle/50 bg-white/5 px-3 py-1.5 text-xs text-gray-200 transition-colors hover:bg-white/10"
+                  >
+                    {t('settings.shortcutsImportEdge')}
+                  </button>
+                </div>
+                {importFeedback && (
+                  <p className="mt-3 text-[11px] text-gray-400">{importFeedback}</p>
+                )}
+              </div>
+            )}
+
             {settings.shortcuts.map((shortcut, index) => (
               <div
                 key={`${shortcut.title}-${index}`}
                 className="group flex flex-wrap items-center gap-2 rounded-lg border border-border-subtle/30 bg-sidebar/50 p-2"
+                draggable
+                onDragStart={() => setDragIndex(index)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => {
+                  if (dragIndex !== null) {
+                    moveShortcut(dragIndex, index);
+                    setDragIndex(null);
+                  }
+                }}
+                onDragEnd={() => setDragIndex(null)}
               >
                 <GripVertical size={14} className="text-gray-600 shrink-0" />
                 {editingShortcut === index ? (
@@ -94,6 +275,9 @@ export function ShortcutsSection({
                     >
                       {t('common.done')}
                     </button>
+                    {!isValidUrl(shortcut.url) && (
+                      <p className="basis-full text-[11px] text-red-300">{t('shortcut.invalidUrl')}</p>
+                    )}
                   </>
                 ) : (
                   <>
@@ -114,6 +298,9 @@ export function ShortcutsSection({
                     >
                       <Trash2 size={12} />
                     </button>
+                    {!isValidUrl(shortcut.url) && (
+                      <p className="basis-full text-[11px] text-red-300">{t('shortcut.invalidUrl')}</p>
+                    )}
                   </>
                 )}
               </div>

@@ -47,6 +47,19 @@ function getTone(status: ActionState['status'], t: ReturnType<typeof useT>) {
   }
 }
 
+function getNextActionLabel(t: ReturnType<typeof useT>, nextAction: string | null | undefined) {
+  switch (nextAction) {
+    case 'restart_firefox':
+      return t('action.next.restartFirefox');
+    case 'reload_extension':
+      return t('action.next.reloadExtension');
+    case 'load_extension':
+      return t('action.next.loadExtension');
+    default:
+      return nextAction;
+  }
+}
+
 export function ActionStatusCard({
   title,
   subtitle,
@@ -75,11 +88,49 @@ export function ActionStatusCard({
 
       <p className="mt-3 text-sm leading-6 text-gray-300">{description}</p>
 
+      {actionState.targetSummary.length > 0 && (
+        <div className="mt-4 rounded-xl border border-border-subtle/30 bg-white/5 p-3 text-sm text-gray-300">
+          {actionState.targetSummary.map((line) => (
+            <p key={line} className="leading-6">
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {actionState.blocking.length > 0 && (
+        <div className="mt-4 space-y-2 rounded-xl border border-red-500/20 bg-red-500/8 p-3 text-sm text-red-100">
+          {actionState.blocking.map((warning) => (
+            <p key={`${warning.code}-${warning.message}`}>{formatWarningMessage(t, warning)}</p>
+          ))}
+        </div>
+      )}
+
       {actionState.warnings.length > 0 && (
         <div className="mt-4 space-y-2 rounded-xl border border-yellow-500/20 bg-yellow-500/8 p-3 text-sm text-yellow-100">
           {actionState.warnings.map((warning) => (
             <p key={`${warning.code}-${warning.message}`}>{formatWarningMessage(t, warning)}</p>
           ))}
+        </div>
+      )}
+
+      {actionState.verification && (
+        <div className="mt-4 rounded-xl border border-green-500/20 bg-green-500/8 p-3 text-sm text-green-100">
+          <p>
+            {actionState.verification.verified
+              ? t('action.verificationPassed')
+              : t('action.verificationFailed')}
+          </p>
+          {actionState.verification.next_action && (
+            <p className="mt-1 text-green-100/80">
+              {getNextActionLabel(t, actionState.verification.next_action)}
+            </p>
+          )}
+          <p className="mt-1 text-green-100/80">
+            {t('action.generatedFiles', {
+              count: String(actionState.verification.generated_files.length),
+            })}
+          </p>
         </div>
       )}
     </section>

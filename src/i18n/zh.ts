@@ -30,6 +30,8 @@ const zh: Record<LocaleKeys, string> = {
   'common.close': '\u5173\u95ED',
   'common.open': '\u6253\u5F00',
   'common.previewOnly': '\u4EC5\u9884\u89C8',
+  'status.lastApplied': '\u4E0A\u6B21\u5E94\u7528',
+  'status.notApplied': '\u5C1A\u672A\u5E94\u7528',
 
   // Image Picker
   'image.upload': '\u70B9\u51FB\u4E0A\u4F20\u6216\u62D6\u62FD\u56FE\u7247',
@@ -43,6 +45,15 @@ const zh: Record<LocaleKeys, string> = {
   'image.croppedSaved': '\u88C1\u526A\u540E\u7684\u56FE\u7247\u5DF2\u4FDD\u5B58\u5E76\u9009\u4E2D\u3002',
   'image.cropSaveFailed': '\u4FDD\u5B58\u88C1\u526A\u56FE\u7247\u5931\u8D25\u3002',
   'image.dropReplace': '\u91CA\u653E\u56FE\u7247\u4EE5\u66FF\u6362\u5F53\u524D\u80CC\u666F\u3002',
+  'image.missingFile': '\u5F53\u524D\u9009\u4E2D\u7684\u56FE\u7247\u6587\u4EF6\u5DF2\u4E0D\u5B58\u5728\u3002',
+  'image.recent': '\u6700\u8FD1\u4F7F\u7528\u7684\u56FE\u7247',
+  'image.favorites': '\u6536\u85CF\u56FE\u7247',
+  'image.favorite': '\u6536\u85CF',
+  'image.unfavorite': '\u53D6\u6D88\u6536\u85CF',
+  'image.library': '\u7D20\u6750\u5E93',
+  'image.libraryHint': '\u5E94\u7528\u5DF2\u4FDD\u5B58\u7684\u53D7\u7BA1\u56FE\u7247\u548C\u88C1\u526A\u56FE\u7247',
+  'image.libraryManaged': '\u53D7\u7BA1',
+  'image.libraryCropped': '\u88C1\u526A',
 
   // Image Cropper
   'cropper.apply': '\u5E94\u7528\u88C1\u526A',
@@ -96,6 +107,19 @@ const zh: Record<LocaleKeys, string> = {
   'chrome.openExtensionsFailed': '\u65E0\u6CD5\u6253\u5F00\u6D4F\u89C8\u5668\u6269\u5C55\u9875\u3002',
   'chrome.appliedFirstInstall': '\u6269\u5C55 bundle \u5DF2\u751F\u6210\u3002\u8BF7\u5148\u5728 Chrome \u6216 Edge \u4E2D\u624B\u52A8\u52A0\u8F7D\u4E00\u6B21\u3002',
   'chrome.appliedUpdate': '\u6269\u5C55 bundle \u5DF2\u66F4\u65B0\u3002\u8BF7\u91CD\u8F7D\u6269\u5C55\u6216\u5237\u65B0\u65B0\u6807\u7B7E\u9875\u3002',
+  'chrome.snapshotTitle': 'Bundle \u5FEB\u7167',
+  'chrome.snapshotDesc': '\u4E3A\u751F\u6210\u7684\u6269\u5C55 bundle \u4FDD\u5B58\u4E00\u4E2A\u6062\u590D\u70B9\uff0C\u9700\u8981\u65F6\u53EF\u4EE5\u56DE\u6EDA\u3002',
+  'chrome.snapshotExport': '\u5BFC\u51FA\u5FEB\u7167',
+  'chrome.snapshotRestore': '\u6062\u590D\u5FEB\u7167',
+  'chrome.snapshotExported': '\u5DF2\u5BFC\u51FA\u5FEB\u7167\uFF1A{name}',
+  'chrome.snapshotExportFailed': '\u5BFC\u51FA\u5FEB\u7167\u5931\u8D25\u3002',
+  'chrome.snapshotRestored': '\u5FEB\u7167\u5DF2\u6062\u590D\u3002',
+  'chrome.snapshotRestoreFailed': '\u6062\u590D\u5FEB\u7167\u5931\u8D25\u3002',
+  'chrome.snapshotRestoreTitle': '\u6062\u590D bundle \u5FEB\u7167',
+  'chrome.snapshotRestoreMessage': '\u786E\u5B9A\u8981\u5C06\u201C{name}\u201D\u6062\u590D\u5230\u672C\u5730 extension bundle \u76EE\u5F55\u5417\uFF1F',
+  'chrome.snapshotEmptyTitle': '\u6682\u65E0\u5FEB\u7167',
+  'chrome.snapshotEmptyDesc': '\u5EFA\u8BAE\u5728\u8F83\u5927\u7684\u53D8\u66F4\u4E4B\u524D\u5148\u5BFC\u51FA\u4E00\u4E2A bundle \u5FEB\u7167\uff0C\u65B9\u4FBF\u540E\u7EED\u56DE\u6EDA\u3002',
+  'chrome.snapshotBadge': '\u5FEB\u7167',
 
   // Setup guide
   'setup.title': '\u9996\u6B21\u8BBE\u7F6E\u6307\u5357',
@@ -131,7 +155,7 @@ const zh: Record<LocaleKeys, string> = {
   'firefox.restartTipTitle': '\u9700\u8981\u91CD\u542F\uFF1A',
   'firefox.restartTipText': '\u8BF7\u5173\u95ED\u6240\u6709 Firefox \u7A97\u53E3\u548C\u540E\u53F0\u8FDB\u7A0B\uFF0C\u7136\u540E\u518D\u91CD\u65B0\u6253\u5F00\u6D4F\u89C8\u5668\u3002',
   'firefox.supportedTitle': 'Firefox \u529F\u80FD\u8FB9\u754C',
-  'firefox.supportedDesc': 'Firefox \u73B0\u5728\u652F\u6301\u80CC\u666F\u56FE\u6216\u80CC\u666F\u8272\u3001\u9002\u5E94\u65B9\u5F0F\u3001\u6A21\u7CCA\u3001\u4EAE\u5EA6\u3001\u906E\u7F69\uff0c\u4EE5\u53CA\u641C\u7D22\u6846\u6837\u5F0F\u3001\u5FEB\u6377\u65B9\u5F0F\u5361\u7247\u6837\u5F0F\u548C\u663E\u9690\u63A7\u5236\u3002\u65F6\u949F\u3001\u81EA\u5B9A\u4E49\u5FEB\u6377\u65B9\u5F0F\u6570\u636E\u548C Chrome \u4E13\u5C5E\u7684\u9AD8\u7EA7\u5E03\u5C40\u80FD\u529B\u4ECD\u4E0D\u4F1A\u5728\u8FD9\u91CC\u66B4\u9732\u3002',
+  'firefox.supportedDesc': 'Firefox \u73B0\u5728\u652F\u6301\u80CC\u666F\u56FE\u6216\u80CC\u666F\u8272\u3001\u9002\u5E94\u65B9\u5F0F\u3001\u6A21\u7CCA\u3001\u4EAE\u5EA6\u3001\u906E\u7F69\uff0c\u4EE5\u53CA\u641C\u7D22\u6846\u548C\u5FEB\u6377\u65B9\u5F0F\u7684\u6837\u5F0F\u3001\u663E\u9690\u4E0E\u5B9E\u9A8C\u6027\u62D6\u62FD\u5B9A\u4F4D\u3002\u65F6\u949F\u3001\u81EA\u5B9A\u4E49\u5FEB\u6377\u65B9\u5F0F\u6570\u636E\u548C Chrome \u4E13\u5C5E\u7684\u5B8C\u6574\u5E03\u5C40\u80FD\u529B\u4ECD\u4E0D\u4F1A\u5728\u8FD9\u91CC\u66B4\u9732\u3002',
   'firefox.resetTitle': '\u91CD\u7F6E Firefox \u5DE5\u4F5C\u533A',
   'firefox.resetMessage': '\u8981\u5C06 Firefox \u76F8\u5173\u8BBE\u7F6E\u6062\u590D\u4E3A\u9ED8\u8BA4\u503C\u5417\uFF1F',
   'firefox.workspaceTitle': 'Firefox \u5DE5\u4F5C\u533A',
@@ -153,10 +177,13 @@ const zh: Record<LocaleKeys, string> = {
   'firefox.actionsDirty': '\u201C\u4FDD\u5B58\u5E76\u5E94\u7528\u201D\u4F1A\u5C06 CSS \u5199\u5165\u9009\u4E2D\u7684 Firefox profile\uff0c\u5E76\u5148\u521B\u5EFA\u4E00\u4E2A\u6062\u590D\u70B9\u3002',
   'firefox.actionsSynced': '\u5F53\u524D profile \u5DF2\u540C\u6B65\u3002\u4ECD\u53EF\u4EE5\u6253\u5F00 profile \u76EE\u5F55\u6216\u6062\u590D\u5907\u4EFD\u3002',
   'firefox.saveAndApply': '\u4FDD\u5B58\u5E76\u5E94\u7528',
+  'firefox.removeTitle': '\u79FB\u9664 Firefox CSS',
+  'firefox.removeMessage': '\u8981\u4ECE\u5F53\u524D\u9009\u4E2D\u7684 profile \u4E2D\u79FB\u9664\u751F\u6210\u7684 Firefox CSS \u5417\uFF1F\u5982\u679C\u53EF\u4EE5\uff0C\u7CFB\u7EDF\u4F1A\u5148\u521B\u5EFA\u4E00\u4E2A\u6062\u590D\u70B9\u3002',
+  'firefox.removeAction': '\u79FB\u9664 CSS',
   'firefox.searchStyleTitle': '\u641C\u7D22\u6846\u6837\u5F0F',
-  'firefox.searchStyleDesc': '\u8FD9\u4E9B\u8BBE\u7F6E\u53EA\u4F1A\u5F71\u54CD Firefox \u65B0\u6807\u7B7E\u5185\u7F6E\u641C\u7D22\u533A\u57DF\u7684\u5916\u89C2\uff0c\u4E0D\u4F1A\u6539\u53D8\u5176\u4F4D\u7F6E\u6216\u641C\u7D22\u63D0\u4F9B\u65B9\u3002',
+  'firefox.searchStyleDesc': '\u8FD9\u4E9B\u8BBE\u7F6E\u4F1A\u5F71\u54CD Firefox \u65B0\u6807\u7B7E\u5185\u7F6E\u641C\u7D22\u533A\u57DF\u7684\u5916\u89C2\uff0c\u5E76\u53EF\u901A\u8FC7\u9884\u89C8\u62D6\u62FD\u5B9E\u9A8C\u6027\u5730\u8C03\u6574\u6574\u4F53\u4F4D\u7F6E\uff0C\u4F46\u4E0D\u4F1A\u6539\u53D8\u641C\u7D22\u63D0\u4F9B\u65B9\u3002',
   'firefox.shortcutsStyleTitle': '\u5FEB\u6377\u65B9\u5F0F\u6837\u5F0F',
-  'firefox.shortcutsStyleDesc': '\u8FD9\u4E9B\u8BBE\u7F6E\u53EA\u4F1A\u7F8E\u5316 Firefox \u5FEB\u6377\u65B9\u5F0F\u5361\u7247\uff0c\u4E0D\u4F1A\u66FF\u6362 Firefox \u81EA\u5E26\u7684\u5FEB\u6377\u65B9\u5F0F\u6570\u636E\u3002',
+  'firefox.shortcutsStyleDesc': '\u8FD9\u4E9B\u8BBE\u7F6E\u4F1A\u7F8E\u5316 Firefox \u5FEB\u6377\u65B9\u5F0F\u5361\u7247\uff0c\u5E76\u53EF\u901A\u8FC7\u9884\u89C8\u62D6\u62FD\u5B9E\u9A8C\u6027\u5730\u8C03\u6574\u533A\u5757\u4F4D\u7F6E\uff0C\u4F46\u4E0D\u4F1A\u66FF\u6362 Firefox \u81EA\u5E26\u7684\u5FEB\u6377\u65B9\u5F0F\u6570\u636E\u3002',
 
   // Firefox profile
   'profile.noneTitle': '\u672A\u627E\u5230 Firefox \u914D\u7F6E\u6587\u4EF6',
@@ -185,6 +212,9 @@ const zh: Record<LocaleKeys, string> = {
   'backup.deleteFailed': '\u5220\u9664\u5907\u4EFD\u5931\u8D25',
   'backup.emptyTitle': '\u6682\u65E0\u5907\u4EFD',
   'backup.emptyDesc': '\u5EFA\u8BAE\u5728\u505A\u5927\u91CF\u8C03\u6574\u4E4B\u524D\u5148\u521B\u5EFA\u4E00\u4E2A\u5907\u4EFD\u3002',
+  'recovery.title': '\u6062\u590D\u4E2D\u5FC3',
+  'recovery.firefoxDesc': '\u5728\u8F83\u9AD8\u98CE\u9669\u7684\u66F4\u6539\u524D\u521B\u5EFA restore point\uff0c\u5FC5\u8981\u65F6\u53EF\u4EE5\u56DE\u6EDA\u5F53\u524D Firefox profile\u3002',
+  'recovery.chromeDesc': '\u4FDD\u5B58\u5DF2\u751F\u6210\u7684 extension bundle \u5FEB\u7167\uff0C\u5FC5\u8981\u65F6\u53EF\u4EE5\u6062\u590D\u67D0\u4E2A\u65E7\u7248 bundle\u3002',
 
   // Preview
   'preview.dragHint': '\u62D6\u62FD\u5143\u7D20\u8C03\u6574\u4F4D\u7F6E',
@@ -193,9 +223,16 @@ const zh: Record<LocaleKeys, string> = {
 
   // Settings sections
   'settings.presets': '\u9884\u8BBE\u6A21\u677F',
+  'settings.presetsDesc': '\u5FEB\u901F\u5957\u7528\u5185\u7F6E\u5E03\u5C40\uff0C\u6216\u5C06\u5F53\u524D\u5DE5\u4F5C\u533A\u4FDD\u5B58\u4E3A\u6309\u6D4F\u89C8\u5668\u533A\u5206\u7684 preset\u3002',
+  'settings.presetProjectionHint': 'Firefox \u4F1A\u81EA\u52A8\u964D\u7EA7',
+  'settings.presetProjected': '\u90E8\u5206\u5E94\u7528',
   'settings.savePreset': '\u4FDD\u5B58\u5F53\u524D\u4E3A\u9884\u8BBE',
+  'settings.deletePresetTitle': '\u5220\u9664\u9884\u8BBE',
+  'settings.deletePresetMessage': '\u786E\u5B9A\u5220\u9664\u9884\u8BBE\u201C{name}\u201D\u5417\uFF1F',
   'settings.presetName': '\u9884\u8BBE\u540D\u79F0...',
   'settings.background': '\u80CC\u666F',
+  'settings.managedImageMode': '\u53D7\u7BA1\u80CC\u666F\u5B58\u50A8',
+  'settings.managedImageModeDesc': '\u5F00\u542F\u540E\u4F1A\u5C06\u56FE\u7247\u590D\u5236\u5230\u5E94\u7528\u6570\u636E\u76EE\u5F55\u4EE5\u63D0\u9AD8\u7A33\u5B9A\u6027\uFF1B\u5173\u95ED\u5219\u76F4\u63A5\u4F7F\u7528\u539F\u59CB\u6587\u4EF6\u8DEF\u5F84\u3002',
   'settings.displayOptions': '\u663E\u793A\u9009\u9879',
   'settings.overlayDarkness': '\u906E\u7F69\u6DF1\u5EA6',
   'settings.overlayColor': '\u906E\u7F69\u989C\u8272',
@@ -221,6 +258,9 @@ const zh: Record<LocaleKeys, string> = {
   'settings.letterSpacing': '\u5B57\u95F4\u8DDD',
   'settings.search': '\u641C\u7D22\u6846',
   'settings.searchEngine': '\u641C\u7D22\u5F15\u64CE',
+  'settings.searchUrlTemplate': '\u641C\u7D22 URL \u6A21\u677F',
+  'settings.searchUrlTemplatePlaceholder': 'https://example.com/search?q={query}',
+  'settings.searchUrlTemplateHint': '\u8BF7\u4F7F\u7528 {query} \u4F5C\u4E3A\u7528\u6237\u8F93\u5165\u5173\u952E\u8BCD\u7684\u5360\u4F4D\u7B26\u3002',
   'settings.opacity': '\u900F\u660E\u5EA6',
   'settings.borderRadius': '\u5706\u89D2',
   'settings.placeholder': '\u5360\u4F4D\u6587\u5B57',
@@ -233,6 +273,18 @@ const zh: Record<LocaleKeys, string> = {
   'settings.padding': '\u5185\u8FB9\u8DDD',
   'settings.shortcuts': '\u5FEB\u6377\u65B9\u5F0F',
   'settings.addShortcut': '\u6DFB\u52A0\u5FEB\u6377\u65B9\u5F0F',
+  'settings.importShortcuts': '\u6279\u91CF\u5BFC\u5165',
+  'settings.shortcutsImportHint': '\u53EF\u4EE5\u4E00\u6B21\u7C98\u8D34 JSON \u6216\u591A\u884C\u6587\u672C\u6279\u91CF\u5BFC\u5165\u5FEB\u6377\u65B9\u5F0F\u3002',
+  'settings.shortcutsImportPlaceholder': '[{"title":"GitHub","url":"https://github.com","icon":"💻"}]',
+  'settings.shortcutsImportFormat': '\u652F\u6301 JSON \u6570\u7EC4\uff0c\u6216\u6309 Title | URL | Icon \u7684\u6BCF\u884C\u683C\u5F0F\u3002\u5982\u679C\u53EA\u586B URL\uff0C\u4F1A\u81EA\u52A8\u63A8\u65AD\u6807\u9898\u3002',
+  'settings.shortcutsImportAppend': '\u8FFD\u52A0\u5BFC\u5165',
+  'settings.shortcutsImportReplace': '\u5168\u90E8\u66FF\u6362',
+  'settings.shortcutsImportChrome': '\u5BFC\u5165 Chrome \u4E66\u7B7E',
+  'settings.shortcutsImportEdge': '\u5BFC\u5165 Edge \u4E66\u7B7E',
+  'settings.shortcutsImportEmpty': '\u6CA1\u6709\u53EF\u7528\u7684\u5FEB\u6377\u65B9\u5F0F\u6570\u636E\u3002',
+  'settings.shortcutsImportApplied': '\u5DF2\u5BFC\u5165 {count} \u6761\u5FEB\u6377\u65B9\u5F0F\u3002',
+  'settings.shortcutsImportedChrome': '\u5DF2\u5BFC\u5165 {count} \u6761 Chrome \u4E66\u7B7E\u3002',
+  'settings.shortcutsImportedEdge': '\u5DF2\u5BFC\u5165 {count} \u6761 Edge \u4E66\u7B7E\u3002',
   'settings.columns': '\u5217\u6570',
   'settings.gap': '\u95F4\u8DDD',
   'settings.shape': '\u5F62\u72B6',
@@ -248,6 +300,7 @@ const zh: Record<LocaleKeys, string> = {
   'shortcut.defaultTitle': '\u65B0\u5FEB\u6377\u65B9\u5F0F',
   'shortcut.titlePlaceholder': '\u540D\u79F0',
   'shortcut.urlPlaceholder': 'https://...',
+  'shortcut.invalidUrl': '\u8BF7\u4F7F\u7528\u5B8C\u6574\u7684 http:// \u6216 https:// \u5730\u5740\u3002',
 
   // Action state
   'action.workspaceState': '\u5DE5\u4F5C\u533A\u72B6\u6001',
@@ -257,6 +310,12 @@ const zh: Record<LocaleKeys, string> = {
   'action.needsAttention': '\u9700\u8981\u5904\u7406',
   'action.pendingChanges': '\u6709\u5F85\u5E94\u7528\u7684\u66F4\u6539',
   'action.dirtyDescription': '\u8FD9\u4E2A\u6D4F\u89C8\u5668\u5DE5\u4F5C\u533A\u8FD8\u6709\u672A\u5E94\u7528\u7684\u66F4\u6539\u3002',
+  'action.verificationPassed': '\u6821\u9A8C\u901A\u8FC7\u3002',
+  'action.verificationFailed': '\u6821\u9A8C\u5931\u8D25\u3002',
+  'action.generatedFiles': '\u5DF2\u68C0\u67E5 {count} \u4E2A\u751F\u6210\u6587\u4EF6\u3002',
+  'action.next.restartFirefox': '\u4E0B\u4E00\u6B65\uFF1A\u5B8C\u5168\u91CD\u542F Firefox\u3002',
+  'action.next.reloadExtension': '\u4E0B\u4E00\u6B65\uFF1A\u91CD\u8F7D\u5DF2\u5B89\u88C5\u7684\u6269\u5C55\u6216\u5237\u65B0\u4E00\u4E2A\u65B0\u6807\u7B7E\u9875\u3002',
+  'action.next.loadExtension': '\u4E0B\u4E00\u6B65\uFF1A\u5728 Chrome \u6216 Edge \u4E2D\u9996\u6B21\u52A0\u8F7D bundle\u3002',
 
   // Warning / status labels
   'warning.firefoxRestartRequired': '\u5199\u5165 CSS \u6216\u4FEE\u590D\u524D\u7F6E\u540E\uff0C\u9700\u8981\u5B8C\u5168\u91CD\u542F Firefox\u3002',
@@ -276,6 +335,11 @@ const zh: Record<LocaleKeys, string> = {
   'warning.field.customCss': '\u81EA\u5B9A\u4E49 CSS',
   'warning.field.unsupportedSettings': '\u4E0D\u652F\u6301\u7684\u8BBE\u7F6E',
 
+  // Diagnostics
+  'diagnostics.export': '\u5BFC\u51FA\u8BCA\u65AD\u5305',
+  'diagnostics.exported': '\u8BCA\u65AD\u5305\u5DF2\u5BFC\u51FA\u3002',
+  'diagnostics.exportFailed': '\u5BFC\u51FA\u8BCA\u65AD\u5305\u5931\u8D25\u3002',
+
   // Option labels
   'option.fit.cover': '\u8986\u76D6',
   'option.fit.contain': '\u5305\u542B',
@@ -285,6 +349,7 @@ const zh: Record<LocaleKeys, string> = {
   'option.search.bing': 'Bing',
   'option.search.baidu': '\u767E\u5EA6',
   'option.search.duckduckgo': 'DuckDuckGo',
+  'option.search.custom': '\u81EA\u5B9A\u4E49',
   'option.weight.light': '\u7EC6',
   'option.weight.normal': '\u5E38\u89C4',
   'option.weight.bold': '\u7C97\u4F53',

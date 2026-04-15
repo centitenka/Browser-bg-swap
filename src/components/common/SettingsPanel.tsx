@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useT } from '../../i18n';
 import type { BrowserCapabilities } from '../../config/capabilities';
 import type { BrowserSettings } from '../../types';
+import { useConfigStore } from '../../stores/configStore';
 import { ImagePicker } from './ImagePicker';
 import { Switch } from './Switch';
-import { AdvancedToggle, ColorField, OptionButtons, RangeField } from '../chrome/settings/Shared';
+import {
+  AdvancedToggle,
+  ColorField,
+  OptionButtons,
+  RangeField,
+  ToggleSwitch,
+} from '../chrome/settings/Shared';
 import { getBorderStyleOptions } from '../chrome/settings/Options';
 
 interface SettingsPanelProps {
@@ -21,11 +28,22 @@ export function SettingsPanel({
   capabilities,
 }: SettingsPanelProps) {
   const t = useT();
+  const recentImages = useConfigStore((s) => s.config.recent_background_images);
+  const favoriteImages = useConfigStore((s) => s.config.favorite_background_images);
+  const managedImages = useConfigStore((s) => s.managedImages);
+  const prepareDroppedImage = useConfigStore((s) => s.prepareDroppedImage);
+  const loadManagedImages = useConfigStore((s) => s.loadManagedImages);
+  const recordRecentImage = useConfigStore((s) => s.recordRecentImage);
+  const toggleFavoriteImage = useConfigStore((s) => s.toggleFavoriteImage);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     search: true,
     shortcuts: true,
   });
   const borderStyleOptions = getBorderStyleOptions(t);
+  useEffect(() => {
+    void loadManagedImages();
+  }, [loadManagedImages]);
+
   const toggleSection = (key: string) => {
     setExpandedSections((previous) => ({ ...previous, [key]: !previous[key] }));
   };
@@ -44,11 +62,33 @@ export function SettingsPanel({
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
           {t('settings.background')}
         </h3>
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-border-subtle/30 bg-sidebar/30 px-3 py-2">
+          <div>
+            <p className="text-xs text-gray-300">{t('settings.managedImageMode')}</p>
+            <p className="text-[11px] text-gray-500">{t('settings.managedImageModeDesc')}</p>
+          </div>
+          <ToggleSwitch
+            checked={settings.background_image_mode !== 'direct'}
+            onChange={(checked) =>
+              onChange({ background_image_mode: checked ? 'managed' : 'direct' })
+            }
+          />
+        </div>
         <ImagePicker
           path={settings.background_image}
           onSelect={onSelectImage}
           onClear={() => onChange({ background_image: null })}
-          onDropPath={(path) => onChange({ background_image: path })}
+          onDropPath={(path) =>
+            void prepareDroppedImage(path, settings.background_image_mode !== 'direct')
+          }
+          recentPaths={recentImages}
+          onUseRecent={(path) => {
+            recordRecentImage(path);
+            onChange({ background_image: path });
+          }}
+          favoritePaths={favoriteImages}
+          libraryEntries={managedImages}
+          onToggleFavorite={(path) => void toggleFavoriteImage(path)}
         />
 
         {showBackgroundControls && (

@@ -29,6 +29,8 @@ const en = {
   'common.close': 'Close',
   'common.open': 'Open',
   'common.previewOnly': 'Preview only',
+  'status.lastApplied': 'Last applied',
+  'status.notApplied': 'Not applied yet',
 
   // Image Picker
   'image.upload': 'Click to upload or drag and drop',
@@ -42,6 +44,15 @@ const en = {
   'image.croppedSaved': 'Cropped image saved and selected.',
   'image.cropSaveFailed': 'Failed to save the cropped image.',
   'image.dropReplace': 'Drop the image to replace the current background.',
+  'image.missingFile': 'The selected image file is no longer available.',
+  'image.recent': 'Recent images',
+  'image.favorites': 'Favorites',
+  'image.favorite': 'Favorite',
+  'image.unfavorite': 'Unfavorite',
+  'image.library': 'Library',
+  'image.libraryHint': 'Managed and cropped images saved by the app',
+  'image.libraryManaged': 'Managed',
+  'image.libraryCropped': 'Cropped',
 
   // Image Cropper
   'cropper.apply': 'Apply Crop',
@@ -95,6 +106,19 @@ const en = {
   'chrome.openExtensionsFailed': 'Could not open the browser extensions page.',
   'chrome.appliedFirstInstall': 'Extension bundle generated. Load it once in Chrome or Edge to activate the new tab page.',
   'chrome.appliedUpdate': 'Extension bundle updated. Reload the extension or refresh a new tab in Chrome or Edge.',
+  'chrome.snapshotTitle': 'Bundle snapshots',
+  'chrome.snapshotDesc': 'Save a restore point for the generated extension bundle and roll back later if needed.',
+  'chrome.snapshotExport': 'Export snapshot',
+  'chrome.snapshotRestore': 'Restore snapshot',
+  'chrome.snapshotExported': 'Snapshot exported: {name}',
+  'chrome.snapshotExportFailed': 'Failed to export snapshot.',
+  'chrome.snapshotRestored': 'Snapshot restored.',
+  'chrome.snapshotRestoreFailed': 'Failed to restore snapshot.',
+  'chrome.snapshotRestoreTitle': 'Restore bundle snapshot',
+  'chrome.snapshotRestoreMessage': 'Restore "{name}" into the local extension bundle folder?',
+  'chrome.snapshotEmptyTitle': 'No snapshots yet',
+  'chrome.snapshotEmptyDesc': 'Export a bundle snapshot before larger changes so you can roll back later.',
+  'chrome.snapshotBadge': 'snapshot',
 
   // Setup guide
   'setup.title': 'First-time Setup',
@@ -130,7 +154,7 @@ const en = {
   'firefox.restartTipTitle': 'Restart required:',
   'firefox.restartTipText': 'Close every Firefox window and background process before reopening the browser.',
   'firefox.supportedTitle': 'Firefox support boundary',
-  'firefox.supportedDesc': 'Firefox currently supports background image or color, fit, blur, brightness, overlay, search-box styling, shortcut-card styling, and visibility toggles. Clock controls, custom shortcut data, and Chrome-only advanced layout stay hidden here.',
+  'firefox.supportedDesc': 'Firefox currently supports background image or color, fit, blur, brightness, overlay, search-box and shortcut styling, visibility toggles, and experimental drag positioning for those built-in sections. Clock controls, custom shortcut data, and Chrome-only full layout controls still stay hidden here.',
   'firefox.resetTitle': 'Reset Firefox workspace',
   'firefox.resetMessage': 'Reset the Firefox-facing settings back to their default values?',
   'firefox.workspaceTitle': 'Firefox workspace',
@@ -152,10 +176,13 @@ const en = {
   'firefox.actionsDirty': 'Save and apply writes CSS into the selected Firefox profile and creates a restore point first.',
   'firefox.actionsSynced': 'The selected profile is in sync. You can still inspect the profile folder or restore a backup.',
   'firefox.saveAndApply': 'Save and apply',
+  'firefox.removeTitle': 'Remove Firefox CSS',
+  'firefox.removeMessage': 'Remove the generated Firefox CSS from the selected profile? A restore point will be created first when possible.',
+  'firefox.removeAction': 'Remove CSS',
   'firefox.searchStyleTitle': 'Search box style',
-  'firefox.searchStyleDesc': 'These controls affect Firefox’s built-in new tab search area without changing its position or search provider.',
+  'firefox.searchStyleDesc': 'These controls affect Firefox’s built-in new tab search area and now allow experimental drag repositioning in the preview, without changing the search provider.',
   'firefox.shortcutsStyleTitle': 'Shortcut style',
-  'firefox.shortcutsStyleDesc': 'These controls style Firefox’s shortcut cards without replacing Firefox’s own shortcut data.',
+  'firefox.shortcutsStyleDesc': 'These controls style Firefox’s shortcut cards and now allow experimental drag repositioning in the preview, without replacing Firefox’s own shortcut data.',
 
   // Firefox profile
   'profile.noneTitle': 'No Firefox profiles found',
@@ -184,6 +211,9 @@ const en = {
   'backup.deleteFailed': 'Failed to delete backup',
   'backup.emptyTitle': 'No backups yet',
   'backup.emptyDesc': 'Create a backup before making large changes.',
+  'recovery.title': 'Recovery center',
+  'recovery.firefoxDesc': 'Create restore points before risky changes and roll back the selected Firefox profile later.',
+  'recovery.chromeDesc': 'Save generated extension bundle snapshots and restore a previous bundle when needed.',
 
   // Preview
   'preview.dragHint': 'Drag elements to reposition',
@@ -192,9 +222,16 @@ const en = {
 
   // Settings sections
   'settings.presets': 'Presets',
+  'settings.presetsDesc': 'Apply a built-in layout quickly or save the current workspace as a browser-specific preset.',
+  'settings.presetProjectionHint': 'Projected for Firefox',
+  'settings.presetProjected': 'Partial',
   'settings.savePreset': 'Save Current as Preset',
+  'settings.deletePresetTitle': 'Delete preset',
+  'settings.deletePresetMessage': 'Delete preset "{name}"?',
   'settings.presetName': 'Preset name...',
   'settings.background': 'Background',
+  'settings.managedImageMode': 'Managed background storage',
+  'settings.managedImageModeDesc': 'Enabled: copy images into the app data folder for stability. Disabled: keep the original file path.',
   'settings.displayOptions': 'Display options',
   'settings.overlayDarkness': 'Overlay Darkness',
   'settings.overlayColor': 'Overlay Color',
@@ -220,6 +257,9 @@ const en = {
   'settings.letterSpacing': 'Letter Spacing',
   'settings.search': 'Search',
   'settings.searchEngine': 'Search Engine',
+  'settings.searchUrlTemplate': 'Search URL Template',
+  'settings.searchUrlTemplatePlaceholder': 'https://example.com/search?q={query}',
+  'settings.searchUrlTemplateHint': 'Use {query} as the placeholder for the typed search text.',
   'settings.opacity': 'Opacity',
   'settings.borderRadius': 'Border Radius',
   'settings.placeholder': 'Placeholder Text',
@@ -232,6 +272,18 @@ const en = {
   'settings.padding': 'Padding',
   'settings.shortcuts': 'Shortcuts',
   'settings.addShortcut': 'Add Shortcut',
+  'settings.importShortcuts': 'Import',
+  'settings.shortcutsImportHint': 'Paste multiple shortcuts at once from JSON or line-based text.',
+  'settings.shortcutsImportPlaceholder': '[{"title":"GitHub","url":"https://github.com","icon":"💻"}]',
+  'settings.shortcutsImportFormat': 'Supports JSON arrays or lines like Title | URL | Icon. URL-only lines infer a title automatically.',
+  'settings.shortcutsImportAppend': 'Append Imported',
+  'settings.shortcutsImportReplace': 'Replace All',
+  'settings.shortcutsImportChrome': 'Chrome Bookmarks',
+  'settings.shortcutsImportEdge': 'Edge Bookmarks',
+  'settings.shortcutsImportEmpty': 'No valid shortcuts were found.',
+  'settings.shortcutsImportApplied': '{count} shortcuts imported.',
+  'settings.shortcutsImportedChrome': '{count} Chrome bookmarks imported.',
+  'settings.shortcutsImportedEdge': '{count} Edge bookmarks imported.',
   'settings.columns': 'Columns',
   'settings.gap': 'Gap',
   'settings.shape': 'Shape',
@@ -247,6 +299,7 @@ const en = {
   'shortcut.defaultTitle': 'New',
   'shortcut.titlePlaceholder': 'Title',
   'shortcut.urlPlaceholder': 'https://...',
+  'shortcut.invalidUrl': 'Use a full http:// or https:// URL.',
 
   // Action state
   'action.workspaceState': 'Workspace state',
@@ -256,6 +309,12 @@ const en = {
   'action.needsAttention': 'Needs attention',
   'action.pendingChanges': 'Pending changes',
   'action.dirtyDescription': 'You have unapplied changes in this browser workspace.',
+  'action.verificationPassed': 'Verification passed.',
+  'action.verificationFailed': 'Verification failed.',
+  'action.generatedFiles': '{count} generated files checked.',
+  'action.next.restartFirefox': 'Next step: fully restart Firefox.',
+  'action.next.reloadExtension': 'Next step: reload the installed extension or refresh a new tab.',
+  'action.next.loadExtension': 'Next step: load the bundle in Chrome or Edge for the first time.',
 
   // Warning / status labels
   'warning.firefoxRestartRequired': 'Fully restart Firefox after writing CSS or prerequisite changes.',
@@ -275,6 +334,11 @@ const en = {
   'warning.field.customCss': 'Custom CSS',
   'warning.field.unsupportedSettings': 'Unsupported settings',
 
+  // Diagnostics
+  'diagnostics.export': 'Export diagnostics',
+  'diagnostics.exported': 'Diagnostics exported.',
+  'diagnostics.exportFailed': 'Failed to export diagnostics.',
+
   // Option labels
   'option.fit.cover': 'Cover',
   'option.fit.contain': 'Contain',
@@ -284,6 +348,7 @@ const en = {
   'option.search.bing': 'Bing',
   'option.search.baidu': 'Baidu',
   'option.search.duckduckgo': 'DuckDuckGo',
+  'option.search.custom': 'Custom',
   'option.weight.light': 'Light',
   'option.weight.normal': 'Normal',
   'option.weight.bold': 'Bold',

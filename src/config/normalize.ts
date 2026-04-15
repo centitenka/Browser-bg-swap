@@ -1,6 +1,7 @@
 import { browserCapabilities } from './capabilities';
 import { CONFIG_VERSION, createDefaultAppConfig, createDefaultSettings } from './defaults';
 import type {
+  AppliedSettingsSnapshot,
   AppWarning,
   AppConfig,
   BrowserSettings,
@@ -34,6 +35,15 @@ function normalizeText(value: string | null | undefined, fallback: string): stri
   return normalized ? normalized : fallback;
 }
 
+function normalizeOptionalText(value: string | null | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function normalizePresetBrowser(value: string | null | undefined): BrowserTab {
+  return value?.trim().toLowerCase() === 'firefox' ? 'firefox' : 'chrome';
+}
+
 function normalizePosition(value: ElementPosition | null | undefined, fallback: ElementPosition): ElementPosition {
   if (!value) {
     return { ...fallback };
@@ -59,6 +69,55 @@ function normalizeShortcuts(shortcuts: Shortcut[] | null | undefined, fallback: 
   return normalized.length > 0 ? normalized : fallback.map((shortcut) => ({ ...shortcut }));
 }
 
+function normalizeRecentImages(images: string[] | null | undefined): string[] {
+  const seen = new Set<string>();
+
+  return (images ?? [])
+    .map((path) => normalizeOptionalText(path))
+    .filter((path): path is string => !!path)
+    .filter((path) => {
+      const key = path.toLowerCase();
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 12);
+}
+
+function normalizeFavoriteImages(images: string[] | null | undefined): string[] {
+  const seen = new Set<string>();
+
+  return (images ?? [])
+    .map((path) => normalizeOptionalText(path))
+    .filter((path): path is string => !!path)
+    .filter((path) => {
+      const key = path.toLowerCase();
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 24);
+}
+
+function normalizeAppliedSettingsSnapshot(
+  browser: BrowserTab,
+  snapshot: AppliedSettingsSnapshot | null | undefined
+): AppliedSettingsSnapshot | null {
+  const appliedAt = normalizeOptionalText(snapshot?.applied_at);
+  if (!appliedAt || !snapshot) {
+    return null;
+  }
+
+  return {
+    applied_at: appliedAt,
+    settings: projectSettingsForBrowser(browser, normalizeBrowserSettings(snapshot.settings)),
+  };
+}
+
 export function normalizeBrowserSettings(settings: Partial<BrowserSettings> | null | undefined): BrowserSettings {
   const defaults = createDefaultSettings();
   const input = settings ?? {};
@@ -66,15 +125,21 @@ export function normalizeBrowserSettings(settings: Partial<BrowserSettings> | nu
   return {
     ...defaults,
     ...input,
-    background_image: input.background_image?.trim() || null,
+    background_image: normalizeOptionalText(input.background_image) ?? null,
+    background_image_mode: normalizeEnum(
+      input.background_image_mode,
+      ['managed', 'direct'],
+      defaults.background_image_mode
+    ) as BrowserSettings['background_image_mode'],
     overlay_opacity: clamp(input.overlay_opacity ?? defaults.overlay_opacity, 0, 100),
     clock_color: normalizeColor(input.clock_color, defaults.clock_color),
     clock_size: clamp(input.clock_size ?? defaults.clock_size, 32, 120),
     search_engine: normalizeEnum(
       input.search_engine,
-      ['google', 'bing', 'baidu', 'duckduckgo'],
+      ['google', 'bing', 'baidu', 'duckduckgo', 'custom'],
       defaults.search_engine
     ),
+    search_url_template: input.search_url_template?.trim() ?? defaults.search_url_template,
     shortcuts: normalizeShortcuts(input.shortcuts, defaults.shortcuts),
     clock_position: normalizePosition(input.clock_position, defaults.clock_position),
     search_position: normalizePosition(input.search_position, defaults.search_position),
@@ -263,6 +328,9 @@ export function projectSettingsForBrowser(browser: BrowserTab, settings: Browser
     search_engine: capabilities.supportsSearchEngine
       ? settings.search_engine
       : defaults.search_engine,
+    search_url_template: capabilities.supportsSearchEngine
+      ? settings.search_url_template
+      : defaults.search_url_template,
     search_bg_color: capabilities.supportsSearchStyling
       ? settings.search_bg_color
       : defaults.search_bg_color,
@@ -370,14 +438,30 @@ export function projectSettingsForBrowser(browser: BrowserTab, settings: Browser
 export function normalizeAppConfig(config: AppConfig | null | undefined): AppConfig {
   const defaults = createDefaultAppConfig();
   const input = config ?? defaults;
+  const selectedProfilePath = normalizeOptionalText(input.firefox?.selected_profile_path) ?? null;
+  const profileSettingsByKey = Object.fromEntries(
+    Object.entries(input.firefox?.profile_settings_by_key ?? {}).map(([key, settings]) => [
+      key.trim(),
+      projectSettingsForBrowser('firefox', normalizeBrowserSettings(settings)),
+    ]).filter(([key]) => !!key)
+  );
 
   return {
     config_version: CONFIG_VERSION,
     firefox: {
-      profile_path: input.firefox?.profile_path?.trim() || null,
-      settings: projectSettingsForBrowser(
-        'firefox',
-        normalizeBrowserSettings(input.firefox?.settings)
+      selected_profile_path: selectedProfilePath,
+      profile_settings_by_key: profileSettingsByKey,
+      last_applied_by_profile_key: Object.fromEntries(
+        Object.entries(input.firefox?.last_applied_by_profile_key ?? {})
+          .map(([key, snapshot]) => [
+            key.trim(),
+            normalizeAppliedSettingsSnapshot('firefox', snapshot),
+          ])
+          .filter(
+            (
+              entry
+            ): entry is [string, AppliedSettingsSnapshot] => !!entry[0] && !!entry[1]
+          )
       ),
     },
     chrome: {
@@ -385,13 +469,20 @@ export function normalizeAppConfig(config: AppConfig | null | undefined): AppCon
         'chrome',
         normalizeBrowserSettings(input.chrome?.settings)
       ),
+      last_applied: normalizeAppliedSettingsSnapshot('chrome', input.chrome?.last_applied),
     },
     custom_presets: (input.custom_presets ?? [])
-      .map((preset) => ({
-        name: preset.name?.trim() ?? '',
-        settings: projectSettingsForBrowser('chrome', normalizeBrowserSettings(preset.settings)),
-      }))
+      .map((preset) => {
+        const browser = normalizePresetBrowser(preset.browser);
+        return {
+          name: preset.name?.trim() ?? '',
+          browser,
+          settings: projectSettingsForBrowser(browser, normalizeBrowserSettings(preset.settings)),
+        };
+      })
       .filter((preset) => preset.name),
+    recent_background_images: normalizeRecentImages(input.recent_background_images),
+    favorite_background_images: normalizeFavoriteImages(input.favorite_background_images),
   };
 }
 
@@ -429,6 +520,7 @@ const projectionComparableFields = [
   'clock_letter_spacing',
   'clock_font_family',
   'search_engine',
+  'search_url_template',
   'search_placeholder',
   'search_width',
   'search_padding',

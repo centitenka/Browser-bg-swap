@@ -8,6 +8,7 @@ export function getSearchEngines(t: Translate) {
     { id: 'bing', label: t('option.search.bing') },
     { id: 'baidu', label: t('option.search.baidu') },
     { id: 'duckduckgo', label: t('option.search.duckduckgo') },
+    { id: 'custom', label: t('option.search.custom') },
   ];
 }
 

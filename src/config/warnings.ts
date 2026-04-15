@@ -17,6 +17,7 @@ const projectedFieldKeys: Record<string, LocaleKeys> = {
   clock_letter_spacing: 'warning.field.clock',
   clock_font_family: 'warning.field.clock',
   search_engine: 'warning.field.searchEngine',
+  search_url_template: 'warning.field.searchEngine',
   search_placeholder: 'warning.field.searchAppearance',
   search_width: 'warning.field.searchAppearance',
   search_padding: 'warning.field.searchAppearance',
@@ -45,6 +46,19 @@ function formatProjectedFields(t: Translate, details: string[] | undefined): str
 
 export function formatWarningMessage(t: Translate, warning: AppWarning): string {
   switch (warning.code) {
+    case 'background_image_missing':
+    case 'chrome_browser_missing':
+    case 'extension_dir_not_writable':
+    case 'firefox_profile_missing':
+    case 'firefox_profile_not_writable':
+    case 'firefox_prerequisite_missing':
+    case 'firefox_prefs_read_only':
+    case 'firefox_user_js_read_only':
+    case 'custom_search_template_invalid':
+    case 'shortcut_url_invalid':
+      return warning.details && warning.details.length > 0
+        ? `${warning.message} ${warning.details.join(', ')}`
+        : warning.message;
     case 'firefox_restart_required':
       return t('warning.firefoxRestartRequired');
     case 'extension_manual_install_required':

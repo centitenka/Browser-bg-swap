@@ -18,6 +18,27 @@ vi.mock('./Switch', () => ({
   ),
 }));
 
+vi.mock('../../stores/configStore', () => ({
+  useConfigStore: (
+    selector: (state: {
+      config: { recent_background_images: string[]; favorite_background_images: string[] };
+      managedImages: [];
+      prepareDroppedImage: () => Promise<void>;
+      loadManagedImages: () => Promise<void>;
+      toggleFavoriteImage: () => Promise<boolean>;
+      recordRecentImage: () => void;
+    }) => unknown
+  ) =>
+    selector({
+      config: { recent_background_images: [], favorite_background_images: [] },
+      managedImages: [],
+      prepareDroppedImage: async () => {},
+      loadManagedImages: async () => {},
+      toggleFavoriteImage: async () => false,
+      recordRecentImage: () => {},
+    }),
+}));
+
 describe('SettingsPanel', () => {
   it('renders only Firefox-supported controls', () => {
     render(

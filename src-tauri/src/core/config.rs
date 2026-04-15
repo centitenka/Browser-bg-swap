@@ -1,9 +1,15 @@
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::hash::{Hash, Hasher};
 
-pub const CONFIG_VERSION: u32 = 3;
+pub const CONFIG_VERSION: u32 = 7;
 
 fn default_config_version() -> u32 {
     CONFIG_VERSION
+}
+
+fn default_background_image_mode() -> String {
+    "managed".into()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -14,17 +20,35 @@ pub struct AppConfig {
     pub chrome: ChromeConfig,
     #[serde(default)]
     pub custom_presets: Vec<NamedPreset>,
+    #[serde(default)]
+    pub recent_background_images: Vec<String>,
+    #[serde(default)]
+    pub favorite_background_images: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FirefoxConfig {
-    pub profile_path: Option<String>,
-    pub settings: BrowserSettings,
+    #[serde(default, alias = "profile_path")]
+    pub selected_profile_path: Option<String>,
+    #[serde(default)]
+    pub profile_settings_by_key: HashMap<String, BrowserSettings>,
+    #[serde(default)]
+    pub last_applied_by_profile_key: HashMap<String, AppliedSettingsSnapshot>,
+    #[serde(default, alias = "settings", skip_serializing)]
+    pub legacy_settings: Option<BrowserSettings>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChromeConfig {
     pub settings: BrowserSettings,
+    #[serde(default)]
+    pub last_applied: Option<AppliedSettingsSnapshot>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppliedSettingsSnapshot {
+    pub settings: BrowserSettings,
+    pub applied_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,69 +66,173 @@ pub struct Shortcut {
     pub position: Option<ElementPosition>,
 }
 
-fn default_overlay_opacity() -> u32 { 30 }
-fn default_true() -> bool { true }
-fn default_clock_color() -> String { "#ffffff".into() }
-fn default_clock_size() -> u32 { 72 }
-fn default_search_engine() -> String { "google".into() }
-fn default_clock_position() -> ElementPosition { ElementPosition { x: 50.0, y: 30.0 } }
-fn default_search_position() -> ElementPosition { ElementPosition { x: 50.0, y: 48.0 } }
-fn default_shortcuts_position() -> ElementPosition { ElementPosition { x: 50.0, y: 68.0 } }
-
-// New default functions
-fn default_background_color() -> String { "#1a1a2e".into() }
-fn default_background_fit() -> String { "cover".into() }
-fn default_clock_font_weight() -> String { "light".into() }
-fn default_search_bg_color() -> String { "#ffffff".into() }
-fn default_search_bg_opacity() -> u32 { 95 }
-fn default_search_border_radius() -> u32 { 28 }
-fn default_search_placeholder() -> String { "\u{641C}\u{7D22}...".into() }
-fn default_shortcuts_bg_color() -> String { "#ffffff".into() }
-fn default_shortcuts_bg_opacity() -> u32 { 90 }
-fn default_shortcuts_border_radius() -> u32 { 12 }
-fn default_shortcuts_columns() -> String { "auto".into() }
-fn default_shortcuts_gap() -> u32 { 12 }
-fn default_background_brightness() -> u32 { 100 }
-fn default_overlay_color() -> String { "#000000".into() }
-
-// Search fine-grained defaults
-fn default_search_border_color() -> String { "#d4af37".into() }
-fn default_search_border_style() -> String { "none".into() }
-fn default_search_shadow_color() -> String { "#000000".into() }
-fn default_search_shadow_blur() -> u32 { 20 }
-fn default_search_shadow_opacity() -> u32 { 15 }
-fn default_search_text_color() -> String { "#333333".into() }
-fn default_search_width() -> u32 { 560 }
-fn default_search_padding() -> u32 { 4 }
-
-// Shortcuts fine-grained defaults
-fn default_shortcuts_border_color() -> String { "#ffffff".into() }
-fn default_shortcuts_border_style() -> String { "none".into() }
-fn default_shortcuts_shadow_color() -> String { "#000000".into() }
-fn default_shortcuts_title_color() -> String { "#333333".into() }
-fn default_shortcuts_icon_size() -> u32 { 36 }
-fn default_shortcuts_padding_x() -> u32 { 8 }
-fn default_shortcuts_padding_y() -> u32 { 14 }
-fn default_shortcuts_shape() -> String { "auto".into() }
-
-// Clock fine-grained defaults
-fn default_clock_shadow_color() -> String { "#000000".into() }
-fn default_clock_shadow_blur() -> u32 { 10 }
-fn default_clock_shadow_opacity() -> u32 { 30 }
-fn default_clock_font_family() -> String { "system".into() }
+fn default_overlay_opacity() -> u32 {
+    30
+}
+fn default_true() -> bool {
+    true
+}
+fn default_clock_color() -> String {
+    "#ffffff".into()
+}
+fn default_clock_size() -> u32 {
+    72
+}
+fn default_search_engine() -> String {
+    "google".into()
+}
+fn default_preset_browser() -> String {
+    "chrome".into()
+}
+fn default_search_url_template() -> String {
+    String::new()
+}
+fn default_clock_position() -> ElementPosition {
+    ElementPosition { x: 50.0, y: 30.0 }
+}
+fn default_search_position() -> ElementPosition {
+    ElementPosition { x: 50.0, y: 48.0 }
+}
+fn default_shortcuts_position() -> ElementPosition {
+    ElementPosition { x: 50.0, y: 68.0 }
+}
+fn default_background_color() -> String {
+    "#1a1a2e".into()
+}
+fn default_background_fit() -> String {
+    "cover".into()
+}
+fn default_clock_font_weight() -> String {
+    "light".into()
+}
+fn default_search_bg_color() -> String {
+    "#ffffff".into()
+}
+fn default_search_bg_opacity() -> u32 {
+    95
+}
+fn default_search_border_radius() -> u32 {
+    28
+}
+fn default_search_placeholder() -> String {
+    "搜索...".into()
+}
+fn default_shortcuts_bg_color() -> String {
+    "#ffffff".into()
+}
+fn default_shortcuts_bg_opacity() -> u32 {
+    90
+}
+fn default_shortcuts_border_radius() -> u32 {
+    12
+}
+fn default_shortcuts_columns() -> String {
+    "auto".into()
+}
+fn default_shortcuts_gap() -> u32 {
+    12
+}
+fn default_background_brightness() -> u32 {
+    100
+}
+fn default_overlay_color() -> String {
+    "#000000".into()
+}
+fn default_search_border_color() -> String {
+    "#d4af37".into()
+}
+fn default_search_border_style() -> String {
+    "none".into()
+}
+fn default_search_shadow_color() -> String {
+    "#000000".into()
+}
+fn default_search_shadow_blur() -> u32 {
+    20
+}
+fn default_search_shadow_opacity() -> u32 {
+    15
+}
+fn default_search_text_color() -> String {
+    "#333333".into()
+}
+fn default_search_width() -> u32 {
+    560
+}
+fn default_search_padding() -> u32 {
+    4
+}
+fn default_shortcuts_border_color() -> String {
+    "#ffffff".into()
+}
+fn default_shortcuts_border_style() -> String {
+    "none".into()
+}
+fn default_shortcuts_shadow_color() -> String {
+    "#000000".into()
+}
+fn default_shortcuts_title_color() -> String {
+    "#333333".into()
+}
+fn default_shortcuts_icon_size() -> u32 {
+    36
+}
+fn default_shortcuts_padding_x() -> u32 {
+    8
+}
+fn default_shortcuts_padding_y() -> u32 {
+    14
+}
+fn default_shortcuts_shape() -> String {
+    "auto".into()
+}
+fn default_clock_shadow_color() -> String {
+    "#000000".into()
+}
+fn default_clock_shadow_blur() -> u32 {
+    10
+}
+fn default_clock_shadow_opacity() -> u32 {
+    30
+}
+fn default_clock_font_family() -> String {
+    "system".into()
+}
 
 fn default_shortcuts() -> Vec<Shortcut> {
     vec![
-        Shortcut { title: "GitHub".into(), url: "https://github.com".into(), icon: "\u{1F4BB}".into(), position: None },
-        Shortcut { title: "YouTube".into(), url: "https://youtube.com".into(), icon: "\u{25B6}\u{FE0F}".into(), position: None },
-        Shortcut { title: "Bilibili".into(), url: "https://bilibili.com".into(), icon: "\u{1F4FA}".into(), position: None },
-        Shortcut { title: "\u{77E5}\u{4E4E}".into(), url: "https://zhihu.com".into(), icon: "\u{2753}".into(), position: None },
+        Shortcut {
+            title: "GitHub".into(),
+            url: "https://github.com".into(),
+            icon: "💻".into(),
+            position: None,
+        },
+        Shortcut {
+            title: "YouTube".into(),
+            url: "https://youtube.com".into(),
+            icon: "▶️".into(),
+            position: None,
+        },
+        Shortcut {
+            title: "Bilibili".into(),
+            url: "https://bilibili.com".into(),
+            icon: "📺".into(),
+            position: None,
+        },
+        Shortcut {
+            title: "知乎".into(),
+            url: "https://zhihu.com".into(),
+            icon: "❓".into(),
+            position: None,
+        },
     ]
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NamedPreset {
     pub name: String,
+    #[serde(default = "default_preset_browser")]
+    pub browser: String,
     pub settings: BrowserSettings,
 }
 
@@ -148,8 +276,30 @@ impl AppWarning {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerificationResult {
+    pub verified: bool,
+    #[serde(default)]
+    pub generated_files: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub next_action: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationResult {
+    pub can_apply: bool,
+    #[serde(default)]
+    pub blocking: Vec<AppWarning>,
+    #[serde(default)]
+    pub warnings: Vec<AppWarning>,
+    #[serde(default)]
+    pub target_summary: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrowserSettings {
     pub background_image: Option<String>,
+    #[serde(default = "default_background_image_mode")]
+    pub background_image_mode: String,
 
     #[serde(default = "default_overlay_opacity")]
     pub overlay_opacity: u32,
@@ -165,6 +315,8 @@ pub struct BrowserSettings {
     pub show_search_box: bool,
     #[serde(default = "default_search_engine")]
     pub search_engine: String,
+    #[serde(default = "default_search_url_template")]
+    pub search_url_template: String,
 
     #[serde(default = "default_true")]
     pub show_shortcuts: bool,
@@ -178,7 +330,6 @@ pub struct BrowserSettings {
     #[serde(default = "default_shortcuts_position")]
     pub shortcuts_position: ElementPosition,
 
-    // Background enhancements
     #[serde(default = "default_background_color")]
     pub background_color: String,
     #[serde(default = "default_background_fit")]
@@ -188,7 +339,6 @@ pub struct BrowserSettings {
     #[serde(default = "default_background_brightness")]
     pub background_brightness: u32,
 
-    // Clock enhancements
     #[serde(default = "default_true")]
     pub clock_format_24h: bool,
     #[serde(default)]
@@ -198,7 +348,6 @@ pub struct BrowserSettings {
     #[serde(default = "default_clock_font_weight")]
     pub clock_font_weight: String,
 
-    // Search box enhancements
     #[serde(default = "default_search_bg_color")]
     pub search_bg_color: String,
     #[serde(default = "default_search_bg_opacity")]
@@ -228,7 +377,6 @@ pub struct BrowserSettings {
     #[serde(default = "default_search_padding")]
     pub search_padding: u32,
 
-    // Shortcuts enhancements
     #[serde(default = "default_shortcuts_bg_color")]
     pub shortcuts_bg_color: String,
     #[serde(default = "default_shortcuts_bg_opacity")]
@@ -264,7 +412,6 @@ pub struct BrowserSettings {
     #[serde(default = "default_shortcuts_shape")]
     pub shortcuts_shape: String,
 
-    // Clock fine-grained
     #[serde(default = "default_clock_shadow_color")]
     pub clock_shadow_color: String,
     #[serde(default = "default_clock_shadow_blur")]
@@ -276,11 +423,9 @@ pub struct BrowserSettings {
     #[serde(default = "default_clock_font_family")]
     pub clock_font_family: String,
 
-    // Overlay
     #[serde(default = "default_overlay_color")]
     pub overlay_color: String,
 
-    // Advanced
     #[serde(default)]
     pub custom_css: String,
 }
@@ -289,12 +434,14 @@ impl Default for BrowserSettings {
     fn default() -> Self {
         Self {
             background_image: None,
+            background_image_mode: default_background_image_mode(),
             overlay_opacity: default_overlay_opacity(),
             show_clock: true,
             clock_color: default_clock_color(),
             clock_size: default_clock_size(),
             show_search_box: true,
             search_engine: default_search_engine(),
+            search_url_template: default_search_url_template(),
             show_shortcuts: true,
             shortcuts: default_shortcuts(),
             clock_position: default_clock_position(),
@@ -353,8 +500,10 @@ impl Default for BrowserSettings {
 impl Default for FirefoxConfig {
     fn default() -> Self {
         Self {
-            profile_path: None,
-            settings: BrowserSettings::default(),
+            selected_profile_path: None,
+            profile_settings_by_key: HashMap::new(),
+            last_applied_by_profile_key: HashMap::new(),
+            legacy_settings: None,
         }
     }
 }
@@ -363,6 +512,7 @@ impl Default for ChromeConfig {
     fn default() -> Self {
         Self {
             settings: BrowserSettings::default(),
+            last_applied: None,
         }
     }
 }
@@ -374,6 +524,8 @@ impl Default for AppConfig {
             firefox: FirefoxConfig::default(),
             chrome: ChromeConfig::default(),
             custom_presets: Vec::new(),
+            recent_background_images: Vec::new(),
+            favorite_background_images: Vec::new(),
         }
     }
 }
@@ -399,7 +551,11 @@ impl SettingsExchangeFile {
 
 impl AppConfig {
     pub fn normalized(self) -> Self {
-        let firefox_presets = self
+        let ChromeConfig {
+            settings: chrome_settings,
+            last_applied: chrome_last_applied,
+        } = self.chrome;
+        let custom_presets = self
             .custom_presets
             .into_iter()
             .filter_map(|preset| {
@@ -407,9 +563,15 @@ impl AppConfig {
                 if name.is_empty() {
                     None
                 } else {
+                    let browser = normalize_preset_browser(preset.browser);
                     Some(NamedPreset {
                         name,
-                        settings: preset.settings.normalized(),
+                        browser: browser.clone(),
+                        settings: if browser == "firefox" {
+                            preset.settings.normalized().projected_for_firefox()
+                        } else {
+                            preset.settings.normalized()
+                        },
                     })
                 }
             })
@@ -417,15 +579,78 @@ impl AppConfig {
 
         Self {
             config_version: CONFIG_VERSION,
-            firefox: FirefoxConfig {
-                profile_path: self.firefox.profile_path.and_then(normalize_optional_text),
-                settings: self.firefox.settings.normalized(),
-            },
+            firefox: self.firefox.normalized(),
             chrome: ChromeConfig {
-                settings: self.chrome.settings.normalized(),
+                settings: chrome_settings.normalized(),
+                last_applied: chrome_last_applied
+                    .and_then(|snapshot| snapshot.normalized_for_browser("chrome")),
             },
-            custom_presets: firefox_presets,
+            custom_presets,
+            recent_background_images: normalize_recent_images(self.recent_background_images),
+            favorite_background_images: normalize_favorite_images(self.favorite_background_images),
         }
+    }
+}
+
+impl FirefoxConfig {
+    pub fn normalized(self) -> Self {
+        let selected_profile_path = self.selected_profile_path.and_then(normalize_optional_text);
+        let mut profile_settings_by_key = self
+            .profile_settings_by_key
+            .into_iter()
+            .filter_map(|(key, settings)| {
+                let key = key.trim().to_string();
+                if key.is_empty() {
+                    None
+                } else {
+                    Some((key, settings.normalized()))
+                }
+            })
+            .collect::<HashMap<_, _>>();
+        let last_applied_by_profile_key = self
+            .last_applied_by_profile_key
+            .into_iter()
+            .filter_map(|(key, snapshot)| {
+                let key = key.trim().to_string();
+                if key.is_empty() {
+                    None
+                } else {
+                    snapshot
+                        .normalized_for_browser("firefox")
+                        .map(|snapshot| (key, snapshot))
+                }
+            })
+            .collect::<HashMap<_, _>>();
+
+        if let (Some(path), Some(legacy_settings)) =
+            (selected_profile_path.as_deref(), self.legacy_settings)
+        {
+            profile_settings_by_key
+                .entry(profile_key_from_path(path))
+                .or_insert_with(|| legacy_settings.normalized());
+        }
+
+        Self {
+            selected_profile_path,
+            profile_settings_by_key,
+            last_applied_by_profile_key,
+            legacy_settings: None,
+        }
+    }
+}
+
+impl AppliedSettingsSnapshot {
+    pub fn normalized_for_browser(self, browser: &str) -> Option<Self> {
+        let applied_at = normalize_optional_text(self.applied_at)?;
+        let settings = match browser {
+            "firefox" => self.settings.normalized().projected_for_firefox(),
+            _ => self.settings.normalized(),
+        };
+
+        Some(Self {
+            settings,
+            applied_at,
+        })
     }
 }
 
@@ -434,16 +659,24 @@ impl BrowserSettings {
         let defaults = Self::default();
 
         self.background_image = self.background_image.and_then(normalize_optional_text);
+        self.background_image_mode = normalize_enum(
+            self.background_image_mode,
+            &["managed", "direct"],
+            defaults.background_image_mode.clone(),
+        );
         self.overlay_opacity = clamp_u32(self.overlay_opacity, 0, 100);
         self.clock_color = normalize_hex_color(self.clock_color, defaults.clock_color.clone());
         self.clock_size = clamp_u32(self.clock_size, 32, 120);
         self.search_engine = normalize_enum(
             self.search_engine,
-            &["google", "bing", "baidu", "duckduckgo"],
+            &["google", "bing", "baidu", "duckduckgo", "custom"],
             defaults.search_engine.clone(),
         );
-        self.clock_position = normalize_position(self.clock_position, defaults.clock_position.clone());
-        self.search_position = normalize_position(self.search_position, defaults.search_position.clone());
+        self.search_url_template = self.search_url_template.trim().to_string();
+        self.clock_position =
+            normalize_position(self.clock_position, defaults.clock_position.clone());
+        self.search_position =
+            normalize_position(self.search_position, defaults.search_position.clone());
         self.shortcuts_position =
             normalize_position(self.shortcuts_position, defaults.shortcuts_position.clone());
 
@@ -467,17 +700,22 @@ impl BrowserSettings {
             normalize_hex_color(self.search_bg_color, defaults.search_bg_color.clone());
         self.search_bg_opacity = clamp_u32(self.search_bg_opacity, 0, 100);
         self.search_border_radius = clamp_u32(self.search_border_radius, 0, 60);
-        self.search_placeholder = normalize_text(self.search_placeholder, defaults.search_placeholder.clone());
+        self.search_placeholder =
+            normalize_text(self.search_placeholder, defaults.search_placeholder.clone());
         self.search_border_width = clamp_u32(self.search_border_width, 0, 5);
-        self.search_border_color =
-            normalize_hex_color(self.search_border_color, defaults.search_border_color.clone());
+        self.search_border_color = normalize_hex_color(
+            self.search_border_color,
+            defaults.search_border_color.clone(),
+        );
         self.search_border_style = normalize_enum(
             self.search_border_style,
             &["none", "solid", "dashed", "double"],
             defaults.search_border_style.clone(),
         );
-        self.search_shadow_color =
-            normalize_hex_color(self.search_shadow_color, defaults.search_shadow_color.clone());
+        self.search_shadow_color = normalize_hex_color(
+            self.search_shadow_color,
+            defaults.search_shadow_color.clone(),
+        );
         self.search_shadow_blur = clamp_u32(self.search_shadow_blur, 0, 40);
         self.search_shadow_opacity = clamp_u32(self.search_shadow_opacity, 0, 100);
         self.search_backdrop_blur = clamp_u32(self.search_backdrop_blur, 0, 20);
@@ -537,12 +775,41 @@ impl BrowserSettings {
             defaults.clock_font_family.clone(),
         );
 
-        self.overlay_color = normalize_hex_color(self.overlay_color, defaults.overlay_color.clone());
+        self.overlay_color =
+            normalize_hex_color(self.overlay_color, defaults.overlay_color.clone());
         self.custom_css = self.custom_css.trim().to_string();
-
         self.shortcuts = normalize_shortcuts(self.shortcuts, &defaults.shortcuts);
 
         self
+    }
+
+    pub fn projected_for_firefox(self) -> Self {
+        let defaults = Self::default();
+
+        Self {
+            show_clock: defaults.show_clock,
+            clock_color: defaults.clock_color,
+            clock_size: defaults.clock_size,
+            clock_format_24h: defaults.clock_format_24h,
+            clock_show_seconds: defaults.clock_show_seconds,
+            clock_show_date: defaults.clock_show_date,
+            clock_font_weight: defaults.clock_font_weight,
+            clock_shadow_color: defaults.clock_shadow_color,
+            clock_shadow_blur: defaults.clock_shadow_blur,
+            clock_shadow_opacity: defaults.clock_shadow_opacity,
+            clock_letter_spacing: defaults.clock_letter_spacing,
+            clock_font_family: defaults.clock_font_family,
+            search_engine: defaults.search_engine,
+            search_url_template: defaults.search_url_template,
+            search_placeholder: defaults.search_placeholder,
+            shortcuts: defaults.shortcuts,
+            shortcuts_icon_size: defaults.shortcuts_icon_size,
+            shortcuts_padding_x: defaults.shortcuts_padding_x,
+            shortcuts_padding_y: defaults.shortcuts_padding_y,
+            shortcuts_shape: defaults.shortcuts_shape,
+            custom_css: defaults.custom_css,
+            ..self
+        }
     }
 }
 
@@ -574,6 +841,15 @@ fn normalize_enum(value: String, allowed: &[&str], fallback: String) -> String {
         lowered
     } else {
         fallback
+    }
+}
+
+fn normalize_preset_browser(value: String) -> String {
+    let normalized = value.trim().to_ascii_lowercase();
+    if normalized == "firefox" {
+        "firefox".into()
+    } else {
+        "chrome".into()
     }
 }
 
@@ -616,8 +892,14 @@ fn normalize_shortcuts(shortcuts: Vec<Shortcut>, fallback: &[Shortcut]) -> Vec<S
             Some(Shortcut {
                 title,
                 url,
-                icon: if icon.is_empty() { "🔗".to_string() } else { icon },
-                position: shortcut.position.map(|position| normalize_position(position, ElementPosition { x: 50.0, y: 68.0 })),
+                icon: if icon.is_empty() {
+                    "🔗".to_string()
+                } else {
+                    icon
+                },
+                position: shortcut.position.map(|position| {
+                    normalize_position(position, ElementPosition { x: 50.0, y: 68.0 })
+                }),
             })
         })
         .take(8)
@@ -628,6 +910,32 @@ fn normalize_shortcuts(shortcuts: Vec<Shortcut>, fallback: &[Shortcut]) -> Vec<S
     } else {
         normalized
     }
+}
+
+fn normalize_recent_images(images: Vec<String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    images
+        .into_iter()
+        .filter_map(normalize_optional_text)
+        .filter(|path| seen.insert(path.to_ascii_lowercase()))
+        .take(12)
+        .collect()
+}
+
+fn normalize_favorite_images(images: Vec<String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    images
+        .into_iter()
+        .filter_map(normalize_optional_text)
+        .filter(|path| seen.insert(path.to_ascii_lowercase()))
+        .take(24)
+        .collect()
+}
+
+pub fn profile_key_from_path(profile_path: &str) -> String {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    profile_path.to_ascii_lowercase().hash(&mut hasher);
+    format!("{:016x}", hasher.finish())
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -648,6 +956,7 @@ pub enum BrowserType {
 pub struct ProfileInfo {
     pub name: String,
     pub path: String,
+    pub key: String,
     pub is_default: bool,
 }
 
@@ -663,6 +972,8 @@ pub struct BackupEntry {
     pub name: String,
     pub label: String,
     pub is_auto: bool,
+    pub source: String,
+    pub profile_key: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -671,4 +982,112 @@ pub struct ApplyResult {
     pub output_path: Option<String>,
     pub backup_name: Option<String>,
     pub warnings: Vec<AppWarning>,
+    pub verification: VerificationResult,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn browser_settings_default_to_managed_backgrounds() {
+        let settings = BrowserSettings::default();
+        assert_eq!(settings.background_image_mode, "managed");
+    }
+
+    #[test]
+    fn firefox_config_migrates_legacy_settings_into_selected_profile() {
+        let firefox = FirefoxConfig {
+            selected_profile_path: Some("C:/Firefox/Profile".into()),
+            profile_settings_by_key: HashMap::new(),
+            last_applied_by_profile_key: HashMap::new(),
+            legacy_settings: Some(BrowserSettings::default()),
+        }
+        .normalized();
+
+        let key = profile_key_from_path("C:/Firefox/Profile");
+        assert!(firefox.profile_settings_by_key.contains_key(&key));
+        assert!(firefox.legacy_settings.is_none());
+    }
+
+    #[test]
+    fn app_config_normalizes_recent_images_without_duplicates() {
+        let config = AppConfig {
+            recent_background_images: vec![
+                "C:/a.png".into(),
+                " c:/A.png ".into(),
+                "C:/b.png".into(),
+            ],
+            ..AppConfig::default()
+        }
+        .normalized();
+
+        assert_eq!(
+            config.recent_background_images,
+            vec!["C:/a.png", "C:/b.png"]
+        );
+    }
+
+    #[test]
+    fn app_config_normalizes_favorite_images_without_duplicates() {
+        let config = AppConfig {
+            favorite_background_images: vec![
+                "C:/fav.png".into(),
+                " c:/FAV.png ".into(),
+                "C:/other.png".into(),
+            ],
+            ..AppConfig::default()
+        }
+        .normalized();
+
+        assert_eq!(
+            config.favorite_background_images,
+            vec!["C:/fav.png", "C:/other.png"]
+        );
+    }
+
+    #[test]
+    fn applied_snapshot_is_projected_and_trimmed() {
+        let config = AppConfig {
+            chrome: ChromeConfig {
+                settings: BrowserSettings::default(),
+                last_applied: Some(AppliedSettingsSnapshot {
+                    applied_at: " 2026-04-15T12:00:00.000Z ".into(),
+                    settings: BrowserSettings {
+                        overlay_opacity: 150,
+                        ..BrowserSettings::default()
+                    },
+                }),
+            },
+            firefox: FirefoxConfig {
+                last_applied_by_profile_key: HashMap::from([(
+                    "abc".into(),
+                    AppliedSettingsSnapshot {
+                        applied_at: "2026-04-15T12:00:00.000Z".into(),
+                        settings: BrowserSettings {
+                            custom_css: "body { color: red; }".into(),
+                            show_clock: false,
+                            ..BrowserSettings::default()
+                        },
+                    },
+                )]),
+                ..FirefoxConfig::default()
+            },
+            ..AppConfig::default()
+        }
+        .normalized();
+
+        assert_eq!(
+            config.chrome.last_applied.unwrap().settings.overlay_opacity,
+            100
+        );
+        let firefox_snapshot = config
+            .firefox
+            .last_applied_by_profile_key
+            .get("abc")
+            .unwrap();
+        assert_eq!(firefox_snapshot.settings.custom_css, "");
+        assert!(firefox_snapshot.settings.show_clock);
+    }
 }

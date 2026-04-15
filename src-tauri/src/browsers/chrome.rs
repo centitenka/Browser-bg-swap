@@ -1,15 +1,15 @@
-use crate::core::config::{AppWarning, ApplyResult, BrowserSettings};
+use crate::core::config::{
+    AppWarning, ApplyResult, BrowserSettings, ValidationResult, VerificationResult,
+};
 use crate::core::error::{AppError, Result};
 use crate::utils::fs::{copy_atomic, write_atomic, write_atomic_string};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const REQUIRED_BUNDLE_FILES: [&str; 4] = ["manifest.json", "newtab.html", "styles.css", "newtab.js"];
+const REQUIRED_BUNDLE_FILES: [&str; 4] =
+    ["manifest.json", "newtab.html", "styles.css", "newtab.js"];
 const REQUIRED_ICON_FILES: [&str; 3] = ["icon16.png", "icon48.png", "icon128.png"];
-const SHORTCUTS_PER_ROW: usize = 6;
-const SHORTCUTS_H_SPACING: usize = 8;
-const SHORTCUTS_V_SPACING: usize = 10;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChromeDetectResult {
@@ -21,10 +21,39 @@ pub struct ChromeDetectResult {
     pub bundle_status_message: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChromeBundleSnapshotEntry {
+    pub id: String,
+    pub label: String,
+    pub path: String,
+}
+
 pub struct ChromeManager;
 
 impl ChromeManager {
-    /// Convert a hex color string to (r, g, b) tuple
+    fn default_search_template(engine: &str) -> &'static str {
+        match engine {
+            "bing" => "https://www.bing.com/search?q={query}",
+            "baidu" => "https://www.baidu.com/s?wd={query}",
+            "duckduckgo" => "https://duckduckgo.com/?q={query}",
+            _ => "https://www.google.com/search?q={query}",
+        }
+    }
+
+    fn resolve_search_template(settings: &BrowserSettings) -> String {
+        if settings.search_engine == "custom" && settings.search_url_template.contains("{query}") {
+            settings.search_url_template.trim().to_string()
+        } else {
+            Self::default_search_template(&settings.search_engine).to_string()
+        }
+    }
+
+    fn is_valid_search_template(template: &str) -> bool {
+        let trimmed = template.trim();
+        (trimmed.starts_with("https://") || trimmed.starts_with("http://"))
+            && trimmed.contains("{query}")
+    }
+
     fn hex_to_rgb(hex: &str) -> (u8, u8, u8) {
         let hex = hex.trim_start_matches('#');
         let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(255);
@@ -33,16 +62,21 @@ impl ChromeManager {
         (r, g, b)
     }
 
-    /// Persistent extension directory
     fn get_extension_dir() -> Result<PathBuf> {
         let dir = dirs::data_dir()
-            .ok_or(AppError::Io("无法获取数据目录".into()))?
+            .ok_or(AppError::Io("Could not resolve the data directory.".into()))?
             .join("BrowserBgSwap")
             .join("Extension");
         Ok(dir)
     }
 
-    /// Detect Chrome/Edge installations and extension status
+    fn get_snapshots_dir() -> Result<PathBuf> {
+        Ok(dirs::data_dir()
+            .ok_or(AppError::Io("Could not resolve the data directory.".into()))?
+            .join("BrowserBgSwap")
+            .join("ExtensionSnapshots"))
+    }
+
     pub fn detect() -> Result<ChromeDetectResult> {
         let ext_dir = Self::get_extension_dir()?;
         let (bundle_status, bundle_status_message) = Self::bundle_status(&ext_dir);
@@ -58,11 +92,85 @@ impl ChromeManager {
         })
     }
 
-    /// Generate / update extension files
-    pub fn apply(
+    pub fn validate_apply(
         settings: &BrowserSettings,
         image_path: Option<&str>,
-    ) -> Result<ApplyResult> {
+    ) -> Result<ValidationResult> {
+        let ext_dir = Self::get_extension_dir()?;
+        let mut blocking = Vec::new();
+        let mut warnings = Vec::new();
+        let (bundle_status, bundle_status_message) = Self::bundle_status(&ext_dir);
+
+        if !Self::is_chrome_installed() && !Self::is_edge_installed() {
+            blocking.push(AppWarning::new(
+                "chrome_browser_missing",
+                "Chrome or Edge must be installed to use the generated new tab bundle.",
+            ));
+        }
+
+        if let Some(path) = image_path {
+            let image = Path::new(path);
+            if !image.exists() || !image.is_file() {
+                blocking.push(AppWarning::new(
+                    "background_image_missing",
+                    "The selected background image could not be found.",
+                ));
+            }
+        }
+
+        if !Self::dir_is_writable(&ext_dir)? {
+            blocking.push(AppWarning::new(
+                "extension_dir_not_writable",
+                "The extension bundle directory is not writable.",
+            ));
+        }
+
+        if bundle_status == "invalid" {
+            warnings.push(AppWarning::new("bundle_invalid", bundle_status_message));
+        }
+
+        for shortcut in &settings.shortcuts {
+            if !Self::is_valid_shortcut_url(&shortcut.url) {
+                blocking.push(AppWarning::with_details(
+                    "shortcut_url_invalid",
+                    "One or more shortcut URLs are invalid.",
+                    vec![shortcut.title.clone(), shortcut.url.clone()],
+                ));
+                break;
+            }
+        }
+
+        if settings.search_engine == "custom"
+            && !Self::is_valid_search_template(&settings.search_url_template)
+        {
+            blocking.push(AppWarning::with_details(
+                "custom_search_template_invalid",
+                "The custom search template must start with http:// or https:// and include {query}.",
+                vec![settings.search_url_template.clone()],
+            ));
+        }
+
+        let mut target_summary = vec![
+            format!("Bundle: {}", ext_dir.to_string_lossy()),
+            format!("Bundle status: {bundle_status}"),
+            format!(
+                "Layout defaults: columns={}, gap={}",
+                settings.shortcuts_columns, settings.shortcuts_gap
+            ),
+        ];
+        if let Some(path) = image_path {
+            target_summary.push(format!("Background: {path}"));
+        }
+
+        Ok(ValidationResult {
+            can_apply: blocking.is_empty(),
+            blocking,
+            warnings,
+            target_summary,
+        })
+    }
+
+    pub fn apply(settings: &BrowserSettings, image_path: Option<&str>) -> Result<ApplyResult> {
         let ext_dir = Self::get_extension_dir()?;
         let was_ready = Self::bundle_status(&ext_dir).0 == "ready";
         fs::create_dir_all(&ext_dir)?;
@@ -72,7 +180,6 @@ impl ChromeManager {
         Self::cleanup_controlled_files(&ext_dir)?;
 
         let bg_file_name = image_path.and_then(Self::background_file_name);
-
         Self::reset_images_dir(&ext_dir.join("images"))?;
 
         if let (Some(img), Some(name)) = (image_path, bg_file_name.as_deref()) {
@@ -89,6 +196,7 @@ impl ChromeManager {
         Self::write_embedded_icons(&ext_dir.join("icons"))?;
         Self::validate_bundle(&ext_dir, bg_file_name.as_deref())?;
 
+        let generated_files = Self::generated_file_list(&ext_dir, bg_file_name.as_deref());
         let mut warnings = Vec::new();
         if image_path.is_some() {
             warnings.push(AppWarning::new(
@@ -96,27 +204,33 @@ impl ChromeManager {
                 "The selected background image was copied into the generated extension bundle.",
             ));
         }
-        warnings.push(if was_ready {
-            AppWarning::new(
+        let next_action = if was_ready {
+            warnings.push(AppWarning::new(
                 "extension_reload_required",
                 "Reload the installed extension or refresh a new tab to pick up the updated bundle.",
-            )
+            ));
+            "reload_extension"
         } else {
-            AppWarning::new(
+            warnings.push(AppWarning::new(
                 "extension_manual_install_required",
                 "Load the generated extension bundle manually the first time.",
-            )
-        });
+            ));
+            "load_extension"
+        };
 
         Ok(ApplyResult {
             success: true,
             output_path: Some(ext_dir.to_string_lossy().to_string()),
             backup_name: None,
             warnings,
+            verification: VerificationResult {
+                verified: true,
+                generated_files,
+                next_action: Some(next_action.into()),
+            },
         })
     }
 
-    /// Remove extension files
     pub fn remove() -> Result<()> {
         let ext_dir = Self::get_extension_dir()?;
         if ext_dir.exists() {
@@ -125,28 +239,112 @@ impl ChromeManager {
         Ok(())
     }
 
-    /// Open the extensions page in the specified browser
+    pub fn list_bundle_snapshots() -> Result<Vec<ChromeBundleSnapshotEntry>> {
+        let snapshots_dir = Self::get_snapshots_dir()?;
+        if !snapshots_dir.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut snapshots = Vec::new();
+        for entry in fs::read_dir(&snapshots_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let id = entry.file_name().to_string_lossy().to_string();
+            snapshots.push(ChromeBundleSnapshotEntry {
+                label: id.replace('_', " "),
+                path: path.to_string_lossy().to_string(),
+                id,
+            });
+        }
+
+        snapshots.sort_by(|a, b| b.id.cmp(&a.id));
+        Ok(snapshots)
+    }
+
+    pub fn export_bundle_snapshot() -> Result<ChromeBundleSnapshotEntry> {
+        let ext_dir = Self::get_extension_dir()?;
+        if Self::bundle_status(&ext_dir).0 != "ready" {
+            return Err(AppError::BackupFailed(
+                "Generate the extension bundle before exporting a snapshot.".into(),
+            ));
+        }
+
+        let snapshots_dir = Self::get_snapshots_dir()?;
+        fs::create_dir_all(&snapshots_dir)?;
+        let id = chrono::Local::now()
+            .format("snapshot_%Y%m%d_%H%M%S")
+            .to_string();
+        let target = snapshots_dir.join(&id);
+        if target.exists() {
+            fs::remove_dir_all(&target)?;
+        }
+        Self::copy_dir_recursive(&ext_dir, &target)?;
+
+        Ok(ChromeBundleSnapshotEntry {
+            label: id.replace('_', " "),
+            path: target.to_string_lossy().to_string(),
+            id,
+        })
+    }
+
+    pub fn restore_bundle_snapshot(snapshot_id: &str) -> Result<ApplyResult> {
+        let snapshots_dir = Self::get_snapshots_dir()?;
+        let source = snapshots_dir.join(snapshot_id);
+        if !source.exists() || !source.is_dir() {
+            return Err(AppError::BackupFailed(
+                "The requested snapshot does not exist.".into(),
+            ));
+        }
+
+        let ext_dir = Self::get_extension_dir()?;
+        if ext_dir.exists() {
+            fs::remove_dir_all(&ext_dir)?;
+        }
+        Self::copy_dir_recursive(&source, &ext_dir)?;
+        Self::validate_bundle(&ext_dir, None)?;
+
+        Ok(ApplyResult {
+            success: true,
+            output_path: Some(ext_dir.to_string_lossy().to_string()),
+            backup_name: None,
+            warnings: vec![AppWarning::new(
+                "extension_reload_required",
+                "Reload the installed extension or refresh a new tab to pick up the restored bundle.",
+            )],
+            verification: VerificationResult {
+                verified: true,
+                generated_files: Self::generated_file_list(&ext_dir, None),
+                next_action: Some("reload_extension".into()),
+            },
+        })
+    }
+
     pub fn open_extensions_page(browser: &str) -> Result<()> {
         let (exe, url) = match browser {
             "chrome" => (Self::find_chrome_exe(), "chrome://extensions"),
             "edge" => (Self::find_edge_exe(), "edge://extensions"),
-            _ => return Err(AppError::Io("不支持的浏览器".into())),
+            _ => return Err(AppError::Io("Unsupported browser".into())),
         };
 
         let exe = exe.ok_or(AppError::Io(format!(
-            "未找到{}可执行文件",
-            if browser == "chrome" { "Chrome" } else { "Edge" }
+            "Could not locate the {} executable",
+            if browser == "chrome" {
+                "Chrome"
+            } else {
+                "Edge"
+            }
         )))?;
 
         std::process::Command::new(exe)
             .arg(url)
             .spawn()
-            .map_err(|e| AppError::Io(format!("无法启动浏览器: {}", e)))?;
+            .map_err(|e| AppError::Io(format!("Could not launch the browser: {e}")))?;
 
         Ok(())
     }
-
-    // ── Browser detection ──────────────────────────────────────────
 
     fn find_chrome_exe() -> Option<PathBuf> {
         let candidates = vec![
@@ -160,10 +358,7 @@ impl ChromeManager {
                 .ok()
                 .map(|p| PathBuf::from(p).join("Google\\Chrome\\Application\\chrome.exe")),
         ];
-        candidates
-            .into_iter()
-            .flatten()
-            .find(|p| p.exists())
+        candidates.into_iter().flatten().find(|p| p.exists())
     }
 
     fn find_edge_exe() -> Option<PathBuf> {
@@ -175,10 +370,7 @@ impl ChromeManager {
                 .ok()
                 .map(|p| PathBuf::from(p).join("Microsoft\\Edge\\Application\\msedge.exe")),
         ];
-        candidates
-            .into_iter()
-            .flatten()
-            .find(|p| p.exists())
+        candidates.into_iter().flatten().find(|p| p.exists())
     }
 
     fn is_chrome_installed() -> bool {
@@ -191,7 +383,10 @@ impl ChromeManager {
 
     fn bundle_status(ext_dir: &Path) -> (String, String) {
         if !ext_dir.exists() {
-            return ("missing".into(), "Extension bundle has not been generated yet.".into());
+            return (
+                "missing".into(),
+                "Extension bundle has not been generated yet.".into(),
+            );
         }
 
         let missing_required = REQUIRED_BUNDLE_FILES
@@ -202,13 +397,17 @@ impl ChromeManager {
                 .any(|name| !ext_dir.join("icons").join(name).exists());
 
         if missing_required {
-            return ("invalid".into(), "Extension bundle is incomplete and should be regenerated.".into());
+            return (
+                "invalid".into(),
+                "Extension bundle is incomplete and should be regenerated.".into(),
+            );
         }
 
-        ("ready".into(), "Extension bundle is ready to load in the browser.".into())
+        (
+            "ready".into(),
+            "Extension bundle is ready to load in the browser.".into(),
+        )
     }
-
-    // ── File generation ────────────────────────────────────────────
 
     fn background_file_name(image_path: &str) -> Option<String> {
         Path::new(image_path)
@@ -224,7 +423,6 @@ impl ChromeManager {
                 fs::remove_file(path)?;
             }
         }
-
         Ok(())
     }
 
@@ -238,16 +436,15 @@ impl ChromeManager {
                 }
             }
         }
-
         Ok(())
     }
 
     fn generate_manifest() -> String {
         serde_json::json!({
             "manifest_version": 3,
-            "name": "BrowserBgSwap - 新标签页自定义",
+            "name": "BrowserBgSwap - New Tab Customization",
             "version": env!("CARGO_PKG_VERSION"),
-            "description": "自定义新标签页背景图片和样式",
+            "description": "Customize the new tab page background and layout",
             "chrome_url_overrides": {
                 "newtab": "newtab.html"
             },
@@ -266,12 +463,31 @@ impl ChromeManager {
         .to_string()
     }
 
+    fn layout_constants(settings: &BrowserSettings) -> (usize, usize, usize) {
+        let per_row = match settings.shortcuts_columns.as_str() {
+            "2" => 2,
+            "3" => 3,
+            "4" => 4,
+            "5" => 5,
+            "6" => 6,
+            _ => 6,
+        };
+
+        let h_spacing = ((settings.shortcuts_gap as f64) * 0.75)
+            .round()
+            .clamp(6.0, 18.0) as usize;
+        let v_spacing = ((settings.shortcuts_gap as f64) * 0.95)
+            .round()
+            .clamp(8.0, 22.0) as usize;
+        (per_row, h_spacing, v_spacing)
+    }
+
     fn generate_html(settings: &BrowserSettings, bg_file_name: Option<&str>) -> String {
         let bg_size = match settings.background_fit.as_str() {
             "contain" => "contain",
             "center" => "auto",
             "stretch" => "100% 100%",
-            _ => "cover", // "cover" and default
+            _ => "cover",
         };
 
         let bg_style = match bg_file_name {
@@ -289,28 +505,22 @@ impl ChromeManager {
         let overlay_alpha = settings.overlay_opacity as f64 / 100.0;
         let (ov_r, ov_g, ov_b) = Self::hex_to_rgb(&settings.overlay_color);
 
-        let (search_action, search_param) = match settings.search_engine.as_str() {
-            "bing" => ("https://www.bing.com/search", "q"),
-            "baidu" => ("https://www.baidu.com/s", "wd"),
-            "duckduckgo" => ("https://duckduckgo.com/", "q"),
-            _ => ("https://www.google.com/search", "q"),
-        };
+        let search_template = Self::resolve_search_template(settings);
 
-        let shortcuts_json = serde_json::to_string(&settings.shortcuts).unwrap_or_else(|_| "[]".into());
+        let shortcuts_json =
+            serde_json::to_string(&settings.shortcuts).unwrap_or_else(|_| "[]".into());
 
         let cp = &settings.clock_position;
         let sp = &settings.search_position;
         let shp = &settings.shortcuts_position;
-
         let clock_weight = match settings.clock_font_weight.as_str() {
             "bold" => "700",
             "normal" => "400",
-            _ => "300", // "light" and default
+            _ => "300",
         };
 
         let (search_r, search_g, search_b) = Self::hex_to_rgb(&settings.search_bg_color);
         let search_bg_alpha = settings.search_bg_opacity as f64 / 100.0;
-
         let (sc_r, sc_g, sc_b) = Self::hex_to_rgb(&settings.shortcuts_bg_color);
         let sc_bg_alpha = settings.shortcuts_bg_opacity as f64 / 100.0;
 
@@ -326,24 +536,23 @@ impl ChromeManager {
             "#shortcuts { display: none !important; }".to_string()
         };
 
-        let search_action =
-            serde_json::to_string(search_action).unwrap_or_else(|_| "\"https://www.google.com/search\"".into());
-        let search_param = serde_json::to_string(search_param).unwrap_or_else(|_| "\"q\"".into());
-        let search_placeholder =
-            serde_json::to_string(&settings.search_placeholder).unwrap_or_else(|_| "\"Search...\"".into());
+        let search_template = serde_json::to_string(&search_template)
+            .unwrap_or_else(|_| "\"https://www.google.com/search?q={query}\"".into());
+        let search_placeholder = serde_json::to_string(&settings.search_placeholder)
+            .unwrap_or_else(|_| "\"Search...\"".into());
 
         format!(
             r#"<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新标签页</title>
+    <title>New Tab</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         .overlay {{ background: rgba({ov_r},{ov_g},{ov_b},{overlay_alpha:.2}) !important; }}
         .clock {{ color: {clock_color}; font-size: {clock_size}px; font-weight: {clock_weight}; left: {cx:.1}%; top: {cy:.1}%; {clock_vis} }}
-        .search-wrap {{ left: {sx:.1}%; top: {sy:.1}%; {search_vis} }}
+        .search-wrap {{ left: {sx:.1}%; top: {sy:.1}%; width: min(90vw, {search_width}px); {search_vis} }}
         .search-wrap form {{ background: rgba({search_r},{search_g},{search_b},{search_bg_alpha:.2}); border-radius: {search_border_radius}px; }}
         .shortcut-item {{ background: rgba({sc_r},{sc_g},{sc_b},{sc_bg_alpha:.2}); border-radius: {shortcuts_border_radius}px; }}
         {shortcuts_vis}
@@ -357,39 +566,52 @@ impl ChromeManager {
     <div class="clock" id="clock"></div>{clock_date_div}
 
     <div class="search-wrap">
-        <form action={search_action} method="GET">
-            <input type="text" name={search_param} placeholder={search_placeholder} autofocus>
+        <form id="search-form">
+            <input id="search-input" type="text" placeholder={search_placeholder} autofocus>
             <button type="submit">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
         </form>
     </div>
 
-    <div class="shortcuts-wrap" id="shortcuts"></div>
+        <div class="shortcuts-wrap" id="shortcuts"></div>
 
     <script>
         var SHORTCUTS = {shortcuts_json};
         var SHORTCUTS_POSITION = {{ x: {shx:.1}, y: {shy:.1} }};
         var CLOCK_CONFIG = {{ format24h: {clock_format_24h}, showSeconds: {clock_show_seconds}, showDate: {clock_show_date} }};
+        var SEARCH_TEMPLATE = {search_template};
     </script>
     <script src="newtab.js"></script>
 </body>
 </html>"#,
             overlay_alpha = overlay_alpha,
-            ov_r = ov_r, ov_g = ov_g, ov_b = ov_b,
+            ov_r = ov_r,
+            ov_g = ov_g,
+            ov_b = ov_b,
             clock_color = settings.clock_color,
             clock_size = settings.clock_size,
             clock_weight = clock_weight,
-            cx = cp.x, cy = cp.y,
-            sx = sp.x, sy = sp.y,
-            shx = shp.x, shy = shp.y,
-            clock_vis = if settings.show_clock { "" } else { "display:none;" },
-            search_vis = if settings.show_search_box { "" } else { "display:none;" },
+            cx = cp.x,
+            cy = cp.y,
+            sx = sp.x,
+            sy = sp.y,
+            shx = shp.x,
+            shy = shp.y,
+            clock_vis = if settings.show_clock {
+                ""
+            } else {
+                "display:none;"
+            },
+            search_vis = if settings.show_search_box {
+                ""
+            } else {
+                "display:none;"
+            },
             shortcuts_vis = shortcuts_vis,
             bg_style = bg_style,
             filter_style = filter_style,
-            search_action = search_action,
-            search_param = search_param,
+            search_template = search_template,
             search_placeholder = search_placeholder,
             shortcuts_json = shortcuts_json,
             search_r = search_r,
@@ -397,6 +619,7 @@ impl ChromeManager {
             search_b = search_b,
             search_bg_alpha = search_bg_alpha,
             search_border_radius = settings.search_border_radius,
+            search_width = settings.search_width,
             sc_r = sc_r,
             sc_g = sc_g,
             sc_b = sc_b,
@@ -412,45 +635,63 @@ impl ChromeManager {
     fn generate_css(settings: &BrowserSettings) -> String {
         let (sc_r, sc_g, sc_b) = Self::hex_to_rgb(&settings.shortcuts_bg_color);
         let sc_bg_alpha = settings.shortcuts_bg_opacity as f64 / 100.0;
-
         let (search_r, search_g, search_b) = Self::hex_to_rgb(&settings.search_bg_color);
         let search_bg_alpha = settings.search_bg_opacity as f64 / 100.0;
-
         let (ss_r, ss_g, ss_b) = Self::hex_to_rgb(&settings.search_shadow_color);
         let ss_alpha = settings.search_shadow_opacity as f64 / 100.0;
-
         let (scs_r, scs_g, scs_b) = Self::hex_to_rgb(&settings.shortcuts_shadow_color);
         let scs_alpha = settings.shortcuts_shadow_opacity as f64 / 100.0;
-
         let (cs_r, cs_g, cs_b) = Self::hex_to_rgb(&settings.clock_shadow_color);
         let cs_alpha = settings.clock_shadow_opacity as f64 / 100.0;
 
         let search_border = if settings.search_border_style != "none" {
-            format!("border: {}px {} {};", settings.search_border_width, settings.search_border_style, settings.search_border_color)
-        } else { String::new() };
-
+            format!(
+                "border: {}px {} {};",
+                settings.search_border_width,
+                settings.search_border_style,
+                settings.search_border_color
+            )
+        } else {
+            String::new()
+        };
         let search_backdrop = if settings.search_backdrop_blur > 0 {
-            format!("backdrop-filter: blur({}px);", settings.search_backdrop_blur)
-        } else { String::new() };
-
+            format!(
+                "backdrop-filter: blur({}px);",
+                settings.search_backdrop_blur
+            )
+        } else {
+            String::new()
+        };
         let sc_border = if settings.shortcuts_border_style != "none" {
-            format!("border: {}px {} {};", settings.shortcuts_border_width, settings.shortcuts_border_style, settings.shortcuts_border_color)
-        } else { String::new() };
-
+            format!(
+                "border: {}px {} {};",
+                settings.shortcuts_border_width,
+                settings.shortcuts_border_style,
+                settings.shortcuts_border_color
+            )
+        } else {
+            String::new()
+        };
         let sc_backdrop = if settings.shortcuts_backdrop_blur > 0 {
-            format!("backdrop-filter: blur({}px);", settings.shortcuts_backdrop_blur)
-        } else { String::new() };
-
+            format!(
+                "backdrop-filter: blur({}px);",
+                settings.shortcuts_backdrop_blur
+            )
+        } else {
+            String::new()
+        };
         let sc_shape = match settings.shortcuts_shape.as_str() {
             "circle" => "border-radius: 50%; aspect-ratio: 1;".to_string(),
-            "square" => format!("border-radius: {}px; aspect-ratio: 1;", settings.shortcuts_border_radius),
+            "square" => format!(
+                "border-radius: {}px; aspect-ratio: 1;",
+                settings.shortcuts_border_radius
+            ),
             _ => format!("border-radius: {}px;", settings.shortcuts_border_radius),
         };
-
         let clock_font = match settings.clock_font_family.as_str() {
             "serif" => "font-family: Georgia, 'Times New Roman', serif;",
             "mono" => "font-family: 'Courier New', monospace;",
-            _ => "",
+            _ => "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;",
         };
 
         let base_css = format!(
@@ -560,12 +801,14 @@ body {{
     width: {icon_size}px; height: {icon_size}px; border-radius: 8px; object-fit: contain;
 }}
 
-  .shortcut-title {{
-      color: {sc_title_color}; font-size: 11px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }}
+.shortcut-title {{
+    color: {sc_title_color}; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}}
 "#,
-            search_r = search_r, search_g = search_g, search_b = search_b,
+            search_r = search_r,
+            search_g = search_g,
+            search_b = search_b,
             search_bg_alpha = search_bg_alpha,
             search_border_radius = settings.search_border_radius,
             search_padding = settings.search_padding,
@@ -573,28 +816,43 @@ body {{
             search_border = search_border,
             search_backdrop = search_backdrop,
             search_text_color = settings.search_text_color,
-            ss_r = ss_r, ss_g = ss_g, ss_b = ss_b, ss_alpha = ss_alpha,
+            ss_r = ss_r,
+            ss_g = ss_g,
+            ss_b = ss_b,
+            ss_alpha = ss_alpha,
             ss_blur = settings.search_shadow_blur,
-            sc_r = sc_r, sc_g = sc_g, sc_b = sc_b, sc_bg_alpha = sc_bg_alpha,
+            sc_r = sc_r,
+            sc_g = sc_g,
+            sc_b = sc_b,
+            sc_bg_alpha = sc_bg_alpha,
             sc_shape = sc_shape,
             sc_pad_y = settings.shortcuts_padding_y,
             sc_pad_x = settings.shortcuts_padding_x,
             sc_border = sc_border,
             sc_backdrop = sc_backdrop,
-            scs_r = scs_r, scs_g = scs_g, scs_b = scs_b, scs_alpha = scs_alpha,
+            scs_r = scs_r,
+            scs_g = scs_g,
+            scs_b = scs_b,
+            scs_alpha = scs_alpha,
             scs_blur = settings.shortcuts_shadow_blur,
             icon_size = settings.shortcuts_icon_size,
             sc_title_color = settings.shortcuts_title_color,
-            cs_r = cs_r, cs_g = cs_g, cs_b = cs_b, cs_alpha = cs_alpha,
-              cs_blur = settings.clock_shadow_blur,
-              clock_letter_spacing = settings.clock_letter_spacing,
-              clock_font = clock_font,
+            cs_r = cs_r,
+            cs_g = cs_g,
+            cs_b = cs_b,
+            cs_alpha = cs_alpha,
+            cs_blur = settings.clock_shadow_blur,
+            clock_letter_spacing = settings.clock_letter_spacing,
+            clock_font = clock_font,
         );
 
         if settings.custom_css.trim().is_empty() {
             base_css
         } else {
-            format!("{}\n\n/* BrowserBgSwap custom CSS */\n{}", base_css, settings.custom_css.trim())
+            format!(
+                "{base_css}\n\n/* BrowserBgSwap custom CSS */\n{}",
+                settings.custom_css.trim()
+            )
         }
     }
 
@@ -602,6 +860,10 @@ body {{
         let format_24h = settings.clock_format_24h;
         let show_seconds = settings.clock_show_seconds;
         let show_date = settings.clock_show_date;
+        let (per_row, h_spacing, v_spacing) = Self::layout_constants(settings);
+
+        let search_template = serde_json::to_string(&Self::resolve_search_template(settings))
+            .unwrap_or_else(|_| "\"https://www.google.com/search?q={query}\"".into());
 
         format!(
             r#"// Clock
@@ -641,7 +903,20 @@ function updateClock() {{
 setInterval(updateClock, 1000);
 updateClock();
 
-// Shortcuts
+(function() {{
+    var form = document.getElementById('search-form');
+    var input = document.getElementById('search-input');
+    var template = (typeof SEARCH_TEMPLATE !== 'undefined' && SEARCH_TEMPLATE) ? SEARCH_TEMPLATE : {search_template};
+    if (form && input) {{
+        form.addEventListener('submit', function(event) {{
+            event.preventDefault();
+            var query = String(input.value || '').trim();
+            if (!query) return;
+            window.location.href = template.replace('{{query}}', encodeURIComponent(query));
+        }});
+    }}
+}})();
+
 (function() {{
     var container = document.getElementById('shortcuts');
     if (!container) return;
@@ -659,12 +934,65 @@ updateClock();
         }}
     }}
 
+    function cacheKey(domain) {{
+        return 'browser-bg-swap:favicon:' + domain;
+    }}
+
+    function faviconUrl(domain) {{
+        return 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=64';
+    }}
+
+    function fallbackIcon(iconDiv, shortcut) {{
+        iconDiv.textContent = shortcut.icon || '🔗';
+    }}
+
+    function hydrateFavicon(iconDiv, shortcut) {{
+        var domain = getDomain(shortcut.url);
+        if (!domain) {{
+            fallbackIcon(iconDiv, shortcut);
+            return;
+        }}
+
+        var cached = window.localStorage.getItem(cacheKey(domain));
+        if (cached) {{
+            var cachedImg = document.createElement('img');
+            cachedImg.src = cached;
+            cachedImg.onerror = function() {{
+                window.localStorage.removeItem(cacheKey(domain));
+                fallbackIcon(iconDiv, shortcut);
+            }};
+            iconDiv.appendChild(cachedImg);
+            return;
+        }}
+
+        var img = document.createElement('img');
+        img.crossOrigin = 'anonymous';
+        img.src = faviconUrl(domain);
+        img.onload = function() {{
+            try {{
+                var canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth || 32;
+                canvas.height = img.naturalHeight || 32;
+                var ctx = canvas.getContext('2d');
+                if (ctx) {{
+                    ctx.drawImage(img, 0, 0);
+                    window.localStorage.setItem(cacheKey(domain), canvas.toDataURL('image/png'));
+                }}
+            }} catch (error) {{
+                // Ignore cache persistence failures and keep the live icon.
+            }}
+        }};
+        img.onerror = function() {{
+            fallbackIcon(iconDiv, shortcut);
+        }};
+        iconDiv.appendChild(img);
+    }}
+
     list.forEach(function(s, i) {{
         var div = document.createElement('div');
         div.className = 'shortcut-item';
         div.addEventListener('click', function() {{ window.location.href = s.url; }});
 
-        // Determine position
         var pos;
         if (s.position) {{
             pos = s.position;
@@ -685,19 +1013,7 @@ updateClock();
 
         var iconDiv = document.createElement('div');
         iconDiv.className = 'shortcut-icon';
-
-        var domain = getDomain(s.url);
-        if (domain) {{
-            var img = document.createElement('img');
-            img.src = 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=64';
-            img.onerror = function() {{
-                iconDiv.removeChild(img);
-                iconDiv.textContent = s.icon;
-            }};
-            iconDiv.appendChild(img);
-        }} else {{
-            iconDiv.textContent = s.icon;
-        }}
+        hydrateFavicon(iconDiv, s);
 
         var titleDiv = document.createElement('div');
         titleDiv.className = 'shortcut-title';
@@ -711,14 +1027,43 @@ updateClock();
             format_24h = format_24h,
             show_seconds = show_seconds,
             show_date = show_date,
-            per_row = SHORTCUTS_PER_ROW,
-            h_spacing = SHORTCUTS_H_SPACING,
-            v_spacing = SHORTCUTS_V_SPACING,
+            search_template = search_template,
+            per_row = per_row,
+            h_spacing = h_spacing,
+            v_spacing = v_spacing,
         )
     }
 
+    fn generated_file_list(ext_dir: &Path, bg_file_name: Option<&str>) -> Vec<String> {
+        let mut files = REQUIRED_BUNDLE_FILES
+            .iter()
+            .map(|name| ext_dir.join(name).to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        for icon in REQUIRED_ICON_FILES {
+            files.push(
+                ext_dir
+                    .join("icons")
+                    .join(icon)
+                    .to_string_lossy()
+                    .to_string(),
+            );
+        }
+
+        if let Some(name) = bg_file_name {
+            files.push(
+                ext_dir
+                    .join("images")
+                    .join(name)
+                    .to_string_lossy()
+                    .to_string(),
+            );
+        }
+
+        files
+    }
+
     fn write_embedded_icons(icons_dir: &Path) -> Result<()> {
-        // Keep embedded extension icons in a tracked path so CI and local builds resolve them identically.
         const ICON_16: &[u8] = include_bytes!("../../icons/32x32.png");
         const ICON_48: &[u8] = include_bytes!("../../icons/Square44x44Logo.png");
         const ICON_128: &[u8] = include_bytes!("../../icons/128x128.png");
@@ -730,7 +1075,6 @@ updateClock();
         ] {
             write_atomic(&icons_dir.join(name), bytes)?;
         }
-
         Ok(())
     }
 
@@ -738,24 +1082,63 @@ updateClock();
         for required in REQUIRED_BUNDLE_FILES {
             let path = ext_dir.join(required);
             if !path.exists() {
-                return Err(AppError::Io(format!("生成扩展缺少文件: {}", required)));
+                return Err(AppError::Io(format!(
+                    "Generated extension is missing {required}"
+                )));
             }
         }
 
         for icon in REQUIRED_ICON_FILES {
             let path = ext_dir.join("icons").join(icon);
             if !path.exists() {
-                return Err(AppError::Io(format!("生成扩展缺少图标: {}", icon)));
+                return Err(AppError::Io(format!(
+                    "Generated extension is missing {icon}"
+                )));
             }
         }
 
         if let Some(name) = bg_file_name {
             let image = ext_dir.join("images").join(name);
             if !image.exists() {
-                return Err(AppError::Io(format!("生成扩展缺少背景图: {}", name)));
+                return Err(AppError::Io(format!(
+                    "Generated extension is missing {name}"
+                )));
             }
         }
 
+        Ok(())
+    }
+
+    fn is_valid_shortcut_url(url: &str) -> bool {
+        let trimmed = url.trim();
+        trimmed.starts_with("https://") || trimmed.starts_with("http://")
+    }
+
+    fn dir_is_writable(path: &Path) -> Result<bool> {
+        let parent = if path.exists() {
+            path.to_path_buf()
+        } else {
+            path.parent().unwrap_or(path).to_path_buf()
+        };
+        fs::create_dir_all(&parent)?;
+        let probe = parent.join(".browser_bg_swap_probe");
+        let result = write_atomic_string(&probe, "ok");
+        let _ = fs::remove_file(&probe);
+        Ok(result.is_ok())
+    }
+
+    fn copy_dir_recursive(from: &Path, to: &Path) -> Result<()> {
+        fs::create_dir_all(to)?;
+        for entry in fs::read_dir(from)? {
+            let entry = entry?;
+            let source = entry.path();
+            let target = to.join(entry.file_name());
+            if source.is_dir() {
+                Self::copy_dir_recursive(&source, &target)?;
+            } else {
+                copy_atomic(&source, &target)?;
+            }
+        }
         Ok(())
     }
 }
@@ -782,7 +1165,7 @@ mod tests {
         let html = ChromeManager::generate_html(&settings, None);
 
         assert!(html.contains("https://duckduckgo.com/"));
-        assert!(html.contains("name=\"q\""));
+        assert!(html.contains("var SEARCH_TEMPLATE"));
     }
 
     #[test]
@@ -797,11 +1180,55 @@ mod tests {
     }
 
     #[test]
-    fn generated_js_uses_shared_shortcut_layout_constants() {
-        let js = ChromeManager::generate_js(&BrowserSettings::default());
+    fn generated_html_keeps_custom_search_template() {
+        let mut settings = BrowserSettings::default();
+        settings.search_engine = "custom".into();
+        settings.search_url_template = "https://kagi.com/search?q={query}".into();
 
-        assert!(js.contains("var perRow = 6;"));
-        assert!(js.contains("var hSpacing = 8;"));
-        assert!(js.contains("var vSpacing = 10;"));
+        let html = ChromeManager::generate_html(&settings, None);
+
+        assert!(html.contains("https://kagi.com/search?q={query}"));
+    }
+
+    #[test]
+    fn generated_js_uses_shortcut_layout_settings() {
+        let mut settings = BrowserSettings::default();
+        settings.shortcuts_columns = "4".into();
+        settings.shortcuts_gap = 18;
+
+        let js = ChromeManager::generate_js(&settings);
+
+        assert!(js.contains("var perRow = 4;"));
+        assert!(js.contains("var hSpacing = 14;"));
+        assert!(js.contains("var vSpacing = 17;"));
+    }
+
+    #[test]
+    fn validation_blocks_invalid_shortcut_urls() {
+        let mut settings = BrowserSettings::default();
+        settings.shortcuts[0].url = "notaurl".into();
+
+        let result = ChromeManager::validate_apply(&settings, None).unwrap();
+
+        assert!(!result.can_apply);
+        assert!(result
+            .blocking
+            .iter()
+            .any(|warning| warning.code == "shortcut_url_invalid"));
+    }
+
+    #[test]
+    fn validation_blocks_invalid_custom_search_template() {
+        let mut settings = BrowserSettings::default();
+        settings.search_engine = "custom".into();
+        settings.search_url_template = "https://kagi.com/search".into();
+
+        let result = ChromeManager::validate_apply(&settings, None).unwrap();
+
+        assert!(!result.can_apply);
+        assert!(result
+            .blocking
+            .iter()
+            .any(|warning| warning.code == "custom_search_template_invalid"));
     }
 }

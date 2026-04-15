@@ -67,11 +67,28 @@ function getFaviconUrl(url: string): string {
   }
 }
 
-function getDefaultShortcutPositions(shortcuts: Shortcut[], center: ElementPosition): ElementPosition[] {
+function getLayoutConstants(settings: BrowserSettings) {
+  const perRow =
+    settings.shortcuts_columns === '2' ||
+    settings.shortcuts_columns === '3' ||
+    settings.shortcuts_columns === '4' ||
+    settings.shortcuts_columns === '5' ||
+    settings.shortcuts_columns === '6'
+      ? Number(settings.shortcuts_columns)
+      : 6;
+  const hSpacing = Math.round(Math.min(18, Math.max(6, settings.shortcuts_gap * 0.75)));
+  const vSpacing = Math.round(Math.min(22, Math.max(8, settings.shortcuts_gap * 0.95)));
+
+  return { perRow, hSpacing, vSpacing };
+}
+
+function getDefaultShortcutPositions(
+  shortcuts: Shortcut[],
+  center: ElementPosition,
+  settings: BrowserSettings
+): ElementPosition[] {
   const positions: ElementPosition[] = [];
-  const itemsPerRow = 6;
-  const hSpacing = 8;
-  const vSpacing = 10;
+  const { perRow: itemsPerRow, hSpacing, vSpacing } = getLayoutConstants(settings);
   const totalRows = Math.ceil(shortcuts.length / itemsPerRow);
 
   for (let i = 0; i < shortcuts.length; i++) {
@@ -214,7 +231,7 @@ export function NtpPreview({
 
   const defaultShortcutPositions =
     settings.show_shortcuts && settings.shortcuts.length > 0
-      ? getDefaultShortcutPositions(settings.shortcuts, settings.shortcuts_position)
+      ? getDefaultShortcutPositions(settings.shortcuts, settings.shortcuts_position, settings)
       : [];
 
   const resolveShortcutPosition = (shortcut: Shortcut, index: number): ElementPosition | null => {

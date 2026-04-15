@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { AlertCircle, FolderOpen, Globe, RefreshCcw, Save, Trash2 } from 'lucide-react';
+import { AlertCircle, FileSearch, FolderOpen, Globe, RefreshCcw, Save, Trash2 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { browserCapabilities } from '../../config/capabilities';
 import { useConfigStore } from '../../stores/configStore';
@@ -11,6 +11,7 @@ import { ToastContainer } from '../common/Toast';
 import { ActionBar } from '../workspace/ActionBar';
 import { ActionStatusCard } from '../workspace/ActionStatusCard';
 import { BrowserWorkspace } from '../workspace/BrowserWorkspace';
+import { RecoveryCenter } from '../workspace/RecoveryCenter';
 import { ChromeSetupGuide } from './ChromeSetupGuide';
 import { NtpPreview } from './NtpPreview';
 import { ChromeSettings } from './ChromeSettings';
@@ -24,6 +25,7 @@ export function ChromePanel() {
   const { toasts, removeToast, success, error: showError } = useToast();
 
   const {
+    config,
     chromeSettings,
     chromeInfo,
     isLoading,
@@ -32,19 +34,33 @@ export function ChromePanel() {
     updateSettings,
     selectImage,
     detectChrome,
+    validateChrome,
     applyChrome,
     removeChrome,
+    chromeSnapshots,
+    exportChromeSnapshot,
+    restoreChromeSnapshot,
     exportSettings,
     importSettings,
+    exportDiagnostics,
     resetSettings,
   } = useConfigStore();
 
   const chromeAction = actionState.chrome;
   const isDirty = dirtyByTab.chrome;
+  const lastAppliedAt = config.chrome.last_applied?.applied_at ?? null;
 
   useEffect(() => {
     detectChrome();
   }, [detectChrome]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void validateChrome();
+    }, 180);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [chromeSettings, validateChrome]);
 
   const handlePositionChange = useCallback(
     (key: string, pos: ElementPosition) => {
@@ -108,6 +124,15 @@ export function ChromePanel() {
     }
   };
 
+  const handleExportDiagnostics = async () => {
+    try {
+      await exportDiagnostics('chrome');
+      success(t('diagnostics.exported'));
+    } catch {
+      showError(t('diagnostics.exportFailed'));
+    }
+  };
+
   const handleReset = async () => {
     const confirmed = await confirm({
       title: t('chrome.resetTitle'),
@@ -122,6 +147,39 @@ export function ChromePanel() {
     }
 
     resetSettings();
+  };
+
+  const handleExportSnapshot = async () => {
+    try {
+      const snapshot = await exportChromeSnapshot();
+      success(t('chrome.snapshotExported', { name: snapshot.label }));
+    } catch {
+      showError(t('chrome.snapshotExportFailed'));
+    }
+  };
+
+  const handleRestoreSnapshot = async (snapshotId: string) => {
+    const snapshot = chromeSnapshots.find((entry) => entry.id === snapshotId);
+    const confirmed = await confirm({
+      title: t('chrome.snapshotRestoreTitle'),
+      message: t('chrome.snapshotRestoreMessage', {
+        name: snapshot?.label ?? snapshotId,
+      }),
+      confirmText: t('chrome.snapshotRestore'),
+      cancelText: t('common.cancel'),
+      isDangerous: true,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await restoreChromeSnapshot(snapshotId);
+      success(t('chrome.snapshotRestored'));
+    } catch {
+      showError(t('chrome.snapshotRestoreFailed'));
+    }
   };
 
   const handleOpenFolder = async () => {
@@ -217,6 +275,12 @@ export function ChromePanel() {
             <dt className="text-gray-500">{t('chrome.bundleFolder')}</dt>
             <dd className="max-w-[220px] break-all text-right text-xs text-gray-400">{chromeInfo.extension_path}</dd>
           </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-gray-500">{t('status.lastApplied')}</dt>
+            <dd className="text-right text-xs text-gray-400">
+              {lastAppliedAt ? new Date(lastAppliedAt).toLocaleString() : t('status.notApplied')}
+            </dd>
+          </div>
         </dl>
       </section>
 
@@ -235,13 +299,38 @@ export function ChromePanel() {
       <ChromeSettings
         settings={chromeSettings}
         onChange={updateSettings}
-        onSelectImage={selectImage}
+        onSelectImage={() => void selectImage(chromeSettings.background_image_mode !== 'direct')}
       />
 
       <ChromeSetupGuide
         chromeInfo={chromeInfo}
         copied={copied}
         onCopy={handleCopy}
+      />
+
+      <RecoveryCenter
+        title={t('recovery.title')}
+        subtitle={t('recovery.chromeDesc')}
+        countLabel={
+          chromeSnapshots.length > 0
+            ? t('backup.savedCount', { count: String(chromeSnapshots.length) })
+            : t('backup.none')
+        }
+        emptyTitle={t('chrome.snapshotEmptyTitle')}
+        emptyDesc={t('chrome.snapshotEmptyDesc')}
+        createLabel={t('chrome.snapshotExport')}
+        createIconLabel={t('chrome.snapshotExport')}
+        showAllLabel={t('common.showAll')}
+        hideLabel={t('common.hide')}
+        restoreLabel={t('chrome.snapshotRestore')}
+        entries={chromeSnapshots.map((snapshot) => ({
+          id: snapshot.id,
+          label: snapshot.label,
+          detail: snapshot.path,
+          badge: t('chrome.snapshotBadge'),
+        }))}
+        onCreate={handleExportSnapshot}
+        onRestore={(entry) => handleRestoreSnapshot(entry.id)}
       />
     </>
   );
@@ -289,6 +378,15 @@ export function ChromePanel() {
             {t('common.import')}
           </button>
           <button
+            onClick={handleExportDiagnostics}
+            className="rounded-xl border border-border-subtle/50 bg-white/5 px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/10"
+          >
+            <span className="inline-flex items-center gap-2">
+              <FileSearch size={15} />
+              {t('diagnostics.export')}
+            </span>
+          </button>
+          <button
             onClick={handleReset}
             className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-200 transition-colors hover:bg-red-500/20"
           >
@@ -320,7 +418,7 @@ export function ChromePanel() {
           )}
           <button
             onClick={handleApply}
-            disabled={isLoading}
+            disabled={isLoading || chromeAction.blocking.length > 0}
             className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             <span className="inline-flex items-center gap-2">

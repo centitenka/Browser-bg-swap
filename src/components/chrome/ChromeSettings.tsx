@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { BrowserSettings } from '../../types';
+import { useConfigStore } from '../../stores/configStore';
 import { PresetsSection } from './settings/PresetsSection';
 import { BackgroundSection } from './settings/BackgroundSection';
 import { ClockSection } from './settings/ClockSection';
@@ -17,6 +18,14 @@ export function ChromeSettings({ settings, onChange, onSelectImage }: ChromeSett
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     background: true,
   });
+  const recentImages = useConfigStore((s) => s.config.recent_background_images);
+  const prepareDroppedImage = useConfigStore((s) => s.prepareDroppedImage);
+  const loadManagedImages = useConfigStore((s) => s.loadManagedImages);
+  const recordRecentImage = useConfigStore((s) => s.recordRecentImage);
+
+  useEffect(() => {
+    void loadManagedImages();
+  }, [loadManagedImages]);
 
   const toggleSection = (key: string) => {
     setExpandedSections((previous) => ({ ...previous, [key]: !previous[key] }));
@@ -24,13 +33,19 @@ export function ChromeSettings({ settings, onChange, onSelectImage }: ChromeSett
 
   return (
     <div className="space-y-6">
-      <PresetsSection onChange={onChange} />
+      <PresetsSection browser="chrome" onChange={onChange} />
       <BackgroundSection
         settings={settings}
         expanded={!!expandedSections.background}
         onToggle={toggleSection}
         onChange={onChange}
         onSelectImage={onSelectImage}
+        onPrepareImage={(path) => void prepareDroppedImage(path, settings.background_image_mode !== 'direct')}
+        recentImages={recentImages}
+        onUseRecent={(path) => {
+          recordRecentImage(path);
+          onChange({ background_image: path });
+        }}
       />
       <ClockSection
         settings={settings}
