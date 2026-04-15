@@ -261,7 +261,7 @@ export const createPersistenceSlice: StoreSlice<PersistenceSlice> = (set, get) =
     }
   },
 
-  saveConfig: async (_tab) => {
+  saveConfig: async () => {
     const { config, firefoxSettings, chromeSettings, selectedProfile, selectedProfileKey } = get();
     const nextConfig = normalizeAppConfig({
       ...config,
