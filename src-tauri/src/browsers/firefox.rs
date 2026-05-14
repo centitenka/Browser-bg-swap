@@ -130,9 +130,10 @@ impl FirefoxManager {
         let mut instructions = Vec::new();
 
         if !toolkit_enabled {
-            instructions.push(
-                format!("请在about:config中设置 {} = true", TOOLKIT_PREF_KEY),
-            );
+            instructions.push(format!(
+                "请在about:config中设置 {} = true",
+                TOOLKIT_PREF_KEY
+            ));
         }
 
         let all_ok = toolkit_enabled;
@@ -181,7 +182,9 @@ impl FirefoxManager {
     pub fn restore_backup(profile_path: &str, backup_name: &str) -> Result<()> {
         let backup_dir = Self::get_backup_dir(profile_path)?;
         let backup_path = backup_dir.join(backup_name);
-        let css_path = Path::new(profile_path).join("chrome").join("userContent.css");
+        let css_path = Path::new(profile_path)
+            .join("chrome")
+            .join("userContent.css");
 
         if !backup_path.exists() {
             return Err(AppError::BackupFailed("备份文件不存在".into()));
@@ -202,7 +205,12 @@ impl FirefoxManager {
         if backup_dir.exists() {
             for entry in fs::read_dir(&backup_dir)? {
                 let entry = entry?;
-                if entry.path().extension().map(|e| e == "css").unwrap_or(false) {
+                if entry
+                    .path()
+                    .extension()
+                    .map(|e| e == "css")
+                    .unwrap_or(false)
+                {
                     if let Some(name) = entry.file_name().to_str() {
                         backups.push(name.to_string());
                     }
@@ -319,7 +327,8 @@ impl FirefoxManager {
             r#"(?m)^\s*user_pref\("{}"\s*,\s*(true|false)\s*\);\s*$"#,
             regex::escape(key)
         );
-        let regex = Regex::new(&pattern).map_err(|error| AppError::InvalidConfig(error.to_string()))?;
+        let regex =
+            Regex::new(&pattern).map_err(|error| AppError::InvalidConfig(error.to_string()))?;
         let pref_line = format!(r#"user_pref("{}", {});"#, key, value);
 
         if regex.is_match(content) {
@@ -403,14 +412,20 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", false);
         let merged = FirefoxManager::merge_user_pref(content, TOOLKIT_PREF_KEY, true).unwrap();
 
         assert!(merged.contains(r#"user_pref("browser.startup.page", 3);"#));
-        assert!(merged.contains(r#"user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);"#));
+        assert!(merged.contains(
+            r#"user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);"#
+        ));
         assert!(!merged.contains("false);"));
     }
 
     #[test]
     fn profile_backup_keys_are_scoped_per_profile() {
-        let first = FirefoxManager::profile_dir_key("C:/Users/test/AppData/Roaming/Mozilla/Firefox/Profiles/a.default-release");
-        let second = FirefoxManager::profile_dir_key("C:/Users/test/AppData/Roaming/Mozilla/Firefox/Profiles/b.default-release");
+        let first = FirefoxManager::profile_dir_key(
+            "C:/Users/test/AppData/Roaming/Mozilla/Firefox/Profiles/a.default-release",
+        );
+        let second = FirefoxManager::profile_dir_key(
+            "C:/Users/test/AppData/Roaming/Mozilla/Firefox/Profiles/b.default-release",
+        );
 
         assert_ne!(first, second);
     }

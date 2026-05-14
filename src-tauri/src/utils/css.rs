@@ -33,8 +33,16 @@ impl CssGenerator {
             .unwrap_or_default();
 
         let overlay_alpha = settings.overlay_opacity as f64 / 100.0;
-        let search_display = if settings.show_search_box { "flex" } else { "none" };
-        let shortcuts_display = if settings.show_shortcuts { "block" } else { "none" };
+        let search_display = if settings.show_search_box {
+            "flex"
+        } else {
+            "none"
+        };
+        let shortcuts_display = if settings.show_shortcuts {
+            "block"
+        } else {
+            "none"
+        };
         let overlay_color = hex_to_rgba(&settings.overlay_color, overlay_alpha);
 
         let bg_size = match settings.background_fit.as_str() {
@@ -166,10 +174,12 @@ mod tests {
 
     #[test]
     fn firefox_background_filter_is_applied_on_background_layer_only() {
-        let mut settings = BrowserSettings::default();
-        settings.background_blur = 8;
-        settings.background_brightness = 120;
-        settings.overlay_color = "#123456".into();
+        let settings = BrowserSettings {
+            background_blur: 8,
+            background_brightness: 120,
+            overlay_color: "#123456".into(),
+            ..Default::default()
+        };
 
         let css = CssGenerator::generate_user_content_css(&settings);
 

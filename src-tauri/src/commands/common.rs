@@ -155,7 +155,10 @@ pub async fn save_cropped_image(data_url: String) -> Result<String> {
 
     fs::create_dir_all(&save_dir)?;
 
-    let filename = format!("cropped_{}.png", chrono::Local::now().format("%Y%m%d_%H%M%S"));
+    let filename = format!(
+        "cropped_{}.png",
+        chrono::Local::now().format("%Y%m%d_%H%M%S")
+    );
     let save_path = save_dir.join(&filename);
     fs::write(&save_path, bytes)?;
 

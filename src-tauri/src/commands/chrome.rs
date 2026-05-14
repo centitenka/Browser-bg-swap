@@ -20,4 +20,3 @@ pub async fn apply_chrome_settings(
 pub async fn remove_chrome_settings() -> Result<()> {
     ChromeManager::remove()
 }
-

@@ -47,10 +47,7 @@ impl ChromeManager {
     }
 
     /// Generate / update extension files
-    pub fn apply(
-        settings: &BrowserSettings,
-        image_path: Option<&str>,
-    ) -> Result<String> {
+    pub fn apply(settings: &BrowserSettings, image_path: Option<&str>) -> Result<String> {
         let ext_dir = Self::get_extension_dir()?;
 
         if ext_dir.exists() {
@@ -97,7 +94,11 @@ impl ChromeManager {
 
         let exe = exe.ok_or(AppError::Io(format!(
             "未找到{}可执行文件",
-            if browser == "chrome" { "Chrome" } else { "Edge" }
+            if browser == "chrome" {
+                "Chrome"
+            } else {
+                "Edge"
+            }
         )))?;
 
         std::process::Command::new(exe)
@@ -122,10 +123,7 @@ impl ChromeManager {
                 .ok()
                 .map(|p| PathBuf::from(p).join("Google\\Chrome\\Application\\chrome.exe")),
         ];
-        candidates
-            .into_iter()
-            .flatten()
-            .find(|p| p.exists())
+        candidates.into_iter().flatten().find(|p| p.exists())
     }
 
     fn find_edge_exe() -> Option<PathBuf> {
@@ -137,10 +135,7 @@ impl ChromeManager {
                 .ok()
                 .map(|p| PathBuf::from(p).join("Microsoft\\Edge\\Application\\msedge.exe")),
         ];
-        candidates
-            .into_iter()
-            .flatten()
-            .find(|p| p.exists())
+        candidates.into_iter().flatten().find(|p| p.exists())
     }
 
     fn is_chrome_installed() -> bool {
@@ -214,7 +209,8 @@ impl ChromeManager {
             _ => ("https://www.google.com/search", "q"),
         };
 
-        let shortcuts_json = serde_json::to_string(&settings.shortcuts).unwrap_or_else(|_| "[]".into());
+        let shortcuts_json =
+            serde_json::to_string(&settings.shortcuts).unwrap_or_else(|_| "[]".into());
 
         let cp = &settings.clock_position;
         let sp = &settings.search_position;
@@ -291,15 +287,28 @@ impl ChromeManager {
 </body>
 </html>"#,
             overlay_alpha = overlay_alpha,
-            ov_r = ov_r, ov_g = ov_g, ov_b = ov_b,
+            ov_r = ov_r,
+            ov_g = ov_g,
+            ov_b = ov_b,
             clock_color = settings.clock_color,
             clock_size = settings.clock_size,
             clock_weight = clock_weight,
-            cx = cp.x, cy = cp.y,
-            sx = sp.x, sy = sp.y,
-            shx = shp.x, shy = shp.y,
-            clock_vis = if settings.show_clock { "" } else { "display:none;" },
-            search_vis = if settings.show_search_box { "" } else { "display:none;" },
+            cx = cp.x,
+            cy = cp.y,
+            sx = sp.x,
+            sy = sp.y,
+            shx = shp.x,
+            shy = shp.y,
+            clock_vis = if settings.show_clock {
+                ""
+            } else {
+                "display:none;"
+            },
+            search_vis = if settings.show_search_box {
+                ""
+            } else {
+                "display:none;"
+            },
             shortcuts_vis = shortcuts_vis,
             bg_style = bg_style,
             filter_style = filter_style,
@@ -342,24 +351,51 @@ impl ChromeManager {
         let cs_alpha = settings.clock_shadow_opacity as f64 / 100.0;
 
         let search_border = if settings.search_border_style != "none" {
-            format!("border: {}px {} {};", settings.search_border_width, settings.search_border_style, settings.search_border_color)
-        } else { String::new() };
+            format!(
+                "border: {}px {} {};",
+                settings.search_border_width,
+                settings.search_border_style,
+                settings.search_border_color
+            )
+        } else {
+            String::new()
+        };
 
         let search_backdrop = if settings.search_backdrop_blur > 0 {
-            format!("backdrop-filter: blur({}px);", settings.search_backdrop_blur)
-        } else { String::new() };
+            format!(
+                "backdrop-filter: blur({}px);",
+                settings.search_backdrop_blur
+            )
+        } else {
+            String::new()
+        };
 
         let sc_border = if settings.shortcuts_border_style != "none" {
-            format!("border: {}px {} {};", settings.shortcuts_border_width, settings.shortcuts_border_style, settings.shortcuts_border_color)
-        } else { String::new() };
+            format!(
+                "border: {}px {} {};",
+                settings.shortcuts_border_width,
+                settings.shortcuts_border_style,
+                settings.shortcuts_border_color
+            )
+        } else {
+            String::new()
+        };
 
         let sc_backdrop = if settings.shortcuts_backdrop_blur > 0 {
-            format!("backdrop-filter: blur({}px);", settings.shortcuts_backdrop_blur)
-        } else { String::new() };
+            format!(
+                "backdrop-filter: blur({}px);",
+                settings.shortcuts_backdrop_blur
+            )
+        } else {
+            String::new()
+        };
 
         let sc_shape = match settings.shortcuts_shape.as_str() {
             "circle" => "border-radius: 50%; aspect-ratio: 1;".to_string(),
-            "square" => format!("border-radius: {}px; aspect-ratio: 1;", settings.shortcuts_border_radius),
+            "square" => format!(
+                "border-radius: {}px; aspect-ratio: 1;",
+                settings.shortcuts_border_radius
+            ),
             _ => format!("border-radius: {}px;", settings.shortcuts_border_radius),
         };
 
@@ -481,7 +517,9 @@ body {{
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }}
 "#,
-            search_r = search_r, search_g = search_g, search_b = search_b,
+            search_r = search_r,
+            search_g = search_g,
+            search_b = search_b,
             search_bg_alpha = search_bg_alpha,
             search_border_radius = settings.search_border_radius,
             search_padding = settings.search_padding,
@@ -489,19 +527,31 @@ body {{
             search_border = search_border,
             search_backdrop = search_backdrop,
             search_text_color = settings.search_text_color,
-            ss_r = ss_r, ss_g = ss_g, ss_b = ss_b, ss_alpha = ss_alpha,
+            ss_r = ss_r,
+            ss_g = ss_g,
+            ss_b = ss_b,
+            ss_alpha = ss_alpha,
             ss_blur = settings.search_shadow_blur,
-            sc_r = sc_r, sc_g = sc_g, sc_b = sc_b, sc_bg_alpha = sc_bg_alpha,
+            sc_r = sc_r,
+            sc_g = sc_g,
+            sc_b = sc_b,
+            sc_bg_alpha = sc_bg_alpha,
             sc_shape = sc_shape,
             sc_pad_y = settings.shortcuts_padding_y,
             sc_pad_x = settings.shortcuts_padding_x,
             sc_border = sc_border,
             sc_backdrop = sc_backdrop,
-            scs_r = scs_r, scs_g = scs_g, scs_b = scs_b, scs_alpha = scs_alpha,
+            scs_r = scs_r,
+            scs_g = scs_g,
+            scs_b = scs_b,
+            scs_alpha = scs_alpha,
             scs_blur = settings.shortcuts_shadow_blur,
             icon_size = settings.shortcuts_icon_size,
             sc_title_color = settings.shortcuts_title_color,
-            cs_r = cs_r, cs_g = cs_g, cs_b = cs_b, cs_alpha = cs_alpha,
+            cs_r = cs_r,
+            cs_g = cs_g,
+            cs_b = cs_b,
+            cs_alpha = cs_alpha,
             cs_blur = settings.clock_shadow_blur,
             clock_letter_spacing = settings.clock_letter_spacing,
             clock_font = clock_font,
@@ -512,6 +562,16 @@ body {{
         let format_24h = settings.clock_format_24h;
         let show_seconds = settings.clock_show_seconds;
         let show_date = settings.clock_show_date;
+        let shortcuts_per_row = if settings.shortcuts_columns == "auto" {
+            settings.shortcuts.len().clamp(1, 6)
+        } else {
+            settings
+                .shortcuts_columns
+                .parse::<usize>()
+                .unwrap_or(6)
+                .max(1)
+        };
+        let shortcuts_gap = settings.shortcuts_gap;
 
         format!(
             r#"// Clock
@@ -557,9 +617,9 @@ updateClock();
     if (!container) return;
     var list = (typeof SHORTCUTS !== 'undefined' && SHORTCUTS.length) ? SHORTCUTS : [];
     var defaultPos = (typeof SHORTCUTS_POSITION !== 'undefined') ? SHORTCUTS_POSITION : {{ x: 50, y: 68 }};
-    var perRow = 6;
-    var hSpacing = 8;
-    var vSpacing = 10;
+    var perRow = {shortcuts_per_row};
+    var hSpacing = {shortcuts_gap};
+    var vSpacing = {shortcuts_gap};
 
     function getDomain(url) {{
         try {{
@@ -621,21 +681,19 @@ updateClock();
             format_24h = format_24h,
             show_seconds = show_seconds,
             show_date = show_date,
+            shortcuts_per_row = shortcuts_per_row,
+            shortcuts_gap = shortcuts_gap,
         )
     }
 
     fn create_default_icons(icons_dir: &Path) -> Result<()> {
         // Minimal valid 1x1 pixel transparent PNG
         let minimal_png: Vec<u8> = vec![
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-            0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41,
-            0x54, 0x08, 0xD7, 0x63, 0x60, 0x60, 0x60, 0x60,
-            0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0x62, 0xF5,
-            0x6A, 0xCE, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45,
-            0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
+            0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00,
+            0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41, 0x54, 0x08,
+            0xD7, 0x63, 0x60, 0x60, 0x60, 0x60, 0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0x62, 0xF5,
+            0x6A, 0xCE, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
         ];
 
         for name in &["icon16.png", "icon48.png", "icon128.png"] {
@@ -661,12 +719,29 @@ mod tests {
 
     #[test]
     fn generated_html_uses_selected_search_engine() {
-        let mut settings = BrowserSettings::default();
-        settings.search_engine = "duckduckgo".into();
+        let settings = BrowserSettings {
+            search_engine: "duckduckgo".into(),
+            ..Default::default()
+        };
 
         let html = ChromeManager::generate_html(&settings, None);
 
         assert!(html.contains("https://duckduckgo.com/"));
         assert!(html.contains("name=\"q\""));
+    }
+
+    #[test]
+    fn generated_shortcut_layout_uses_configured_columns_and_gap() {
+        let settings = BrowserSettings {
+            shortcuts_columns: "4".into(),
+            shortcuts_gap: 16,
+            ..Default::default()
+        };
+
+        let js = ChromeManager::generate_js(&settings);
+
+        assert!(js.contains("var perRow = 4;"));
+        assert!(js.contains("var hSpacing = 16;"));
+        assert!(js.contains("var vSpacing = 16;"));
     }
 }

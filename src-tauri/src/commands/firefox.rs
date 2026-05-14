@@ -9,10 +9,7 @@ pub async fn detect_firefox() -> Result<BrowserInfo> {
 }
 
 #[tauri::command]
-pub async fn apply_firefox_settings(
-    profile_path: String,
-    settings: BrowserSettings,
-) -> Result<()> {
+pub async fn apply_firefox_settings(profile_path: String, settings: BrowserSettings) -> Result<()> {
     let css = CssGenerator::generate_user_content_css(&settings);
     FirefoxManager::apply_css(&profile_path, &css)
 }

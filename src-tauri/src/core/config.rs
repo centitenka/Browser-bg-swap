@@ -46,63 +46,167 @@ pub struct Shortcut {
     pub position: Option<ElementPosition>,
 }
 
-fn default_overlay_opacity() -> u32 { 30 }
-fn default_true() -> bool { true }
-fn default_clock_color() -> String { "#ffffff".into() }
-fn default_clock_size() -> u32 { 72 }
-fn default_search_engine() -> String { "google".into() }
-fn default_clock_position() -> ElementPosition { ElementPosition { x: 50.0, y: 30.0 } }
-fn default_search_position() -> ElementPosition { ElementPosition { x: 50.0, y: 48.0 } }
-fn default_shortcuts_position() -> ElementPosition { ElementPosition { x: 50.0, y: 68.0 } }
+fn default_overlay_opacity() -> u32 {
+    30
+}
+fn default_true() -> bool {
+    true
+}
+fn default_clock_color() -> String {
+    "#ffffff".into()
+}
+fn default_clock_size() -> u32 {
+    72
+}
+fn default_search_engine() -> String {
+    "google".into()
+}
+fn default_clock_position() -> ElementPosition {
+    ElementPosition { x: 50.0, y: 30.0 }
+}
+fn default_search_position() -> ElementPosition {
+    ElementPosition { x: 50.0, y: 48.0 }
+}
+fn default_shortcuts_position() -> ElementPosition {
+    ElementPosition { x: 50.0, y: 68.0 }
+}
 
 // New default functions
-fn default_background_color() -> String { "#1a1a2e".into() }
-fn default_background_fit() -> String { "cover".into() }
-fn default_clock_font_weight() -> String { "light".into() }
-fn default_search_bg_color() -> String { "#ffffff".into() }
-fn default_search_bg_opacity() -> u32 { 95 }
-fn default_search_border_radius() -> u32 { 28 }
-fn default_search_placeholder() -> String { "\u{641C}\u{7D22}...".into() }
-fn default_shortcuts_bg_color() -> String { "#ffffff".into() }
-fn default_shortcuts_bg_opacity() -> u32 { 90 }
-fn default_shortcuts_border_radius() -> u32 { 12 }
-fn default_shortcuts_columns() -> String { "auto".into() }
-fn default_shortcuts_gap() -> u32 { 12 }
-fn default_background_brightness() -> u32 { 100 }
-fn default_overlay_color() -> String { "#000000".into() }
+fn default_background_color() -> String {
+    "#1a1a2e".into()
+}
+fn default_background_fit() -> String {
+    "cover".into()
+}
+fn default_clock_font_weight() -> String {
+    "light".into()
+}
+fn default_search_bg_color() -> String {
+    "#ffffff".into()
+}
+fn default_search_bg_opacity() -> u32 {
+    95
+}
+fn default_search_border_radius() -> u32 {
+    28
+}
+fn default_search_placeholder() -> String {
+    "\u{641C}\u{7D22}...".into()
+}
+fn default_shortcuts_bg_color() -> String {
+    "#ffffff".into()
+}
+fn default_shortcuts_bg_opacity() -> u32 {
+    90
+}
+fn default_shortcuts_border_radius() -> u32 {
+    12
+}
+fn default_shortcuts_columns() -> String {
+    "auto".into()
+}
+fn default_shortcuts_gap() -> u32 {
+    12
+}
+fn default_background_brightness() -> u32 {
+    100
+}
+fn default_overlay_color() -> String {
+    "#000000".into()
+}
 
 // Search fine-grained defaults
-fn default_search_border_color() -> String { "#d4af37".into() }
-fn default_search_border_style() -> String { "none".into() }
-fn default_search_shadow_color() -> String { "#000000".into() }
-fn default_search_shadow_blur() -> u32 { 20 }
-fn default_search_shadow_opacity() -> u32 { 15 }
-fn default_search_text_color() -> String { "#333333".into() }
-fn default_search_width() -> u32 { 560 }
-fn default_search_padding() -> u32 { 4 }
+fn default_search_border_color() -> String {
+    "#d4af37".into()
+}
+fn default_search_border_style() -> String {
+    "none".into()
+}
+fn default_search_shadow_color() -> String {
+    "#000000".into()
+}
+fn default_search_shadow_blur() -> u32 {
+    20
+}
+fn default_search_shadow_opacity() -> u32 {
+    15
+}
+fn default_search_text_color() -> String {
+    "#333333".into()
+}
+fn default_search_width() -> u32 {
+    560
+}
+fn default_search_padding() -> u32 {
+    4
+}
 
 // Shortcuts fine-grained defaults
-fn default_shortcuts_border_color() -> String { "#ffffff".into() }
-fn default_shortcuts_border_style() -> String { "none".into() }
-fn default_shortcuts_shadow_color() -> String { "#000000".into() }
-fn default_shortcuts_title_color() -> String { "#333333".into() }
-fn default_shortcuts_icon_size() -> u32 { 36 }
-fn default_shortcuts_padding_x() -> u32 { 8 }
-fn default_shortcuts_padding_y() -> u32 { 14 }
-fn default_shortcuts_shape() -> String { "auto".into() }
+fn default_shortcuts_border_color() -> String {
+    "#ffffff".into()
+}
+fn default_shortcuts_border_style() -> String {
+    "none".into()
+}
+fn default_shortcuts_shadow_color() -> String {
+    "#000000".into()
+}
+fn default_shortcuts_title_color() -> String {
+    "#333333".into()
+}
+fn default_shortcuts_icon_size() -> u32 {
+    36
+}
+fn default_shortcuts_padding_x() -> u32 {
+    8
+}
+fn default_shortcuts_padding_y() -> u32 {
+    14
+}
+fn default_shortcuts_shape() -> String {
+    "auto".into()
+}
 
 // Clock fine-grained defaults
-fn default_clock_shadow_color() -> String { "#000000".into() }
-fn default_clock_shadow_blur() -> u32 { 10 }
-fn default_clock_shadow_opacity() -> u32 { 30 }
-fn default_clock_font_family() -> String { "system".into() }
+fn default_clock_shadow_color() -> String {
+    "#000000".into()
+}
+fn default_clock_shadow_blur() -> u32 {
+    10
+}
+fn default_clock_shadow_opacity() -> u32 {
+    30
+}
+fn default_clock_font_family() -> String {
+    "system".into()
+}
 
 fn default_shortcuts() -> Vec<Shortcut> {
     vec![
-        Shortcut { title: "GitHub".into(), url: "https://github.com".into(), icon: "\u{1F4BB}".into(), position: None },
-        Shortcut { title: "YouTube".into(), url: "https://youtube.com".into(), icon: "\u{25B6}\u{FE0F}".into(), position: None },
-        Shortcut { title: "Bilibili".into(), url: "https://bilibili.com".into(), icon: "\u{1F4FA}".into(), position: None },
-        Shortcut { title: "\u{77E5}\u{4E4E}".into(), url: "https://zhihu.com".into(), icon: "\u{2753}".into(), position: None },
+        Shortcut {
+            title: "GitHub".into(),
+            url: "https://github.com".into(),
+            icon: "\u{1F4BB}".into(),
+            position: None,
+        },
+        Shortcut {
+            title: "YouTube".into(),
+            url: "https://youtube.com".into(),
+            icon: "\u{25B6}\u{FE0F}".into(),
+            position: None,
+        },
+        Shortcut {
+            title: "Bilibili".into(),
+            url: "https://bilibili.com".into(),
+            icon: "\u{1F4FA}".into(),
+            position: None,
+        },
+        Shortcut {
+            title: "\u{77E5}\u{4E4E}".into(),
+            url: "https://zhihu.com".into(),
+            icon: "\u{2753}".into(),
+            position: None,
+        },
     ]
 }
 
@@ -261,66 +365,8 @@ pub struct BrowserSettings {
 
 impl Default for BrowserSettings {
     fn default() -> Self {
-        Self {
-            background_image: None,
-            overlay_opacity: default_overlay_opacity(),
-            show_clock: true,
-            clock_color: default_clock_color(),
-            clock_size: default_clock_size(),
-            show_search_box: true,
-            search_engine: default_search_engine(),
-            show_shortcuts: true,
-            shortcuts: default_shortcuts(),
-            clock_position: default_clock_position(),
-            search_position: default_search_position(),
-            shortcuts_position: default_shortcuts_position(),
-            background_color: default_background_color(),
-            background_fit: default_background_fit(),
-            background_blur: 0,
-            background_brightness: default_background_brightness(),
-            clock_format_24h: true,
-            clock_show_seconds: false,
-            clock_show_date: false,
-            clock_font_weight: default_clock_font_weight(),
-            search_bg_color: default_search_bg_color(),
-            search_bg_opacity: default_search_bg_opacity(),
-            search_border_radius: default_search_border_radius(),
-            search_placeholder: default_search_placeholder(),
-            search_border_width: 0,
-            search_border_color: default_search_border_color(),
-            search_border_style: default_search_border_style(),
-            search_shadow_color: default_search_shadow_color(),
-            search_shadow_blur: default_search_shadow_blur(),
-            search_shadow_opacity: default_search_shadow_opacity(),
-            search_backdrop_blur: 0,
-            search_text_color: default_search_text_color(),
-            search_width: default_search_width(),
-            search_padding: default_search_padding(),
-            shortcuts_bg_color: default_shortcuts_bg_color(),
-            shortcuts_bg_opacity: default_shortcuts_bg_opacity(),
-            shortcuts_border_radius: default_shortcuts_border_radius(),
-            shortcuts_columns: default_shortcuts_columns(),
-            shortcuts_gap: default_shortcuts_gap(),
-            shortcuts_border_width: 0,
-            shortcuts_border_color: default_shortcuts_border_color(),
-            shortcuts_border_style: default_shortcuts_border_style(),
-            shortcuts_shadow_color: default_shortcuts_shadow_color(),
-            shortcuts_shadow_blur: 0,
-            shortcuts_shadow_opacity: 0,
-            shortcuts_backdrop_blur: 0,
-            shortcuts_title_color: default_shortcuts_title_color(),
-            shortcuts_icon_size: default_shortcuts_icon_size(),
-            shortcuts_padding_x: default_shortcuts_padding_x(),
-            shortcuts_padding_y: default_shortcuts_padding_y(),
-            shortcuts_shape: default_shortcuts_shape(),
-            clock_shadow_color: default_clock_shadow_color(),
-            clock_shadow_blur: default_clock_shadow_blur(),
-            clock_shadow_opacity: default_clock_shadow_opacity(),
-            clock_letter_spacing: 0,
-            clock_font_family: default_clock_font_family(),
-            overlay_color: default_overlay_color(),
-            custom_css: String::new(),
-        }
+        serde_json::from_str(include_str!("../../../src/shared/defaultSettings.json"))
+            .expect("shared defaultSettings.json must match BrowserSettings")
     }
 }
 
@@ -400,7 +446,10 @@ impl AppConfig {
                 settings: self.firefox.settings.normalized(),
             },
             chrome: ChromeConfig {
-                extension_output_path: self.chrome.extension_output_path.and_then(normalize_optional_text),
+                extension_output_path: self
+                    .chrome
+                    .extension_output_path
+                    .and_then(normalize_optional_text),
                 enabled: self.chrome.enabled,
                 settings: self.chrome.settings.normalized(),
             },
@@ -422,8 +471,10 @@ impl BrowserSettings {
             &["google", "bing", "baidu", "duckduckgo"],
             defaults.search_engine.clone(),
         );
-        self.clock_position = normalize_position(self.clock_position, defaults.clock_position.clone());
-        self.search_position = normalize_position(self.search_position, defaults.search_position.clone());
+        self.clock_position =
+            normalize_position(self.clock_position, defaults.clock_position.clone());
+        self.search_position =
+            normalize_position(self.search_position, defaults.search_position.clone());
         self.shortcuts_position =
             normalize_position(self.shortcuts_position, defaults.shortcuts_position.clone());
 
@@ -447,17 +498,22 @@ impl BrowserSettings {
             normalize_hex_color(self.search_bg_color, defaults.search_bg_color.clone());
         self.search_bg_opacity = clamp_u32(self.search_bg_opacity, 0, 100);
         self.search_border_radius = clamp_u32(self.search_border_radius, 0, 60);
-        self.search_placeholder = normalize_text(self.search_placeholder, defaults.search_placeholder.clone());
+        self.search_placeholder =
+            normalize_text(self.search_placeholder, defaults.search_placeholder.clone());
         self.search_border_width = clamp_u32(self.search_border_width, 0, 5);
-        self.search_border_color =
-            normalize_hex_color(self.search_border_color, defaults.search_border_color.clone());
+        self.search_border_color = normalize_hex_color(
+            self.search_border_color,
+            defaults.search_border_color.clone(),
+        );
         self.search_border_style = normalize_enum(
             self.search_border_style,
             &["none", "solid", "dashed", "double"],
             defaults.search_border_style.clone(),
         );
-        self.search_shadow_color =
-            normalize_hex_color(self.search_shadow_color, defaults.search_shadow_color.clone());
+        self.search_shadow_color = normalize_hex_color(
+            self.search_shadow_color,
+            defaults.search_shadow_color.clone(),
+        );
         self.search_shadow_blur = clamp_u32(self.search_shadow_blur, 0, 40);
         self.search_shadow_opacity = clamp_u32(self.search_shadow_opacity, 0, 100);
         self.search_backdrop_blur = clamp_u32(self.search_backdrop_blur, 0, 20);
@@ -517,7 +573,8 @@ impl BrowserSettings {
             defaults.clock_font_family.clone(),
         );
 
-        self.overlay_color = normalize_hex_color(self.overlay_color, defaults.overlay_color.clone());
+        self.overlay_color =
+            normalize_hex_color(self.overlay_color, defaults.overlay_color.clone());
         self.custom_css = self.custom_css.trim().to_string();
 
         self.shortcuts = normalize_shortcuts(self.shortcuts, &defaults.shortcuts);
@@ -596,8 +653,14 @@ fn normalize_shortcuts(shortcuts: Vec<Shortcut>, fallback: &[Shortcut]) -> Vec<S
             Some(Shortcut {
                 title,
                 url,
-                icon: if icon.is_empty() { "🔗".to_string() } else { icon },
-                position: shortcut.position.map(|position| normalize_position(position, ElementPosition { x: 50.0, y: 68.0 })),
+                icon: if icon.is_empty() {
+                    "🔗".to_string()
+                } else {
+                    icon
+                },
+                position: shortcut.position.map(|position| {
+                    normalize_position(position, ElementPosition { x: 50.0, y: 68.0 })
+                }),
             })
         })
         .take(8)

@@ -60,11 +60,22 @@ function getFaviconUrl(url: string): string {
   }
 }
 
-function getDefaultShortcutPositions(shortcuts: Shortcut[], center: ElementPosition): ElementPosition[] {
+function getShortcutColumns(columns: string, shortcutCount: number): number {
+  if (columns === 'auto') return Math.min(6, Math.max(1, shortcutCount));
+  const parsed = Number.parseInt(columns, 10);
+  return Number.isFinite(parsed) ? Math.max(1, parsed) : 6;
+}
+
+function getDefaultShortcutPositions(
+  shortcuts: Shortcut[],
+  center: ElementPosition,
+  columns: string,
+  gap: number
+): ElementPosition[] {
   const positions: ElementPosition[] = [];
-  const itemsPerRow = 6;
-  const hSpacing = 8;
-  const vSpacing = 10;
+  const itemsPerRow = getShortcutColumns(columns, shortcuts.length);
+  const hSpacing = gap;
+  const vSpacing = gap;
   const totalRows = Math.ceil(shortcuts.length / itemsPerRow);
 
   for (let i = 0; i < shortcuts.length; i++) {
@@ -175,7 +186,12 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
     `group cursor-grab select-none ${dragging === key ? 'cursor-grabbing ring-2 ring-primary/50 rounded-lg' : ''}`;
 
   const defaultShortcutPositions = settings.show_shortcuts && settings.shortcuts.length > 0
-    ? getDefaultShortcutPositions(settings.shortcuts, settings.shortcuts_position)
+    ? getDefaultShortcutPositions(
+        settings.shortcuts,
+        settings.shortcuts_position,
+        settings.shortcuts_columns,
+        settings.shortcuts_gap
+      )
     : [];
 
   return (
