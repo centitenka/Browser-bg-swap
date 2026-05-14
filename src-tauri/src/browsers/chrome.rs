@@ -24,6 +24,15 @@ impl ChromeManager {
         (r, g, b)
     }
 
+    fn gradient_direction_css(direction: &str) -> &str {
+        match direction {
+            "to-right" => "to right",
+            "to-br" => "135deg",
+            "to-tr" => "45deg",
+            _ => "to bottom",
+        }
+    }
+
     /// Persistent extension directory
     fn get_extension_dir() -> Result<PathBuf> {
         let dir = dirs::data_dir()
@@ -191,7 +200,13 @@ impl ChromeManager {
             Some(name) => format!(
                 "background-image: url('images/{name}'); background-size: {bg_size}; background-position: center; background-repeat: no-repeat;"
             ),
-            None => format!("background: {};", settings.background_color),
+            None if settings.theme.background.gradient_enabled => format!(
+                "background: linear-gradient({}, {}, {});",
+                Self::gradient_direction_css(&settings.theme.background.gradient_direction),
+                settings.theme.background.gradient_from,
+                settings.theme.background.gradient_to
+            ),
+            None => format!("background: {};", settings.theme.background.color),
         };
 
         let filter_style = format!(
@@ -771,6 +786,27 @@ mod tests {
         assert!(js.contains("return Math.max(parseInt(configuredColumns, 10) || 6, 1);"));
         assert!(js.contains("var hSpacing = 16;"));
         assert!(js.contains("var vSpacing = 16;"));
+    }
+
+    #[test]
+    fn generated_html_uses_theme_gradient_background_without_image() {
+        let settings = serde_json::from_value::<BrowserSettings>(serde_json::json!({
+            "background_image": null,
+            "theme": {
+                "background": {
+                    "gradient_enabled": true,
+                    "gradient_from": "#010203",
+                    "gradient_to": "#abcdef",
+                    "gradient_direction": "to-right"
+                }
+            }
+        }))
+        .unwrap()
+        .normalized();
+
+        let html = ChromeManager::generate_html(&settings, None);
+
+        assert!(html.contains("linear-gradient(to right, #010203, #abcdef)"));
     }
 
     #[test]

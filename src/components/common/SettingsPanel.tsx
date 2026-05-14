@@ -4,7 +4,7 @@ import type { BrowserSettings } from '../../types';
 import { ImagePicker } from './ImagePicker';
 import { Switch } from './Switch';
 import { borderStyleOptions } from '../chrome/settings/Options';
-import { ColorField, OptionButtons, RangeField } from '../chrome/settings/Shared';
+import { CapabilityBadge, ColorField, OptionButtons, RangeField } from '../chrome/settings/Shared';
 
 interface SettingsPanelProps {
   settings: BrowserSettings;
@@ -32,9 +32,12 @@ export function SettingsPanel({
   return (
     <div className="space-y-8">
       <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-          {t('settings.background')}
-        </h3>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {t('settings.background')}
+          </h3>
+          <CapabilityBadge level="partial" />
+        </div>
         <ImagePicker
           path={settings.background_image}
           onSelect={onSelectImage}
@@ -160,9 +163,12 @@ export function SettingsPanel({
       </section>
 
       <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-          {t('settings.displayOptions')}
-        </h3>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {t('settings.displayOptions')}
+          </h3>
+          <CapabilityBadge level="partial" />
+        </div>
         <div className="divide-y divide-border-subtle/30">
           {capabilities.supportsSearchVisibility && (
             <div className="py-1">
@@ -189,9 +195,12 @@ export function SettingsPanel({
 
       {capabilities.supportsSearchCustomization && settings.show_search_box && (
         <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-            {t('settings.searchStyle')}
-          </h3>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {t('settings.searchStyle')}
+            </h3>
+            <CapabilityBadge level="partial" />
+          </div>
           <div className="space-y-4">
             <ColorField
               label={t('settings.bgColorLabel')}
@@ -280,9 +289,12 @@ export function SettingsPanel({
 
       {capabilities.supportsShortcutsCustomization && settings.show_shortcuts && (
         <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-            {t('settings.shortcutStyle')}
-          </h3>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {t('settings.shortcutStyle')}
+            </h3>
+            <CapabilityBadge level="partial" />
+          </div>
           <div className="space-y-4">
             <ColorField
               label={t('settings.bgColorLabel')}

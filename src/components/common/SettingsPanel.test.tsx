@@ -39,4 +39,19 @@ describe('SettingsPanel', () => {
     expect(screen.queryByText('Clock')).not.toBeInTheDocument();
     expect(screen.queryByText('Custom CSS')).not.toBeInTheDocument();
   });
+
+  it('marks Firefox theme controls as partially supported', () => {
+    render(
+      <I18nContext.Provider value={{ lang: 'en', setLang: () => {}, t: createT('en') }}>
+        <SettingsPanel
+          settings={createDefaultSettings()}
+          onChange={vi.fn()}
+          onSelectImage={vi.fn()}
+          capabilities={browserCapabilities.firefox}
+        />
+      </I18nContext.Provider>
+    );
+
+    expect(screen.getAllByText('Firefox partial')).not.toHaveLength(0);
+  });
 });

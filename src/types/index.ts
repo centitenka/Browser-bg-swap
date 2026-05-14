@@ -16,8 +16,88 @@ export interface Shortcut {
   children?: Shortcut[];
 }
 
+export interface ThemeBackgroundSettings {
+  color: string;
+  fit: string;
+  blur: number;
+  brightness: number;
+  overlay_color: string;
+  overlay_opacity: number;
+  gradient_enabled: boolean;
+  gradient_from: string;
+  gradient_to: string;
+  gradient_direction: string;
+}
+
+export interface ThemeClockSettings {
+  color: string;
+  size: number;
+  format_24h: boolean;
+  show_seconds: boolean;
+  show_date: boolean;
+  font_weight: string;
+  font_family: string;
+  shadow_color: string;
+  shadow_blur: number;
+  shadow_opacity: number;
+  letter_spacing: number;
+}
+
+export interface ThemeSearchSettings {
+  engine: string;
+  bg_color: string;
+  bg_opacity: number;
+  border_radius: number;
+  placeholder: string;
+  border_width: number;
+  border_color: string;
+  border_style: string;
+  shadow_color: string;
+  shadow_blur: number;
+  shadow_opacity: number;
+  backdrop_blur: number;
+  text_color: string;
+  width: number;
+  padding: number;
+}
+
+export interface ThemeShortcutsSettings {
+  bg_color: string;
+  bg_opacity: number;
+  border_radius: number;
+  columns: string;
+  gap: number;
+  border_width: number;
+  border_color: string;
+  border_style: string;
+  shadow_color: string;
+  shadow_blur: number;
+  shadow_opacity: number;
+  backdrop_blur: number;
+  title_color: string;
+  icon_size: number;
+  padding_x: number;
+  padding_y: number;
+  shape: string;
+}
+
+export interface ThemeSettings {
+  background: ThemeBackgroundSettings;
+  clock: ThemeClockSettings;
+  search: ThemeSearchSettings;
+  shortcuts: ThemeShortcutsSettings;
+}
+
+export interface LayoutSettings {
+  clock_position: ElementPosition;
+  search_position: ElementPosition;
+  shortcuts_position: ElementPosition;
+}
+
 export interface BrowserSettings {
   background_image: string | null;
+  theme: ThemeSettings;
+  layout: LayoutSettings;
   overlay_opacity: number;
   show_clock: boolean;
   clock_color: string;

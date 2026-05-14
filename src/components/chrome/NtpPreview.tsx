@@ -31,6 +31,20 @@ function getObjectFitStyle(fit: string): React.CSSProperties {
   }
 }
 
+function getGradientDirection(direction: string): string {
+  switch (direction) {
+    case 'to-right':
+      return 'to right';
+    case 'to-br':
+      return '135deg';
+    case 'to-tr':
+      return '45deg';
+    case 'to-bottom':
+    default:
+      return 'to bottom';
+  }
+}
+
 function getFontWeight(weight: string): number {
   switch (weight) {
     case 'light':
@@ -99,6 +113,7 @@ function getDefaultShortcutPositions(
 
 export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
   const t = useT();
+  const { theme, layout } = settings;
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [clockText, setClockText] = useState('');
@@ -115,20 +130,20 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
       const seconds = String(now.getSeconds()).padStart(2, '0');
 
       let suffix = '';
-      if (!settings.clock_format_24h) {
+      if (!theme.clock.format_24h) {
         suffix = hours >= 12 ? ' PM' : ' AM';
         hours = hours % 12 || 12;
       }
 
       let text = `${String(hours).padStart(2, '0')}:${minutes}`;
-      if (settings.clock_show_seconds) {
+      if (theme.clock.show_seconds) {
         text += `:${seconds}`;
       }
       text += suffix;
 
       setClockText(text);
 
-      if (settings.clock_show_date) {
+      if (theme.clock.show_date) {
         const y = now.getFullYear();
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const d = String(now.getDate()).padStart(2, '0');
@@ -138,7 +153,7 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, [settings.clock_format_24h, settings.clock_show_seconds, settings.clock_show_date]);
+  }, [theme.clock.format_24h, theme.clock.show_seconds, theme.clock.show_date]);
 
   const getPosition = useCallback(
     (e: PointerEvent) => {
@@ -176,7 +191,7 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
 
   const bgUrl = settings.background_image ? convertFileSrc(settings.background_image) : null;
 
-  const bgFilter = `blur(${settings.background_blur}px) brightness(${settings.background_brightness}%)`;
+  const bgFilter = `blur(${theme.background.blur}px) brightness(${theme.background.brightness}%)`;
 
   const elementStyle = (pos: ElementPosition, extra?: React.CSSProperties): React.CSSProperties => ({
     position: 'absolute',
@@ -195,15 +210,18 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
     ? activeFolder.children ?? []
     : settings.shortcuts;
   const inFolder = activeFolder?.kind === 'folder';
-
   const defaultShortcutPositions = settings.show_shortcuts && visibleShortcuts.length > 0
     ? getDefaultShortcutPositions(
         visibleShortcuts,
-        settings.shortcuts_position,
-        settings.shortcuts_columns,
-        settings.shortcuts_gap
+        layout.shortcuts_position,
+        theme.shortcuts.columns,
+        theme.shortcuts.gap
       )
     : [];
+
+  const backgroundStyle = theme.background.gradient_enabled
+    ? `linear-gradient(${getGradientDirection(theme.background.gradient_direction)}, ${theme.background.gradient_from}, ${theme.background.gradient_to})`
+    : theme.background.color || '#202124';
 
   return (
     <div
@@ -221,16 +239,17 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
           alt=""
           className="absolute inset-0 w-full h-full"
           style={{
-            ...getObjectFitStyle(settings.background_fit),
+            ...getObjectFitStyle(theme.background.fit),
             filter: bgFilter,
           }}
           draggable={false}
         />
       ) : (
         <div
+          data-testid="ntp-background"
           className="absolute inset-0"
           style={{
-            background: settings.background_color || '#202124',
+            background: backgroundStyle,
             filter: bgFilter,
           }}
         />
@@ -239,13 +258,13 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
       {/* Overlay */}
       <div
         className="absolute inset-0"
-        style={{ background: hexToRgba(settings.overlay_color, settings.overlay_opacity) }}
+        style={{ background: hexToRgba(theme.background.overlay_color, theme.background.overlay_opacity) }}
       />
 
       {/* Clock */}
       {settings.show_clock && (
         <div
-          style={elementStyle(settings.clock_position)}
+          style={elementStyle(layout.clock_position)}
           className={dragHandleClass('clock_position')}
           onPointerDown={handlePointerDown('clock_position')}
         >
@@ -253,24 +272,24 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
             <div
               className="whitespace-nowrap text-center"
               style={{
-                color: settings.clock_color,
-                fontSize: `${Math.max(12, settings.clock_size * 0.4)}px`,
-                fontWeight: getFontWeight(settings.clock_font_weight),
-                fontFamily: getFontFamily(settings.clock_font_family),
-                textShadow: `0 2px ${settings.clock_shadow_blur * 0.4}px ${hexToRgba(settings.clock_shadow_color, settings.clock_shadow_opacity)}`,
-                letterSpacing: `${settings.clock_letter_spacing}px`,
+                color: theme.clock.color,
+                fontSize: `${Math.max(12, theme.clock.size * 0.4)}px`,
+                fontWeight: getFontWeight(theme.clock.font_weight),
+                fontFamily: getFontFamily(theme.clock.font_family),
+                textShadow: `0 2px ${theme.clock.shadow_blur * 0.4}px ${hexToRgba(theme.clock.shadow_color, theme.clock.shadow_opacity)}`,
+                letterSpacing: `${theme.clock.letter_spacing}px`,
               }}
             >
               {clockText}
             </div>
-            {settings.clock_show_date && (
+            {theme.clock.show_date && (
               <div
                 className="text-center whitespace-nowrap"
                 style={{
-                  color: settings.clock_color,
-                  fontSize: `${Math.max(8, settings.clock_size * 0.15)}px`,
-                  fontWeight: getFontWeight(settings.clock_font_weight),
-                  textShadow: `0 1px ${settings.clock_shadow_blur * 0.2}px ${hexToRgba(settings.clock_shadow_color, settings.clock_shadow_opacity)}`,
+                  color: theme.clock.color,
+                  fontSize: `${Math.max(8, theme.clock.size * 0.15)}px`,
+                  fontWeight: getFontWeight(theme.clock.font_weight),
+                  textShadow: `0 1px ${theme.clock.shadow_blur * 0.2}px ${hexToRgba(theme.clock.shadow_color, theme.clock.shadow_opacity)}`,
                   opacity: 0.8,
                   marginTop: '2px',
                 }}
@@ -288,7 +307,7 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
       {/* Search box */}
       {settings.show_search_box && (
         <div
-          style={elementStyle(settings.search_position, { width: '70%', maxWidth: '320px' })}
+          style={elementStyle(layout.search_position, { width: '70%', maxWidth: '320px' })}
           className={dragHandleClass('search_position')}
           onPointerDown={handlePointerDown('search_position')}
         >
@@ -296,20 +315,20 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
             <div
               className="flex"
               style={{
-                backgroundColor: hexToRgba(settings.search_bg_color, settings.search_bg_opacity),
-                borderRadius: `${Math.max(2, settings.search_border_radius * 0.3)}px`,
-                padding: `${Math.max(1, settings.search_padding * 0.3)}px ${Math.max(2, settings.search_padding * 0.5)}px`,
-                boxShadow: `0 ${settings.search_shadow_blur * 0.1}px ${settings.search_shadow_blur * 0.4}px ${hexToRgba(settings.search_shadow_color, settings.search_shadow_opacity)}`,
-                ...(settings.search_border_style !== 'none' ? {
-                  border: `${Math.max(1, settings.search_border_width)}px ${settings.search_border_style} ${settings.search_border_color}`,
+                backgroundColor: hexToRgba(theme.search.bg_color, theme.search.bg_opacity),
+                borderRadius: `${Math.max(2, theme.search.border_radius * 0.3)}px`,
+                padding: `${Math.max(1, theme.search.padding * 0.3)}px ${Math.max(2, theme.search.padding * 0.5)}px`,
+                boxShadow: `0 ${theme.search.shadow_blur * 0.1}px ${theme.search.shadow_blur * 0.4}px ${hexToRgba(theme.search.shadow_color, theme.search.shadow_opacity)}`,
+                ...(theme.search.border_style !== 'none' ? {
+                  border: `${Math.max(1, theme.search.border_width)}px ${theme.search.border_style} ${theme.search.border_color}`,
                 } : {}),
-                ...(settings.search_backdrop_blur > 0 ? {
-                  backdropFilter: `blur(${settings.search_backdrop_blur * 0.4}px)`,
+                ...(theme.search.backdrop_blur > 0 ? {
+                  backdropFilter: `blur(${theme.search.backdrop_blur * 0.4}px)`,
                 } : {}),
               }}
             >
-              <span className="flex-1 text-[10px] py-0.5" style={{ color: settings.search_text_color }}>
-                {settings.search_placeholder || '搜索...'}
+              <span className="flex-1 text-[10px] py-0.5" style={{ color: theme.search.text_color }}>
+                {theme.search.placeholder || '搜索...'}
               </span>
               <div className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -356,35 +375,35 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
                 className="text-center"
                 style={{
                   minWidth: '48px',
-                  padding: `${settings.shortcuts_padding_y * 0.2}px ${settings.shortcuts_padding_x * 0.2}px`,
-                  backgroundColor: hexToRgba(settings.shortcuts_bg_color, settings.shortcuts_bg_opacity),
-                  borderRadius: settings.shortcuts_shape === 'circle' ? '50%' : `${Math.max(2, settings.shortcuts_border_radius * 0.3)}px`,
-                  aspectRatio: settings.shortcuts_shape !== 'auto' ? '1' : undefined,
-                  boxShadow: settings.shortcuts_shadow_opacity > 0 ? `0 2px ${settings.shortcuts_shadow_blur * 0.3}px ${hexToRgba(settings.shortcuts_shadow_color, settings.shortcuts_shadow_opacity)}` : undefined,
-                  ...(settings.shortcuts_border_style !== 'none' ? {
-                    border: `${Math.max(1, settings.shortcuts_border_width)}px ${settings.shortcuts_border_style} ${settings.shortcuts_border_color}`,
+                  padding: `${theme.shortcuts.padding_y * 0.2}px ${theme.shortcuts.padding_x * 0.2}px`,
+                  backgroundColor: hexToRgba(theme.shortcuts.bg_color, theme.shortcuts.bg_opacity),
+                  borderRadius: theme.shortcuts.shape === 'circle' ? '50%' : `${Math.max(2, theme.shortcuts.border_radius * 0.3)}px`,
+                  aspectRatio: theme.shortcuts.shape !== 'auto' ? '1' : undefined,
+                  boxShadow: theme.shortcuts.shadow_opacity > 0 ? `0 2px ${theme.shortcuts.shadow_blur * 0.3}px ${hexToRgba(theme.shortcuts.shadow_color, theme.shortcuts.shadow_opacity)}` : undefined,
+                  ...(theme.shortcuts.border_style !== 'none' ? {
+                    border: `${Math.max(1, theme.shortcuts.border_width)}px ${theme.shortcuts.border_style} ${theme.shortcuts.border_color}`,
                   } : {}),
-                  ...(settings.shortcuts_backdrop_blur > 0 ? {
-                    backdropFilter: `blur(${settings.shortcuts_backdrop_blur * 0.4}px)`,
+                  ...(theme.shortcuts.backdrop_blur > 0 ? {
+                    backdropFilter: `blur(${theme.shortcuts.backdrop_blur * 0.4}px)`,
                   } : {}),
                 }}
               >
-                <div className="flex justify-center items-center" style={{ height: `${settings.shortcuts_icon_size * 0.3}px` }}>
+                <div className="flex justify-center items-center" style={{ height: `${theme.shortcuts.icon_size * 0.3}px` }}>
                   {folder ? (
-                    <span style={{ fontSize: `${settings.shortcuts_icon_size * 0.25}px` }}>{s.icon || '📁'}</span>
+                    <span style={{ fontSize: `${theme.shortcuts.icon_size * 0.25}px` }}>{s.icon || '📁'}</span>
                   ) : failedFavicons.has(i) || !getFaviconUrl(s.url ?? '') ? (
-                    <span style={{ fontSize: `${settings.shortcuts_icon_size * 0.25}px` }}>{s.icon}</span>
+                    <span style={{ fontSize: `${theme.shortcuts.icon_size * 0.25}px` }}>{s.icon}</span>
                   ) : (
                     <img
                       src={getFaviconUrl(s.url ?? '')}
                       alt=""
-                      style={{ width: `${settings.shortcuts_icon_size * 0.3}px`, height: `${settings.shortcuts_icon_size * 0.3}px`, borderRadius: '2px' }}
+                      style={{ width: `${theme.shortcuts.icon_size * 0.3}px`, height: `${theme.shortcuts.icon_size * 0.3}px`, borderRadius: '2px' }}
                       onError={() => setFailedFavicons(prev => new Set(prev).add(i))}
                       draggable={false}
                     />
                   )}
                 </div>
-                <div className="mt-0.5 truncate max-w-[48px]" style={{ fontSize: '7px', color: settings.shortcuts_title_color }}>
+                <div className="mt-0.5 truncate max-w-[48px]" style={{ fontSize: '7px', color: theme.shortcuts.title_color }}>
                   {s.title}
                 </div>
               </div>

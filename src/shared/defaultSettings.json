@@ -1,5 +1,82 @@
 {
   "background_image": null,
+  "theme": {
+    "background": {
+      "color": "#1a1a2e",
+      "fit": "cover",
+      "blur": 0,
+      "brightness": 100,
+      "overlay_color": "#000000",
+      "overlay_opacity": 30,
+      "gradient_enabled": false,
+      "gradient_from": "#1a1a2e",
+      "gradient_to": "#2d3250",
+      "gradient_direction": "to-bottom"
+    },
+    "clock": {
+      "color": "#ffffff",
+      "size": 72,
+      "format_24h": true,
+      "show_seconds": false,
+      "show_date": false,
+      "font_weight": "light",
+      "font_family": "system",
+      "shadow_color": "#000000",
+      "shadow_blur": 10,
+      "shadow_opacity": 30,
+      "letter_spacing": 0
+    },
+    "search": {
+      "engine": "google",
+      "bg_color": "#ffffff",
+      "bg_opacity": 95,
+      "border_radius": 28,
+      "placeholder": "\u641c\u7d22...",
+      "border_width": 0,
+      "border_color": "#d4af37",
+      "border_style": "none",
+      "shadow_color": "#000000",
+      "shadow_blur": 20,
+      "shadow_opacity": 15,
+      "backdrop_blur": 0,
+      "text_color": "#333333",
+      "width": 560,
+      "padding": 4
+    },
+    "shortcuts": {
+      "bg_color": "#ffffff",
+      "bg_opacity": 90,
+      "border_radius": 12,
+      "columns": "auto",
+      "gap": 12,
+      "border_width": 0,
+      "border_color": "#ffffff",
+      "border_style": "none",
+      "shadow_color": "#000000",
+      "shadow_blur": 0,
+      "shadow_opacity": 0,
+      "backdrop_blur": 0,
+      "title_color": "#333333",
+      "icon_size": 36,
+      "padding_x": 8,
+      "padding_y": 14,
+      "shape": "auto"
+    }
+  },
+  "layout": {
+    "clock_position": {
+      "x": 50,
+      "y": 30
+    },
+    "search_position": {
+      "x": 50,
+      "y": 48
+    },
+    "shortcuts_position": {
+      "x": 50,
+      "y": 68
+    }
+  },
   "overlay_opacity": 30,
   "show_clock": true,
   "clock_color": "#ffffff",

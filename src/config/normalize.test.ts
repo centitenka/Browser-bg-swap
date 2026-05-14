@@ -7,8 +7,91 @@ import {
   normalizeImportedSettings,
   projectSettingsForBrowser,
 } from './normalize';
+import type { BrowserSettings } from '../types';
 
 describe('normalizeBrowserSettings', () => {
+  it('migrates legacy flat visual settings into theme and layout modules', () => {
+    const normalized = normalizeBrowserSettings({
+      background_color: '#112233',
+      background_fit: 'contain',
+      background_blur: 8,
+      background_brightness: 120,
+      overlay_color: '#445566',
+      overlay_opacity: 40,
+      clock_size: 96,
+      clock_color: '#ddeeff',
+      search_width: 640,
+      search_border_radius: 18,
+      shortcuts_columns: '4',
+      shortcuts_gap: 20,
+      clock_position: { x: 25, y: 35 },
+      search_position: { x: 50, y: 55 },
+      shortcuts_position: { x: 75, y: 65 },
+    } as unknown as Partial<BrowserSettings>);
+
+    expect(CONFIG_VERSION).toBe(3);
+    expect(normalized.theme.background).toMatchObject({
+      color: '#112233',
+      fit: 'contain',
+      blur: 8,
+      brightness: 120,
+      overlay_color: '#445566',
+      overlay_opacity: 40,
+    });
+    expect(normalized.theme.clock).toMatchObject({
+      size: 96,
+      color: '#ddeeff',
+    });
+    expect(normalized.theme.search).toMatchObject({
+      width: 640,
+      border_radius: 18,
+    });
+    expect(normalized.theme.shortcuts).toMatchObject({
+      columns: '4',
+      gap: 20,
+    });
+    expect(normalized.layout).toMatchObject({
+      clock_position: { x: 25, y: 35 },
+      search_position: { x: 50, y: 55 },
+      shortcuts_position: { x: 75, y: 65 },
+    });
+  });
+
+  it('clamps nested theme values and mirrors them to legacy fields', () => {
+    const normalized = normalizeBrowserSettings({
+      theme: {
+        background: {
+          color: '#111111',
+          fit: 'stretch',
+          blur: 999,
+          brightness: -10,
+          overlay_color: 'bad',
+          overlay_opacity: -5,
+          gradient_enabled: true,
+          gradient_from: 'bad',
+          gradient_to: '#abcdef',
+          gradient_direction: 'to-right',
+        },
+      },
+    } as unknown as Partial<BrowserSettings>);
+
+    expect(normalized.theme.background).toMatchObject({
+      color: '#111111',
+      fit: 'stretch',
+      blur: sharedConfigSchema.numbers.background_blur.max,
+      brightness: sharedConfigSchema.numbers.background_brightness.min,
+      overlay_color: '#000000',
+      overlay_opacity: sharedConfigSchema.numbers.overlay_opacity.min,
+      gradient_enabled: true,
+      gradient_from: '#1a1a2e',
+      gradient_to: '#abcdef',
+      gradient_direction: 'to-right',
+    });
+    expect(normalized.background_blur).toBe(20);
+    expect(normalized.background_brightness).toBe(50);
+    expect(normalized.overlay_opacity).toBe(0);
+  });
+
   it('clamps and sanitizes invalid values', () => {
     const normalized = normalizeBrowserSettings({
       overlay_opacity: 999,
@@ -106,6 +189,7 @@ describe('normalizeImportedSettings', () => {
     expect(payload?.browser).toBe('chrome');
     expect(payload?.settings.show_clock).toBe(true);
     expect(payload?.settings.custom_css).toBe('');
+    expect(payload?.settings.theme.clock.size).toBe(createDefaultSettings().theme.clock.size);
   });
 });
 

@@ -12,6 +12,13 @@ export const backgroundFitOptions = [
   { id: 'stretch', label: 'Stretch' },
 ];
 
+export const gradientDirectionOptions = [
+  { id: 'to-bottom', label: 'Down' },
+  { id: 'to-right', label: 'Right' },
+  { id: 'to-br', label: 'Diagonal' },
+  { id: 'to-tr', label: 'Rise' },
+];
+
 export const fontWeightOptions = [
   { id: 'light', label: 'Light' },
   { id: 'normal', label: 'Normal' },

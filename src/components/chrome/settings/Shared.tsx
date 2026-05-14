@@ -1,6 +1,21 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useT } from '../../../i18n';
 
+export function CapabilityBadge({ level }: { level: 'full' | 'partial' }) {
+  const t = useT();
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal ${
+        level === 'full'
+          ? 'bg-green-500/10 text-green-300 border border-green-500/20'
+          : 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20'
+      }`}
+    >
+      {level === 'full' ? t('settings.supportFull') : t('settings.supportPartial')}
+    </span>
+  );
+}
+
 export function AdvancedToggle({
   sectionKey,
   expanded,

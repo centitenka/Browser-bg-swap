@@ -1,5 +1,5 @@
 {
-  "configVersion": 2,
+  "configVersion": 3,
   "numbers": {
     "overlay_opacity": { "min": 0, "max": 100 },
     "clock_size": { "min": 32, "max": 120 },
@@ -36,6 +36,7 @@
     "shortcuts_columns": ["auto", "2", "3", "4", "5", "6"],
     "shortcuts_border_style": ["none", "solid", "dashed", "double"],
     "shortcuts_shape": ["auto", "square", "circle"],
-    "clock_font_family": ["system", "serif", "mono"]
+    "clock_font_family": ["system", "serif", "mono"],
+    "gradient_direction": ["to-bottom", "to-right", "to-br", "to-tr"]
   }
 }

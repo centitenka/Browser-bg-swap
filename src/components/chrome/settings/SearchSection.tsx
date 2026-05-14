@@ -3,6 +3,7 @@ import type { BrowserSettings } from '../../../types';
 import { borderStyleOptions, searchEngines } from './Options';
 import {
   AdvancedToggle,
+  CapabilityBadge,
   ColorField,
   OptionButtons,
   RangeField,
@@ -27,7 +28,10 @@ export function SearchSection({
   return (
     <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('settings.search')}</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('settings.search')}</h3>
+          <CapabilityBadge level="full" />
+        </div>
         <ToggleSwitch
           checked={settings.show_search_box}
           onChange={(checked) => onChange({ show_search_box: checked })}

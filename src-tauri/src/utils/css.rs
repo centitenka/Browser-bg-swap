@@ -23,6 +23,15 @@ fn hex_to_rgba(hex: &str, opacity: f64) -> String {
     format!("rgba({}, {}, {}, {:.2})", red, green, blue, opacity)
 }
 
+fn gradient_direction_css(direction: &str) -> &str {
+    match direction {
+        "to-right" => "to right",
+        "to-br" => "135deg",
+        "to-tr" => "45deg",
+        _ => "to bottom",
+    }
+}
+
 impl CssGenerator {
     pub fn generate_user_content_css(settings: &BrowserSettings) -> String {
         let has_bg_image = settings.background_image.is_some();
@@ -63,7 +72,9 @@ impl CssGenerator {
         let search_border = if settings.search_border_style != "none" {
             format!(
                 "border: {}px {} {} !important;",
-                settings.search_border_width, settings.search_border_style, settings.search_border_color
+                settings.search_border_width,
+                settings.search_border_style,
+                settings.search_border_color
             )
         } else {
             "border: none !important;".to_string()
@@ -92,10 +103,17 @@ impl CssGenerator {
                 bg_url = bg_url,
                 bg_size = bg_size,
             )
+        } else if settings.theme.background.gradient_enabled {
+            format!(
+                "background: linear-gradient({}, {}, {}) !important;",
+                gradient_direction_css(&settings.theme.background.gradient_direction),
+                settings.theme.background.gradient_from,
+                settings.theme.background.gradient_to,
+            )
         } else {
             format!(
                 "background: {bg_color} !important;",
-                bg_color = settings.background_color,
+                bg_color = settings.theme.background.color,
             )
         };
 
@@ -277,5 +295,26 @@ mod tests {
         assert!(css.contains("background: rgba(34, 51, 68, 0.60) !important;"));
         assert!(css.contains("border: 1px dashed #667788 !important;"));
         assert!(css.contains("color: #fedcba !important;"));
+    }
+
+    #[test]
+    fn firefox_css_uses_theme_gradient_background_without_image() {
+        let settings = serde_json::from_value::<BrowserSettings>(serde_json::json!({
+            "background_image": null,
+            "theme": {
+                "background": {
+                    "gradient_enabled": true,
+                    "gradient_from": "#010203",
+                    "gradient_to": "#abcdef",
+                    "gradient_direction": "to-right"
+                }
+            }
+        }))
+        .unwrap()
+        .normalized();
+
+        let css = CssGenerator::generate_user_content_css(&settings);
+
+        assert!(css.contains("linear-gradient(to right, #010203, #abcdef)"));
     }
 }

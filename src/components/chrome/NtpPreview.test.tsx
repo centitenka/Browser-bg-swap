@@ -9,6 +9,33 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 describe('NtpPreview', () => {
+  it('renders a theme gradient background when no image is selected', () => {
+    const settings = {
+      ...createDefaultSettings(),
+      background_color: '#000000',
+      theme: {
+        ...createDefaultSettings().theme,
+        background: {
+          ...createDefaultSettings().theme.background,
+          gradient_enabled: true,
+          gradient_from: '#010203',
+          gradient_to: '#abcdef',
+          gradient_direction: 'to-right',
+        },
+      },
+    };
+
+    const { container } = render(
+      <I18nContext.Provider value={{ lang: 'en', setLang: () => {}, t: createT('en') }}>
+        <NtpPreview settings={settings} onPositionChange={() => {}} />
+      </I18nContext.Provider>
+    );
+
+    expect(container.querySelector('[data-testid="ntp-background"]')).toHaveStyle({
+      background: 'linear-gradient(to right, #010203, #abcdef)',
+    });
+  });
+
   it('opens a shortcut folder grid and returns to the top level', () => {
     const settings = {
       ...createDefaultSettings(),

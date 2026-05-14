@@ -5,6 +5,7 @@ import type { BrowserSettings, Shortcut } from '../../../types';
 import { borderStyleOptions, columnsOptions, shapeOptions } from './Options';
 import {
   AdvancedToggle,
+  CapabilityBadge,
   ColorField,
   OptionButtons,
   RangeField,
@@ -105,9 +106,12 @@ export function ShortcutsSection({
   return (
     <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          {t('settings.shortcuts')}
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {t('settings.shortcuts')}
+          </h3>
+          <CapabilityBadge level="full" />
+        </div>
         <ToggleSwitch
           checked={settings.show_shortcuts}
           onChange={(checked) => onChange({ show_shortcuts: checked })}
