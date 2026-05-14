@@ -60,6 +60,10 @@ function getFaviconUrl(url: string): string {
   }
 }
 
+function isFolder(shortcut: Shortcut): boolean {
+  return shortcut.kind === 'folder';
+}
+
 function getShortcutColumns(columns: string, shortcutCount: number): number {
   if (columns === 'auto') return Math.min(6, Math.max(1, shortcutCount));
   const parsed = Number.parseInt(columns, 10);
@@ -100,6 +104,7 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
   const [clockText, setClockText] = useState('');
   const [dateText, setDateText] = useState('');
   const [failedFavicons, setFailedFavicons] = useState<Set<number>>(new Set());
+  const [activeFolderIndex, setActiveFolderIndex] = useState<number | null>(null);
 
   // Live clock
   useEffect(() => {
@@ -185,9 +190,15 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
   const dragHandleClass = (key: string) =>
     `group cursor-grab select-none ${dragging === key ? 'cursor-grabbing ring-2 ring-primary/50 rounded-lg' : ''}`;
 
-  const defaultShortcutPositions = settings.show_shortcuts && settings.shortcuts.length > 0
+  const activeFolder = activeFolderIndex !== null ? settings.shortcuts[activeFolderIndex] : null;
+  const visibleShortcuts = activeFolder?.kind === 'folder'
+    ? activeFolder.children ?? []
+    : settings.shortcuts;
+  const inFolder = activeFolder?.kind === 'folder';
+
+  const defaultShortcutPositions = settings.show_shortcuts && visibleShortcuts.length > 0
     ? getDefaultShortcutPositions(
-        settings.shortcuts,
+        visibleShortcuts,
         settings.shortcuts_position,
         settings.shortcuts_columns,
         settings.shortcuts_gap
@@ -315,16 +326,30 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
       )}
 
       {/* Shortcuts - individually draggable */}
-      {settings.show_shortcuts && settings.shortcuts.map((s, i) => {
-        const pos = s.position ?? defaultShortcutPositions[i];
+      {settings.show_shortcuts && inFolder && (
+        <button
+          onClick={() => setActiveFolderIndex(null)}
+          className="absolute z-20 left-3 top-3 px-2 py-1 rounded bg-black/60 text-white/80 text-[10px] backdrop-blur-sm"
+        >
+          Back
+        </button>
+      )}
+      {settings.show_shortcuts && visibleShortcuts.map((s, i) => {
+        const pos = inFolder ? defaultShortcutPositions[i] : s.position ?? defaultShortcutPositions[i];
         if (!pos) return null;
         const key = `shortcut_position_${i}`;
+        const folder = isFolder(s);
         return (
           <div
             key={i}
             style={elementStyle(pos)}
-            className={dragHandleClass(key)}
-            onPointerDown={handlePointerDown(key)}
+            className={inFolder ? 'select-none' : dragHandleClass(key)}
+            onPointerDown={inFolder ? undefined : handlePointerDown(key)}
+            onClick={(event) => {
+              if (!folder || inFolder) return;
+              event.stopPropagation();
+              setActiveFolderIndex(i);
+            }}
           >
             <div className="relative">
               <div
@@ -345,11 +370,13 @@ export function NtpPreview({ settings, onPositionChange }: NtpPreviewProps) {
                 }}
               >
                 <div className="flex justify-center items-center" style={{ height: `${settings.shortcuts_icon_size * 0.3}px` }}>
-                  {failedFavicons.has(i) ? (
+                  {folder ? (
+                    <span style={{ fontSize: `${settings.shortcuts_icon_size * 0.25}px` }}>{s.icon || '📁'}</span>
+                  ) : failedFavicons.has(i) || !getFaviconUrl(s.url ?? '') ? (
                     <span style={{ fontSize: `${settings.shortcuts_icon_size * 0.25}px` }}>{s.icon}</span>
                   ) : (
                     <img
-                      src={getFaviconUrl(s.url)}
+                      src={getFaviconUrl(s.url ?? '')}
                       alt=""
                       style={{ width: `${settings.shortcuts_icon_size * 0.3}px`, height: `${settings.shortcuts_icon_size * 0.3}px`, borderRadius: '2px' }}
                       onError={() => setFailedFavicons(prev => new Set(prev).add(i))}

@@ -516,6 +516,13 @@ body {{
     color: {sc_title_color}; font-size: 11px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }}
+
+.shortcut-back {{
+    position: absolute; left: 24px; top: 24px;
+    background: rgba(0,0,0,0.45); color: white; border: none;
+    border-radius: 8px; padding: 8px 12px; cursor: pointer;
+    backdrop-filter: blur(8px);
+}}
 "#,
             search_r = search_r,
             search_g = search_g,
@@ -562,15 +569,6 @@ body {{
         let format_24h = settings.clock_format_24h;
         let show_seconds = settings.clock_show_seconds;
         let show_date = settings.clock_show_date;
-        let shortcuts_per_row = if settings.shortcuts_columns == "auto" {
-            settings.shortcuts.len().clamp(1, 6)
-        } else {
-            settings
-                .shortcuts_columns
-                .parse::<usize>()
-                .unwrap_or(6)
-                .max(1)
-        };
         let shortcuts_gap = settings.shortcuts_gap;
 
         format!(
@@ -615,9 +613,9 @@ updateClock();
 (function() {{
     var container = document.getElementById('shortcuts');
     if (!container) return;
-    var list = (typeof SHORTCUTS !== 'undefined' && SHORTCUTS.length) ? SHORTCUTS : [];
+    var rootList = (typeof SHORTCUTS !== 'undefined' && SHORTCUTS.length) ? SHORTCUTS : [];
     var defaultPos = (typeof SHORTCUTS_POSITION !== 'undefined') ? SHORTCUTS_POSITION : {{ x: 50, y: 68 }};
-    var perRow = {shortcuts_per_row};
+    var configuredColumns = "{shortcuts_columns}";
     var hSpacing = {shortcuts_gap};
     var vSpacing = {shortcuts_gap};
 
@@ -629,14 +627,38 @@ updateClock();
         }}
     }}
 
+    function getPerRow(list) {{
+        if (configuredColumns === 'auto') {{
+            return Math.min(Math.max(list.length, 1), 6);
+        }}
+        return Math.max(parseInt(configuredColumns, 10) || 6, 1);
+    }}
+
+    function renderShortcuts(list, parentTitle) {{
+        container.innerHTML = '';
+        var perRow = getPerRow(list);
+        if (parentTitle) {{
+            var back = document.createElement('button');
+            back.className = 'shortcut-back';
+            back.textContent = '← Back';
+            back.addEventListener('click', function() {{ renderShortcuts(rootList, ''); }});
+            container.appendChild(back);
+        }}
+
     list.forEach(function(s, i) {{
         var div = document.createElement('div');
         div.className = 'shortcut-item';
-        div.addEventListener('click', function() {{ window.location.href = s.url; }});
+        div.addEventListener('click', function() {{
+            if (s.kind === 'folder') {{
+                renderShortcuts(s.children || [], s.title);
+            }} else if (s.url) {{
+                window.location.href = s.url;
+            }}
+        }});
 
         // Determine position
         var pos;
-        if (s.position) {{
+        if (!parentTitle && s.position) {{
             pos = s.position;
         }} else {{
             var total = list.length;
@@ -656,8 +678,10 @@ updateClock();
         var iconDiv = document.createElement('div');
         iconDiv.className = 'shortcut-icon';
 
-        var domain = getDomain(s.url);
-        if (domain) {{
+        var domain = getDomain(s.url || '');
+        if (s.kind === 'folder') {{
+            iconDiv.textContent = s.icon || '📁';
+        }} else if (domain) {{
             var img = document.createElement('img');
             img.src = 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=64';
             img.onerror = function() {{
@@ -676,12 +700,15 @@ updateClock();
         div.appendChild(titleDiv);
         container.appendChild(div);
     }});
+    }}
+
+    renderShortcuts(rootList, '');
 }})();
 "#,
             format_24h = format_24h,
             show_seconds = show_seconds,
             show_date = show_date,
-            shortcuts_per_row = shortcuts_per_row,
+            shortcuts_columns = settings.shortcuts_columns,
             shortcuts_gap = shortcuts_gap,
         )
     }
@@ -740,8 +767,16 @@ mod tests {
 
         let js = ChromeManager::generate_js(&settings);
 
-        assert!(js.contains("var perRow = 4;"));
+        assert!(js.contains("var configuredColumns = \"4\";"));
+        assert!(js.contains("return Math.max(parseInt(configuredColumns, 10) || 6, 1);"));
         assert!(js.contains("var hSpacing = 16;"));
         assert!(js.contains("var vSpacing = 16;"));
+    }
+
+    #[test]
+    fn rejects_unsupported_extension_page_browser() {
+        let error = ChromeManager::open_extensions_page("firefox").unwrap_err();
+
+        assert!(error.to_string().contains("不支持的浏览器"));
     }
 }

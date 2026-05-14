@@ -44,6 +44,40 @@ impl CssGenerator {
             "none"
         };
         let overlay_color = hex_to_rgba(&settings.overlay_color, overlay_alpha);
+        let search_bg = hex_to_rgba(
+            &settings.search_bg_color,
+            settings.search_bg_opacity as f64 / 100.0,
+        );
+        let search_shadow = hex_to_rgba(
+            &settings.search_shadow_color,
+            settings.search_shadow_opacity as f64 / 100.0,
+        );
+        let shortcuts_bg = hex_to_rgba(
+            &settings.shortcuts_bg_color,
+            settings.shortcuts_bg_opacity as f64 / 100.0,
+        );
+        let shortcuts_shadow = hex_to_rgba(
+            &settings.shortcuts_shadow_color,
+            settings.shortcuts_shadow_opacity as f64 / 100.0,
+        );
+        let search_border = if settings.search_border_style != "none" {
+            format!(
+                "border: {}px {} {} !important;",
+                settings.search_border_width, settings.search_border_style, settings.search_border_color
+            )
+        } else {
+            "border: none !important;".to_string()
+        };
+        let shortcuts_border = if settings.shortcuts_border_style != "none" {
+            format!(
+                "border: {}px {} {} !important;",
+                settings.shortcuts_border_width,
+                settings.shortcuts_border_style,
+                settings.shortcuts_border_color
+            )
+        } else {
+            "border: none !important;".to_string()
+        };
 
         let bg_size = match settings.background_fit.as_str() {
             "contain" => "contain",
@@ -117,9 +151,18 @@ impl CssGenerator {
 
     /* 搜索框样式优化 */
     .search-inner-wrapper {{
-        background: rgba(255, 255, 255, 0.9) !important;
-        border-radius: 8px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        background: {search_bg} !important;
+        border-radius: {search_radius}px !important;
+        box-shadow: 0 2px {search_shadow_blur}px {search_shadow} !important;
+        {search_border}
+        max-width: {search_width}px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }}
+
+    .search-handoff-button,
+    .fake-textbox {{
+        color: {search_text_color} !important;
     }}
 
     /* 快捷方式/最近访问 */
@@ -129,9 +172,11 @@ impl CssGenerator {
 
     /* 快捷方式卡片样式 */
     .top-site-outer {{
-        background: rgba(255, 255, 255, 0.85) !important;
-        border-radius: 12px !important;
-        backdrop-filter: blur(10px) !important;
+        background: {shortcuts_bg} !important;
+        border-radius: {shortcuts_radius}px !important;
+        box-shadow: 0 4px {shortcuts_shadow_blur}px {shortcuts_shadow} !important;
+        {shortcuts_border}
+        backdrop-filter: blur({shortcuts_backdrop_blur}px) !important;
         transition: transform 0.2s, box-shadow 0.2s !important;
     }}
 
@@ -141,8 +186,9 @@ impl CssGenerator {
     }}
 
     /* 文字颜色调整 */
-    .section-title span {{
-        color: #fff !important;
+    .section-title span,
+    .top-site-outer .title {{
+        color: {shortcuts_title_color} !important;
         text-shadow: 0 1px 3px rgba(0,0,0,0.5) !important;
     }}
 
@@ -163,6 +209,20 @@ impl CssGenerator {
             overlay_color = overlay_color,
             search_display = search_display,
             shortcuts_display = shortcuts_display,
+            search_bg = search_bg,
+            search_radius = settings.search_border_radius,
+            search_shadow_blur = settings.search_shadow_blur,
+            search_shadow = search_shadow,
+            search_border = search_border,
+            search_width = settings.search_width,
+            search_text_color = settings.search_text_color,
+            shortcuts_bg = shortcuts_bg,
+            shortcuts_radius = settings.shortcuts_border_radius,
+            shortcuts_shadow_blur = settings.shortcuts_shadow_blur,
+            shortcuts_shadow = shortcuts_shadow,
+            shortcuts_border = shortcuts_border,
+            shortcuts_backdrop_blur = settings.shortcuts_backdrop_blur,
+            shortcuts_title_color = settings.shortcuts_title_color,
         )
     }
 }
@@ -186,5 +246,36 @@ mod tests {
         assert!(css.contains(".outer-wrapper::after"));
         assert!(css.contains("filter: blur(8px) brightness(120%)"));
         assert!(css.contains("background: rgba(18, 52, 86, 0.30)"));
+    }
+
+    #[test]
+    fn firefox_search_and_shortcut_styles_use_settings() {
+        let settings = BrowserSettings {
+            search_bg_color: "#112233".into(),
+            search_bg_opacity: 75,
+            search_border_radius: 18,
+            search_border_width: 2,
+            search_border_style: "solid".into(),
+            search_border_color: "#445566".into(),
+            search_text_color: "#abcdef".into(),
+            shortcuts_bg_color: "#223344".into(),
+            shortcuts_bg_opacity: 60,
+            shortcuts_border_radius: 14,
+            shortcuts_border_width: 1,
+            shortcuts_border_style: "dashed".into(),
+            shortcuts_border_color: "#667788".into(),
+            shortcuts_title_color: "#fedcba".into(),
+            ..Default::default()
+        };
+
+        let css = CssGenerator::generate_user_content_css(&settings);
+
+        assert!(css.contains("background: rgba(17, 34, 51, 0.75) !important;"));
+        assert!(css.contains("border-radius: 18px !important;"));
+        assert!(css.contains("border: 2px solid #445566 !important;"));
+        assert!(css.contains("color: #abcdef !important;"));
+        assert!(css.contains("background: rgba(34, 51, 68, 0.60) !important;"));
+        assert!(css.contains("border: 1px dashed #667788 !important;"));
+        assert!(css.contains("color: #fedcba !important;"));
     }
 }

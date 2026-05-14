@@ -5,11 +5,15 @@ export interface ElementPosition {
   y: number;
 }
 
+export type ShortcutKind = 'link' | 'folder';
+
 export interface Shortcut {
+  kind?: ShortcutKind;
   title: string;
-  url: string;
+  url?: string;
   icon: string;
   position?: ElementPosition;
+  children?: Shortcut[];
 }
 
 export interface BrowserSettings {

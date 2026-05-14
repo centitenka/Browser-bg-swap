@@ -29,6 +29,7 @@
   },
   "enums": {
     "search_engine": ["google", "bing", "baidu", "duckduckgo"],
+    "shortcut_kind": ["link", "folder"],
     "background_fit": ["cover", "contain", "center", "stretch"],
     "clock_font_weight": ["light", "normal", "bold"],
     "search_border_style": ["none", "solid", "dashed", "double"],

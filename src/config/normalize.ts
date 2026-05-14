@@ -62,16 +62,57 @@ function normalizePosition(value: ElementPosition | null | undefined, fallback: 
   };
 }
 
+function normalizeShortcutLink(shortcut: Shortcut): Shortcut | null {
+  const title = shortcut.title?.trim() ?? '';
+  const url = shortcut.url?.trim() ?? '';
+
+  if (!title || !url) {
+    return null;
+  }
+
+  return {
+    kind: 'link',
+    title,
+    url,
+    icon: shortcut.icon?.trim() || '\uD83D\uDD17',
+    position: shortcut.position ? normalizePosition(shortcut.position, { x: 50, y: 68 }) : undefined,
+  };
+}
+
+function normalizeShortcutFolder(shortcut: Shortcut): Shortcut | null {
+  const title = shortcut.title?.trim() ?? '';
+  if (!title) {
+    return null;
+  }
+
+  const children = (shortcut.children ?? [])
+    .map((child) => normalizeShortcutLink({ ...child, kind: 'link' }))
+    .filter((child): child is Shortcut => child !== null)
+    .slice(0, 16);
+
+  if (children.length === 0) {
+    return null;
+  }
+
+  return {
+    kind: 'folder',
+    title,
+    icon: shortcut.icon?.trim() || '\uD83D\uDCC1',
+    position: shortcut.position ? normalizePosition(shortcut.position, { x: 50, y: 68 }) : undefined,
+    children,
+  };
+}
+
+function normalizeShortcut(shortcut: Shortcut): Shortcut | null {
+  const kind = normalizeEnumSetting(shortcut.kind, 'shortcut_kind', 'link');
+  return kind === 'folder' ? normalizeShortcutFolder(shortcut) : normalizeShortcutLink(shortcut);
+}
+
 function normalizeShortcuts(shortcuts: Shortcut[] | null | undefined, fallback: Shortcut[]): Shortcut[] {
   const normalized = (shortcuts ?? [])
-    .map((shortcut) => ({
-      title: shortcut.title?.trim() ?? '',
-      url: shortcut.url?.trim() ?? '',
-      icon: shortcut.icon?.trim() || '\uD83D\uDD17',
-      position: shortcut.position ? normalizePosition(shortcut.position, { x: 50, y: 68 }) : undefined,
-    }))
-    .filter((shortcut) => shortcut.title && shortcut.url)
-    .slice(0, 8);
+    .map(normalizeShortcut)
+    .filter((shortcut): shortcut is Shortcut => shortcut !== null)
+    .slice(0, 16);
 
   return normalized.length > 0 ? normalized : fallback.map((shortcut) => ({ ...shortcut }));
 }

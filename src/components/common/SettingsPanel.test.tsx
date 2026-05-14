@@ -33,6 +33,9 @@ describe('SettingsPanel', () => {
 
     expect(screen.getByText('Display options')).toBeInTheDocument();
     expect(screen.getByText('Show search box')).toBeInTheDocument();
+    expect(screen.getByText('Search style')).toBeInTheDocument();
+    expect(screen.getByText('Shortcut style')).toBeInTheDocument();
+    expect(screen.getAllByText('Border Radius').length).toBeGreaterThan(0);
     expect(screen.queryByText('Clock')).not.toBeInTheDocument();
     expect(screen.queryByText('Custom CSS')).not.toBeInTheDocument();
   });

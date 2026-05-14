@@ -3,6 +3,8 @@ import type { BrowserCapabilities } from '../../config/capabilities';
 import type { BrowserSettings } from '../../types';
 import { ImagePicker } from './ImagePicker';
 import { Switch } from './Switch';
+import { borderStyleOptions } from '../chrome/settings/Options';
+import { ColorField, OptionButtons, RangeField } from '../chrome/settings/Shared';
 
 interface SettingsPanelProps {
   settings: BrowserSettings;
@@ -184,6 +186,180 @@ export function SettingsPanel({
           )}
         </div>
       </section>
+
+      {capabilities.supportsSearchCustomization && settings.show_search_box && (
+        <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            {t('settings.searchStyle')}
+          </h3>
+          <div className="space-y-4">
+            <ColorField
+              label={t('settings.bgColorLabel')}
+              value={settings.search_bg_color}
+              onChange={(value) => onChange({ search_bg_color: value })}
+            />
+            <RangeField
+              label={t('settings.opacity')}
+              value={settings.search_bg_opacity}
+              min={0}
+              max={100}
+              suffix="%"
+              onChange={(value) => onChange({ search_bg_opacity: value })}
+            />
+            <RangeField
+              label={t('settings.borderRadius')}
+              value={settings.search_border_radius}
+              min={0}
+              max={60}
+              suffix="px"
+              onChange={(value) => onChange({ search_border_radius: value })}
+            />
+            <ColorField
+              label={t('settings.textColor')}
+              value={settings.search_text_color}
+              onChange={(value) => onChange({ search_text_color: value })}
+            />
+            <div>
+              <label className="text-xs text-gray-400 block mb-2">{t('settings.borderStyle')}</label>
+              <OptionButtons
+                value={settings.search_border_style}
+                options={borderStyleOptions}
+                onChange={(value) => onChange({ search_border_style: value })}
+                columns="grid grid-cols-2 lg:grid-cols-4 gap-1.5"
+              />
+            </div>
+            {settings.search_border_style !== 'none' && (
+              <>
+                <RangeField
+                  label={t('settings.borderWidth')}
+                  value={settings.search_border_width}
+                  min={0}
+                  max={5}
+                  suffix="px"
+                  onChange={(value) => onChange({ search_border_width: value })}
+                />
+                <ColorField
+                  label={t('settings.borderColor')}
+                  value={settings.search_border_color}
+                  onChange={(value) => onChange({ search_border_color: value })}
+                />
+              </>
+            )}
+            <ColorField
+              label={t('settings.shadowColor')}
+              value={settings.search_shadow_color}
+              onChange={(value) => onChange({ search_shadow_color: value })}
+            />
+            <RangeField
+              label={t('settings.shadowBlur')}
+              value={settings.search_shadow_blur}
+              min={0}
+              max={40}
+              suffix="px"
+              onChange={(value) => onChange({ search_shadow_blur: value })}
+            />
+            <RangeField
+              label={t('settings.shadowOpacity')}
+              value={settings.search_shadow_opacity}
+              min={0}
+              max={100}
+              suffix="%"
+              onChange={(value) => onChange({ search_shadow_opacity: value })}
+            />
+            <RangeField
+              label={t('settings.width')}
+              value={settings.search_width}
+              min={300}
+              max={800}
+              suffix="px"
+              onChange={(value) => onChange({ search_width: value })}
+            />
+          </div>
+        </section>
+      )}
+
+      {capabilities.supportsShortcutsCustomization && settings.show_shortcuts && (
+        <section className="bg-card border border-border-subtle/40 rounded-xl p-6 shadow-sm">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            {t('settings.shortcutStyle')}
+          </h3>
+          <div className="space-y-4">
+            <ColorField
+              label={t('settings.bgColorLabel')}
+              value={settings.shortcuts_bg_color}
+              onChange={(value) => onChange({ shortcuts_bg_color: value })}
+            />
+            <RangeField
+              label={t('settings.opacity')}
+              value={settings.shortcuts_bg_opacity}
+              min={0}
+              max={100}
+              suffix="%"
+              onChange={(value) => onChange({ shortcuts_bg_opacity: value })}
+            />
+            <RangeField
+              label={t('settings.borderRadius')}
+              value={settings.shortcuts_border_radius}
+              min={0}
+              max={50}
+              suffix="px"
+              onChange={(value) => onChange({ shortcuts_border_radius: value })}
+            />
+            <ColorField
+              label={t('settings.titleColor')}
+              value={settings.shortcuts_title_color}
+              onChange={(value) => onChange({ shortcuts_title_color: value })}
+            />
+            <div>
+              <label className="text-xs text-gray-400 block mb-2">{t('settings.borderStyle')}</label>
+              <OptionButtons
+                value={settings.shortcuts_border_style}
+                options={borderStyleOptions}
+                onChange={(value) => onChange({ shortcuts_border_style: value })}
+                columns="grid grid-cols-2 lg:grid-cols-4 gap-1.5"
+              />
+            </div>
+            {settings.shortcuts_border_style !== 'none' && (
+              <>
+                <RangeField
+                  label={t('settings.borderWidth')}
+                  value={settings.shortcuts_border_width}
+                  min={0}
+                  max={5}
+                  suffix="px"
+                  onChange={(value) => onChange({ shortcuts_border_width: value })}
+                />
+                <ColorField
+                  label={t('settings.borderColor')}
+                  value={settings.shortcuts_border_color}
+                  onChange={(value) => onChange({ shortcuts_border_color: value })}
+                />
+              </>
+            )}
+            <ColorField
+              label={t('settings.shadowColor')}
+              value={settings.shortcuts_shadow_color}
+              onChange={(value) => onChange({ shortcuts_shadow_color: value })}
+            />
+            <RangeField
+              label={t('settings.shadowBlur')}
+              value={settings.shortcuts_shadow_blur}
+              min={0}
+              max={40}
+              suffix="px"
+              onChange={(value) => onChange({ shortcuts_shadow_blur: value })}
+            />
+            <RangeField
+              label={t('settings.shadowOpacity')}
+              value={settings.shortcuts_shadow_opacity}
+              min={0}
+              max={100}
+              suffix="%"
+              onChange={(value) => onChange({ shortcuts_shadow_opacity: value })}
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

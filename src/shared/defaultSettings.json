@@ -9,21 +9,25 @@
   "show_shortcuts": true,
   "shortcuts": [
     {
+      "kind": "link",
       "title": "GitHub",
       "url": "https://github.com",
       "icon": "\ud83d\udcbb"
     },
     {
+      "kind": "link",
       "title": "YouTube",
       "url": "https://youtube.com",
       "icon": "\u25b6\ufe0f"
     },
     {
+      "kind": "link",
       "title": "Bilibili",
       "url": "https://bilibili.com",
       "icon": "\ud83d\udcfa"
     },
     {
+      "kind": "link",
       "title": "\u77e5\u4e4e",
       "url": "https://zhihu.com",
       "icon": "\u2753"

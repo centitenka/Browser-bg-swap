@@ -25,6 +25,69 @@ describe('normalizeBrowserSettings', () => {
     expect(normalized.shortcuts.length).toBeGreaterThan(0);
     expect(normalized.overlay_color).toBe('#000000');
   });
+
+  it('keeps shortcut folders while normalizing legacy links', () => {
+    const normalized = normalizeBrowserSettings({
+      shortcuts: [
+        { title: ' GitHub ', url: ' https://github.com ', icon: '' },
+        {
+          kind: 'folder',
+          title: ' Dev ',
+          icon: 'D',
+          children: [
+            { title: ' Docs ', url: ' https://developer.mozilla.org ', icon: '' },
+            { kind: 'folder', title: ' Nested ', icon: 'N', children: [] },
+          ],
+        },
+      ],
+    });
+
+    expect(normalized.shortcuts[0]).toMatchObject({
+      kind: 'link',
+      title: 'GitHub',
+      url: 'https://github.com',
+      icon: '🔗',
+    });
+    expect(normalized.shortcuts[1]).toMatchObject({
+      kind: 'folder',
+      title: 'Dev',
+      icon: 'D',
+    });
+    expect(normalized.shortcuts[1].children).toEqual([
+      {
+        kind: 'link',
+        title: 'Docs',
+        url: 'https://developer.mozilla.org',
+        icon: '🔗',
+        position: undefined,
+      },
+    ]);
+  });
+
+  it('filters empty folders and limits top-level and child shortcuts to sixteen', () => {
+    const manyLinks = Array.from({ length: 20 }, (_, index) => ({
+      title: `Link ${index}`,
+      url: `https://example.com/${index}`,
+      icon: 'L',
+    }));
+
+    const normalized = normalizeBrowserSettings({
+      shortcuts: [
+        { kind: 'folder', title: 'Empty', icon: 'E', children: [] },
+        {
+          kind: 'folder',
+          title: 'Full',
+          icon: 'F',
+          children: manyLinks,
+        },
+        ...manyLinks,
+      ],
+    });
+
+    expect(normalized.shortcuts).toHaveLength(16);
+    expect(normalized.shortcuts.find((shortcut) => shortcut.title === 'Empty')).toBeUndefined();
+    expect(normalized.shortcuts[0].children).toHaveLength(16);
+  });
 });
 
 describe('normalizeImportedSettings', () => {

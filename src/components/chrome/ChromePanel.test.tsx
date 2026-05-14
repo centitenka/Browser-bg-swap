@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { invoke } from '@tauri-apps/api/core';
 import { describe, expect, it, vi } from 'vitest';
 import { createDefaultSettings } from '../../config/defaults';
 import { I18nContext, createT } from '../../i18n';
@@ -13,7 +14,7 @@ vi.mock('../../stores/configStore', () => ({
     chromeInfo: {
       chrome_installed: true,
       edge_installed: false,
-      extension_exists: false,
+      extension_exists: true,
       extension_path: 'C:/tmp/BrowserBgSwap/Extension',
     },
     isLoading: false,
@@ -73,5 +74,19 @@ describe('ChromePanel', () => {
     await waitFor(() => expect(resetSettings).toHaveBeenCalled());
 
     confirmSpy.mockRestore();
+  });
+
+  it('opens the Chrome extensions page from setup actions', async () => {
+    render(
+      <I18nContext.Provider value={{ lang: 'en', setLang: () => {}, t: createT('en') }}>
+        <ChromePanel />
+      </I18nContext.Provider>
+    );
+
+    fireEvent.click(screen.getByText('Open Chrome extensions'));
+
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith('open_extensions_page', { browser: 'chrome' });
+    });
   });
 });

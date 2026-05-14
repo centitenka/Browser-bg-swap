@@ -57,13 +57,31 @@ pub struct ElementPosition {
     pub y: f64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ShortcutKind {
+    Link,
+    Folder,
+}
+
+impl Default for ShortcutKind {
+    fn default() -> Self {
+        Self::Link
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Shortcut {
+    #[serde(default)]
+    pub kind: ShortcutKind,
     pub title: String,
-    pub url: String,
+    #[serde(default)]
+    pub url: Option<String>,
     pub icon: String,
     #[serde(default)]
     pub position: Option<ElementPosition>,
+    #[serde(default)]
+    pub children: Vec<Shortcut>,
 }
 
 fn default_overlay_opacity() -> u32 {
@@ -204,28 +222,36 @@ fn default_clock_font_family() -> String {
 fn default_shortcuts() -> Vec<Shortcut> {
     vec![
         Shortcut {
+            kind: ShortcutKind::Link,
             title: "GitHub".into(),
-            url: "https://github.com".into(),
+            url: Some("https://github.com".into()),
             icon: "\u{1F4BB}".into(),
             position: None,
+            children: Vec::new(),
         },
         Shortcut {
+            kind: ShortcutKind::Link,
             title: "YouTube".into(),
-            url: "https://youtube.com".into(),
+            url: Some("https://youtube.com".into()),
             icon: "\u{25B6}\u{FE0F}".into(),
             position: None,
+            children: Vec::new(),
         },
         Shortcut {
+            kind: ShortcutKind::Link,
             title: "Bilibili".into(),
-            url: "https://bilibili.com".into(),
+            url: Some("https://bilibili.com".into()),
             icon: "\u{1F4FA}".into(),
             position: None,
+            children: Vec::new(),
         },
         Shortcut {
+            kind: ShortcutKind::Link,
             title: "\u{77E5}\u{4E4E}".into(),
-            url: "https://zhihu.com".into(),
+            url: Some("https://zhihu.com".into()),
             icon: "\u{2753}".into(),
             position: None,
+            children: Vec::new(),
         },
     ]
 }
@@ -726,32 +752,78 @@ fn normalize_position(value: ElementPosition, fallback: ElementPosition) -> Elem
     }
 }
 
+fn normalize_shortcut_link(shortcut: Shortcut) -> Option<Shortcut> {
+    let title = shortcut.title.trim().to_string();
+    let url = shortcut.url.and_then(normalize_optional_text)?;
+    let icon = shortcut.icon.trim().to_string();
+
+    if title.is_empty() {
+        return None;
+    }
+
+    Some(Shortcut {
+        kind: ShortcutKind::Link,
+        title,
+        url: Some(url),
+        icon: if icon.is_empty() {
+            "🔗".to_string()
+        } else {
+            icon
+        },
+        position: shortcut
+            .position
+            .map(|position| normalize_position(position, ElementPosition { x: 50.0, y: 68.0 })),
+        children: Vec::new(),
+    })
+}
+
+fn normalize_shortcut_folder(shortcut: Shortcut) -> Option<Shortcut> {
+    let title = shortcut.title.trim().to_string();
+    let icon = shortcut.icon.trim().to_string();
+
+    if title.is_empty() {
+        return None;
+    }
+
+    let children: Vec<Shortcut> = shortcut
+        .children
+        .into_iter()
+        .filter_map(normalize_shortcut_link)
+        .take(16)
+        .collect();
+
+    if children.is_empty() {
+        return None;
+    }
+
+    Some(Shortcut {
+        kind: ShortcutKind::Folder,
+        title,
+        url: None,
+        icon: if icon.is_empty() {
+            "📁".to_string()
+        } else {
+            icon
+        },
+        position: shortcut
+            .position
+            .map(|position| normalize_position(position, ElementPosition { x: 50.0, y: 68.0 })),
+        children,
+    })
+}
+
+fn normalize_shortcut(shortcut: Shortcut) -> Option<Shortcut> {
+    match shortcut.kind {
+        ShortcutKind::Folder => normalize_shortcut_folder(shortcut),
+        ShortcutKind::Link => normalize_shortcut_link(shortcut),
+    }
+}
+
 fn normalize_shortcuts(shortcuts: Vec<Shortcut>, fallback: &[Shortcut]) -> Vec<Shortcut> {
     let normalized: Vec<Shortcut> = shortcuts
         .into_iter()
-        .filter_map(|shortcut| {
-            let title = shortcut.title.trim().to_string();
-            let url = shortcut.url.trim().to_string();
-            let icon = shortcut.icon.trim().to_string();
-
-            if title.is_empty() || url.is_empty() {
-                return None;
-            }
-
-            Some(Shortcut {
-                title,
-                url,
-                icon: if icon.is_empty() {
-                    "🔗".to_string()
-                } else {
-                    icon
-                },
-                position: shortcut.position.map(|position| {
-                    normalize_position(position, ElementPosition { x: 50.0, y: 68.0 })
-                }),
-            })
-        })
-        .take(8)
+        .filter_map(normalize_shortcut)
+        .take(16)
         .collect();
 
     if normalized.is_empty() {
@@ -787,4 +859,65 @@ pub struct PrereqCheck {
     pub toolkit_legacy_enabled: bool,
     pub all_ok: bool,
     pub instructions: Vec<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn normalizes_legacy_links_and_folder_shortcuts() {
+        let settings = serde_json::from_value::<BrowserSettings>(json!({
+            "background_image": null,
+            "shortcuts": [
+                { "title": " GitHub ", "url": " https://github.com ", "icon": "" },
+                {
+                    "kind": "folder",
+                    "title": " Dev ",
+                    "icon": "D",
+                    "children": [
+                        { "title": " Docs ", "url": " https://docs.example.com ", "icon": "" },
+                        { "kind": "folder", "title": " Nested ", "icon": "N", "children": [] }
+                    ]
+                }
+            ]
+        }))
+        .unwrap()
+        .normalized();
+
+        assert_eq!(settings.shortcuts[0].kind, ShortcutKind::Link);
+        assert_eq!(settings.shortcuts[0].title, "GitHub");
+        assert_eq!(settings.shortcuts[0].url.as_deref(), Some("https://github.com"));
+        assert_eq!(settings.shortcuts[0].icon, "🔗");
+        assert_eq!(settings.shortcuts[1].kind, ShortcutKind::Folder);
+        assert_eq!(settings.shortcuts[1].title, "Dev");
+        assert_eq!(settings.shortcuts[1].children.len(), 1);
+        assert_eq!(settings.shortcuts[1].children[0].title, "Docs");
+    }
+
+    #[test]
+    fn limits_shortcut_folders_to_sixteen_items() {
+        let children: Vec<_> = (0..20)
+            .map(|index| {
+                json!({
+                    "title": format!("Link {index}"),
+                    "url": format!("https://example.com/{index}"),
+                    "icon": "L"
+                })
+            })
+            .collect();
+
+        let settings = serde_json::from_value::<BrowserSettings>(json!({
+            "background_image": null,
+            "shortcuts": [
+                { "kind": "folder", "title": "Full", "icon": "F", "children": children }
+            ]
+        }))
+        .unwrap()
+        .normalized();
+
+        assert_eq!(settings.shortcuts.len(), 1);
+        assert_eq!(settings.shortcuts[0].children.len(), 16);
+    }
 }

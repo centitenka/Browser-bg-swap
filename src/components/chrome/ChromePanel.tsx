@@ -150,6 +150,17 @@ export function ChromePanel() {
     }
   };
 
+  const handleOpenExtensionsPage = async (browser: 'chrome' | 'edge') => {
+    try {
+      await invoke('open_extensions_page', { browser });
+      if (chromeInfo?.extension_path) {
+        await handleCopy(chromeInfo.extension_path, 'Path');
+      }
+    } catch {
+      showError(t('chrome.folderFailed'));
+    }
+  };
+
   const noBrowser =
     chromeInfo && !chromeInfo.chrome_installed && !chromeInfo.edge_installed;
 
@@ -330,11 +341,29 @@ export function ChromePanel() {
                   <div className="flex flex-wrap gap-2">
                     {chromeInfo.chrome_installed && (
                       <button
+                        onClick={() => handleOpenExtensionsPage('chrome')}
+                        className="flex items-center gap-2 px-2.5 py-1.5 bg-primary/10 border border-primary/30 rounded-lg hover:bg-primary/20 transition-colors text-xs text-primary"
+                      >
+                        <ArrowRight size={12} />
+                        {t('setup.openChrome')}
+                      </button>
+                    )}
+                    {chromeInfo.chrome_installed && (
+                      <button
                         onClick={() => handleCopy('chrome://extensions', 'Chrome URL')}
                         className="flex items-center gap-2 px-2.5 py-1.5 bg-sidebar/80 border border-border-subtle/30 rounded-lg hover:bg-sidebar transition-colors group"
                       >
                         <code className="text-xs text-blue-300">chrome://extensions</code>
                         {copied === 'Chrome URL' ? <CheckCircle size={12} className="text-green-400" /> : <Copy size={12} className="text-gray-500 group-hover:text-gray-300" />}
+                      </button>
+                    )}
+                    {chromeInfo.edge_installed && (
+                      <button
+                        onClick={() => handleOpenExtensionsPage('edge')}
+                        className="flex items-center gap-2 px-2.5 py-1.5 bg-primary/10 border border-primary/30 rounded-lg hover:bg-primary/20 transition-colors text-xs text-primary"
+                      >
+                        <ArrowRight size={12} />
+                        {t('setup.openEdge')}
                       </button>
                     )}
                     {chromeInfo.edge_installed && (
