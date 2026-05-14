@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { sharedConfigSchema } from './defaults';
 import { CONFIG_VERSION, createDefaultAppConfig, createDefaultSettings } from './defaults';
 import {
   normalizeAppConfig,
@@ -20,6 +21,7 @@ describe('normalizeBrowserSettings', () => {
     expect(normalized.overlay_opacity).toBe(100);
     expect(normalized.background_fit).toBe('cover');
     expect(normalized.search_width).toBe(800);
+    expect(normalized.search_width).toBe(sharedConfigSchema.numbers.search_width.max);
     expect(normalized.shortcuts.length).toBeGreaterThan(0);
     expect(normalized.overlay_color).toBe('#000000');
   });

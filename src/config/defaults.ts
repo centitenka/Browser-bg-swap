@@ -1,7 +1,15 @@
 import type { AppConfig, BrowserSettings, Shortcut } from '../types';
 import defaultSettingsJson from '../shared/defaultSettings.json';
+import configSchemaJson from '../shared/configSchema.json';
 
-export const CONFIG_VERSION = 2;
+export type SharedConfigSchema = {
+  configVersion: number;
+  numbers: Record<string, { min: number; max: number }>;
+  enums: Record<string, string[]>;
+};
+
+export const sharedConfigSchema = configSchemaJson as SharedConfigSchema;
+export const CONFIG_VERSION = sharedConfigSchema.configVersion;
 
 const defaultSettings = defaultSettingsJson as BrowserSettings;
 

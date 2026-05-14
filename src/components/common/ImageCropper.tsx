@@ -2,29 +2,12 @@ import { useState, useCallback } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
 import { X, Check, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useT } from '../../i18n';
+import { createCroppedImage } from './imageCrop';
 
 interface ImageCropperProps {
   imageSrc: string;
   onCropDone: (dataUrl: string) => void;
   onCancel: () => void;
-}
-
-function createCroppedImage(imageSrc: string, crop: Area): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = crop.width;
-      canvas.height = crop.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return reject(new Error('Canvas not supported'));
-      ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
-      resolve(canvas.toDataURL('image/png'));
-    };
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = imageSrc;
-  });
 }
 
 export function ImageCropper({ imageSrc, onCropDone, onCancel }: ImageCropperProps) {
@@ -43,7 +26,7 @@ export function ImageCropper({ imageSrc, onCropDone, onCancel }: ImageCropperPro
     if (!croppedAreaPixels) return;
     setIsSaving(true);
     try {
-      const dataUrl = await createCroppedImage(imageSrc, croppedAreaPixels);
+      const dataUrl = await createCroppedImage(imageSrc, croppedAreaPixels, rotation);
       onCropDone(dataUrl);
     } catch {
       onCancel();

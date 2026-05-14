@@ -1,0 +1,40 @@
+{
+  "configVersion": 2,
+  "numbers": {
+    "overlay_opacity": { "min": 0, "max": 100 },
+    "clock_size": { "min": 32, "max": 120 },
+    "background_blur": { "min": 0, "max": 20 },
+    "background_brightness": { "min": 50, "max": 150 },
+    "search_bg_opacity": { "min": 0, "max": 100 },
+    "search_border_radius": { "min": 0, "max": 60 },
+    "search_border_width": { "min": 0, "max": 5 },
+    "search_shadow_blur": { "min": 0, "max": 40 },
+    "search_shadow_opacity": { "min": 0, "max": 100 },
+    "search_backdrop_blur": { "min": 0, "max": 20 },
+    "search_width": { "min": 300, "max": 800 },
+    "search_padding": { "min": 0, "max": 20 },
+    "shortcuts_bg_opacity": { "min": 0, "max": 100 },
+    "shortcuts_border_radius": { "min": 0, "max": 50 },
+    "shortcuts_gap": { "min": 4, "max": 32 },
+    "shortcuts_border_width": { "min": 0, "max": 5 },
+    "shortcuts_shadow_blur": { "min": 0, "max": 40 },
+    "shortcuts_shadow_opacity": { "min": 0, "max": 100 },
+    "shortcuts_backdrop_blur": { "min": 0, "max": 20 },
+    "shortcuts_icon_size": { "min": 16, "max": 64 },
+    "shortcuts_padding_x": { "min": 0, "max": 30 },
+    "shortcuts_padding_y": { "min": 0, "max": 30 },
+    "clock_shadow_blur": { "min": 0, "max": 30 },
+    "clock_shadow_opacity": { "min": 0, "max": 100 },
+    "clock_letter_spacing": { "min": -10, "max": 20 }
+  },
+  "enums": {
+    "search_engine": ["google", "bing", "baidu", "duckduckgo"],
+    "background_fit": ["cover", "contain", "center", "stretch"],
+    "clock_font_weight": ["light", "normal", "bold"],
+    "search_border_style": ["none", "solid", "dashed", "double"],
+    "shortcuts_columns": ["auto", "2", "3", "4", "5", "6"],
+    "shortcuts_border_style": ["none", "solid", "dashed", "double"],
+    "shortcuts_shape": ["auto", "square", "circle"],
+    "clock_font_family": ["system", "serif", "mono"]
+  }
+}

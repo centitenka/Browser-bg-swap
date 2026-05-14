@@ -1,5 +1,5 @@
 import { browserCapabilities } from './capabilities';
-import { CONFIG_VERSION, createDefaultAppConfig, createDefaultSettings } from './defaults';
+import { CONFIG_VERSION, createDefaultAppConfig, createDefaultSettings, sharedConfigSchema } from './defaults';
 import type {
   AppConfig,
   BrowserSettings,
@@ -18,6 +18,15 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function clampSetting(value: number | null | undefined, key: string, fallback: number): number {
+  const range = sharedConfigSchema.numbers[key];
+  if (!range) {
+    throw new Error(`Missing numeric config schema for ${key}`);
+  }
+
+  return clamp(value ?? fallback, range.min, range.max);
+}
+
 function normalizeColor(value: string | null | undefined, fallback: string): string {
   const normalized = value?.trim();
   return normalized && colorPattern.test(normalized) ? normalized.toLowerCase() : fallback;
@@ -26,6 +35,15 @@ function normalizeColor(value: string | null | undefined, fallback: string): str
 function normalizeEnum(value: string | null | undefined, allowed: string[], fallback: string): string {
   const normalized = value?.trim().toLowerCase();
   return normalized && allowed.includes(normalized) ? normalized : fallback;
+}
+
+function normalizeEnumSetting(value: string | null | undefined, key: string, fallback: string): string {
+  const allowed = sharedConfigSchema.enums[key];
+  if (!allowed) {
+    throw new Error(`Missing enum config schema for ${key}`);
+  }
+
+  return normalizeEnum(value, allowed, fallback);
 }
 
 function normalizeText(value: string | null | undefined, fallback: string): string {
@@ -66,154 +84,154 @@ export function normalizeBrowserSettings(settings: Partial<BrowserSettings> | nu
     ...defaults,
     ...input,
     background_image: input.background_image?.trim() || null,
-    overlay_opacity: clamp(input.overlay_opacity ?? defaults.overlay_opacity, 0, 100),
+    overlay_opacity: clampSetting(input.overlay_opacity, 'overlay_opacity', defaults.overlay_opacity),
     clock_color: normalizeColor(input.clock_color, defaults.clock_color),
-    clock_size: clamp(input.clock_size ?? defaults.clock_size, 32, 120),
-    search_engine: normalizeEnum(
-      input.search_engine,
-      ['google', 'bing', 'baidu', 'duckduckgo'],
-      defaults.search_engine
-    ),
+    clock_size: clampSetting(input.clock_size, 'clock_size', defaults.clock_size),
+    search_engine: normalizeEnumSetting(input.search_engine, 'search_engine', defaults.search_engine),
     shortcuts: normalizeShortcuts(input.shortcuts, defaults.shortcuts),
     clock_position: normalizePosition(input.clock_position, defaults.clock_position),
     search_position: normalizePosition(input.search_position, defaults.search_position),
     shortcuts_position: normalizePosition(input.shortcuts_position, defaults.shortcuts_position),
     background_color: normalizeColor(input.background_color, defaults.background_color),
-    background_fit: normalizeEnum(
-      input.background_fit,
-      ['cover', 'contain', 'center', 'stretch'],
-      defaults.background_fit
+    background_fit: normalizeEnumSetting(input.background_fit, 'background_fit', defaults.background_fit),
+    background_blur: clampSetting(input.background_blur, 'background_blur', defaults.background_blur),
+    background_brightness: clampSetting(
+      input.background_brightness,
+      'background_brightness',
+      defaults.background_brightness
     ),
-    background_blur: clamp(input.background_blur ?? defaults.background_blur, 0, 20),
-    background_brightness: clamp(
-      input.background_brightness ?? defaults.background_brightness,
-      50,
-      150
-    ),
-    clock_font_weight: normalizeEnum(
+    clock_font_weight: normalizeEnumSetting(
       input.clock_font_weight,
-      ['light', 'normal', 'bold'],
+      'clock_font_weight',
       defaults.clock_font_weight
     ),
     search_bg_color: normalizeColor(input.search_bg_color, defaults.search_bg_color),
-    search_bg_opacity: clamp(input.search_bg_opacity ?? defaults.search_bg_opacity, 0, 100),
-    search_border_radius: clamp(
-      input.search_border_radius ?? defaults.search_border_radius,
-      0,
-      60
+    search_bg_opacity: clampSetting(input.search_bg_opacity, 'search_bg_opacity', defaults.search_bg_opacity),
+    search_border_radius: clampSetting(
+      input.search_border_radius,
+      'search_border_radius',
+      defaults.search_border_radius
     ),
     search_placeholder: normalizeText(input.search_placeholder, defaults.search_placeholder),
-    search_border_width: clamp(input.search_border_width ?? defaults.search_border_width, 0, 5),
+    search_border_width: clampSetting(
+      input.search_border_width,
+      'search_border_width',
+      defaults.search_border_width
+    ),
     search_border_color: normalizeColor(input.search_border_color, defaults.search_border_color),
-    search_border_style: normalizeEnum(
+    search_border_style: normalizeEnumSetting(
       input.search_border_style,
-      ['none', 'solid', 'dashed', 'double'],
+      'search_border_style',
       defaults.search_border_style
     ),
     search_shadow_color: normalizeColor(input.search_shadow_color, defaults.search_shadow_color),
-    search_shadow_blur: clamp(input.search_shadow_blur ?? defaults.search_shadow_blur, 0, 40),
-    search_shadow_opacity: clamp(
-      input.search_shadow_opacity ?? defaults.search_shadow_opacity,
-      0,
-      100
+    search_shadow_blur: clampSetting(input.search_shadow_blur, 'search_shadow_blur', defaults.search_shadow_blur),
+    search_shadow_opacity: clampSetting(
+      input.search_shadow_opacity,
+      'search_shadow_opacity',
+      defaults.search_shadow_opacity
     ),
-    search_backdrop_blur: clamp(
-      input.search_backdrop_blur ?? defaults.search_backdrop_blur,
-      0,
-      20
+    search_backdrop_blur: clampSetting(
+      input.search_backdrop_blur,
+      'search_backdrop_blur',
+      defaults.search_backdrop_blur
     ),
     search_text_color: normalizeColor(input.search_text_color, defaults.search_text_color),
-    search_width: clamp(input.search_width ?? defaults.search_width, 300, 800),
-    search_padding: clamp(input.search_padding ?? defaults.search_padding, 0, 20),
+    search_width: clampSetting(input.search_width, 'search_width', defaults.search_width),
+    search_padding: clampSetting(input.search_padding, 'search_padding', defaults.search_padding),
     shortcuts_bg_color: normalizeColor(input.shortcuts_bg_color, defaults.shortcuts_bg_color),
-    shortcuts_bg_opacity: clamp(
-      input.shortcuts_bg_opacity ?? defaults.shortcuts_bg_opacity,
-      0,
-      100
+    shortcuts_bg_opacity: clampSetting(
+      input.shortcuts_bg_opacity,
+      'shortcuts_bg_opacity',
+      defaults.shortcuts_bg_opacity
     ),
-    shortcuts_border_radius: clamp(
-      input.shortcuts_border_radius ?? defaults.shortcuts_border_radius,
-      0,
-      50
+    shortcuts_border_radius: clampSetting(
+      input.shortcuts_border_radius,
+      'shortcuts_border_radius',
+      defaults.shortcuts_border_radius
     ),
-    shortcuts_columns: normalizeEnum(
+    shortcuts_columns: normalizeEnumSetting(
       input.shortcuts_columns,
-      ['auto', '2', '3', '4', '5', '6'],
+      'shortcuts_columns',
       defaults.shortcuts_columns
     ),
-    shortcuts_gap: clamp(input.shortcuts_gap ?? defaults.shortcuts_gap, 4, 32),
-    shortcuts_border_width: clamp(
-      input.shortcuts_border_width ?? defaults.shortcuts_border_width,
-      0,
-      5
+    shortcuts_gap: clampSetting(input.shortcuts_gap, 'shortcuts_gap', defaults.shortcuts_gap),
+    shortcuts_border_width: clampSetting(
+      input.shortcuts_border_width,
+      'shortcuts_border_width',
+      defaults.shortcuts_border_width
     ),
     shortcuts_border_color: normalizeColor(
       input.shortcuts_border_color,
       defaults.shortcuts_border_color
     ),
-    shortcuts_border_style: normalizeEnum(
+    shortcuts_border_style: normalizeEnumSetting(
       input.shortcuts_border_style,
-      ['none', 'solid', 'dashed', 'double'],
+      'shortcuts_border_style',
       defaults.shortcuts_border_style
     ),
     shortcuts_shadow_color: normalizeColor(
       input.shortcuts_shadow_color,
       defaults.shortcuts_shadow_color
     ),
-    shortcuts_shadow_blur: clamp(
-      input.shortcuts_shadow_blur ?? defaults.shortcuts_shadow_blur,
-      0,
-      40
+    shortcuts_shadow_blur: clampSetting(
+      input.shortcuts_shadow_blur,
+      'shortcuts_shadow_blur',
+      defaults.shortcuts_shadow_blur
     ),
-    shortcuts_shadow_opacity: clamp(
-      input.shortcuts_shadow_opacity ?? defaults.shortcuts_shadow_opacity,
-      0,
-      100
+    shortcuts_shadow_opacity: clampSetting(
+      input.shortcuts_shadow_opacity,
+      'shortcuts_shadow_opacity',
+      defaults.shortcuts_shadow_opacity
     ),
-    shortcuts_backdrop_blur: clamp(
-      input.shortcuts_backdrop_blur ?? defaults.shortcuts_backdrop_blur,
-      0,
-      20
+    shortcuts_backdrop_blur: clampSetting(
+      input.shortcuts_backdrop_blur,
+      'shortcuts_backdrop_blur',
+      defaults.shortcuts_backdrop_blur
     ),
     shortcuts_title_color: normalizeColor(
       input.shortcuts_title_color,
       defaults.shortcuts_title_color
     ),
-    shortcuts_icon_size: clamp(
-      input.shortcuts_icon_size ?? defaults.shortcuts_icon_size,
-      16,
-      64
+    shortcuts_icon_size: clampSetting(
+      input.shortcuts_icon_size,
+      'shortcuts_icon_size',
+      defaults.shortcuts_icon_size
     ),
-    shortcuts_padding_x: clamp(
-      input.shortcuts_padding_x ?? defaults.shortcuts_padding_x,
-      0,
-      30
+    shortcuts_padding_x: clampSetting(
+      input.shortcuts_padding_x,
+      'shortcuts_padding_x',
+      defaults.shortcuts_padding_x
     ),
-    shortcuts_padding_y: clamp(
-      input.shortcuts_padding_y ?? defaults.shortcuts_padding_y,
-      0,
-      30
+    shortcuts_padding_y: clampSetting(
+      input.shortcuts_padding_y,
+      'shortcuts_padding_y',
+      defaults.shortcuts_padding_y
     ),
-    shortcuts_shape: normalizeEnum(
+    shortcuts_shape: normalizeEnumSetting(
       input.shortcuts_shape,
-      ['auto', 'square', 'circle'],
+      'shortcuts_shape',
       defaults.shortcuts_shape
     ),
     clock_shadow_color: normalizeColor(input.clock_shadow_color, defaults.clock_shadow_color),
-    clock_shadow_blur: clamp(input.clock_shadow_blur ?? defaults.clock_shadow_blur, 0, 30),
-    clock_shadow_opacity: clamp(
-      input.clock_shadow_opacity ?? defaults.clock_shadow_opacity,
-      0,
-      100
+    clock_shadow_blur: clampSetting(
+      input.clock_shadow_blur,
+      'clock_shadow_blur',
+      defaults.clock_shadow_blur
     ),
-    clock_letter_spacing: clamp(
-      input.clock_letter_spacing ?? defaults.clock_letter_spacing,
-      -10,
-      20
+    clock_shadow_opacity: clampSetting(
+      input.clock_shadow_opacity,
+      'clock_shadow_opacity',
+      defaults.clock_shadow_opacity
     ),
-    clock_font_family: normalizeEnum(
+    clock_letter_spacing: clampSetting(
+      input.clock_letter_spacing,
+      'clock_letter_spacing',
+      defaults.clock_letter_spacing
+    ),
+    clock_font_family: normalizeEnumSetting(
       input.clock_font_family,
-      ['system', 'serif', 'mono'],
+      'clock_font_family',
       defaults.clock_font_family
     ),
     overlay_color: normalizeColor(input.overlay_color, defaults.overlay_color),

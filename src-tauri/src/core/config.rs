@@ -1,9 +1,29 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
-pub const CONFIG_VERSION: u32 = 2;
+include!(concat!(env!("OUT_DIR"), "/config_schema.rs"));
+
+#[derive(Debug, Deserialize)]
+struct SharedConfigSchema {
+    #[serde(rename = "configVersion")]
+    config_version: u32,
+    numbers: HashMap<String, NumberRule>,
+    enums: HashMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct NumberRule {
+    min: f64,
+    max: f64,
+}
+
+fn shared_config_schema() -> SharedConfigSchema {
+    serde_json::from_str(include_str!("../../../src/shared/configSchema.json"))
+        .expect("shared configSchema.json must be valid")
+}
 
 fn default_config_version() -> u32 {
-    CONFIG_VERSION
+    shared_config_schema().config_version
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -461,14 +481,16 @@ impl AppConfig {
 impl BrowserSettings {
     pub fn normalized(mut self) -> Self {
         let defaults = Self::default();
+        let schema = shared_config_schema();
 
         self.background_image = self.background_image.and_then(normalize_optional_text);
-        self.overlay_opacity = clamp_u32(self.overlay_opacity, 0, 100);
+        self.overlay_opacity = clamp_u32(&schema, "overlay_opacity", self.overlay_opacity);
         self.clock_color = normalize_hex_color(self.clock_color, defaults.clock_color.clone());
-        self.clock_size = clamp_u32(self.clock_size, 32, 120);
+        self.clock_size = clamp_u32(&schema, "clock_size", self.clock_size);
         self.search_engine = normalize_enum(
+            &schema,
+            "search_engine",
             self.search_engine,
-            &["google", "bing", "baidu", "duckduckgo"],
             defaults.search_engine.clone(),
         );
         self.clock_position =
@@ -481,95 +503,145 @@ impl BrowserSettings {
         self.background_color =
             normalize_hex_color(self.background_color, defaults.background_color.clone());
         self.background_fit = normalize_enum(
+            &schema,
+            "background_fit",
             self.background_fit,
-            &["cover", "contain", "center", "stretch"],
             defaults.background_fit.clone(),
         );
-        self.background_blur = clamp_u32(self.background_blur, 0, 20);
-        self.background_brightness = clamp_u32(self.background_brightness, 50, 150);
+        self.background_blur = clamp_u32(&schema, "background_blur", self.background_blur);
+        self.background_brightness =
+            clamp_u32(&schema, "background_brightness", self.background_brightness);
 
         self.clock_font_weight = normalize_enum(
+            &schema,
+            "clock_font_weight",
             self.clock_font_weight,
-            &["light", "normal", "bold"],
             defaults.clock_font_weight.clone(),
         );
 
         self.search_bg_color =
             normalize_hex_color(self.search_bg_color, defaults.search_bg_color.clone());
-        self.search_bg_opacity = clamp_u32(self.search_bg_opacity, 0, 100);
-        self.search_border_radius = clamp_u32(self.search_border_radius, 0, 60);
+        self.search_bg_opacity =
+            clamp_u32(&schema, "search_bg_opacity", self.search_bg_opacity);
+        self.search_border_radius = clamp_u32(
+            &schema,
+            "search_border_radius",
+            self.search_border_radius,
+        );
         self.search_placeholder =
             normalize_text(self.search_placeholder, defaults.search_placeholder.clone());
-        self.search_border_width = clamp_u32(self.search_border_width, 0, 5);
+        self.search_border_width =
+            clamp_u32(&schema, "search_border_width", self.search_border_width);
         self.search_border_color = normalize_hex_color(
             self.search_border_color,
             defaults.search_border_color.clone(),
         );
         self.search_border_style = normalize_enum(
+            &schema,
+            "search_border_style",
             self.search_border_style,
-            &["none", "solid", "dashed", "double"],
             defaults.search_border_style.clone(),
         );
         self.search_shadow_color = normalize_hex_color(
             self.search_shadow_color,
             defaults.search_shadow_color.clone(),
         );
-        self.search_shadow_blur = clamp_u32(self.search_shadow_blur, 0, 40);
-        self.search_shadow_opacity = clamp_u32(self.search_shadow_opacity, 0, 100);
-        self.search_backdrop_blur = clamp_u32(self.search_backdrop_blur, 0, 20);
+        self.search_shadow_blur =
+            clamp_u32(&schema, "search_shadow_blur", self.search_shadow_blur);
+        self.search_shadow_opacity = clamp_u32(
+            &schema,
+            "search_shadow_opacity",
+            self.search_shadow_opacity,
+        );
+        self.search_backdrop_blur =
+            clamp_u32(&schema, "search_backdrop_blur", self.search_backdrop_blur);
         self.search_text_color =
             normalize_hex_color(self.search_text_color, defaults.search_text_color.clone());
-        self.search_width = clamp_u32(self.search_width, 300, 800);
-        self.search_padding = clamp_u32(self.search_padding, 0, 20);
+        self.search_width = clamp_u32(&schema, "search_width", self.search_width);
+        self.search_padding = clamp_u32(&schema, "search_padding", self.search_padding);
 
         self.shortcuts_bg_color =
             normalize_hex_color(self.shortcuts_bg_color, defaults.shortcuts_bg_color.clone());
-        self.shortcuts_bg_opacity = clamp_u32(self.shortcuts_bg_opacity, 0, 100);
-        self.shortcuts_border_radius = clamp_u32(self.shortcuts_border_radius, 0, 50);
+        self.shortcuts_bg_opacity =
+            clamp_u32(&schema, "shortcuts_bg_opacity", self.shortcuts_bg_opacity);
+        self.shortcuts_border_radius = clamp_u32(
+            &schema,
+            "shortcuts_border_radius",
+            self.shortcuts_border_radius,
+        );
         self.shortcuts_columns = normalize_enum(
+            &schema,
+            "shortcuts_columns",
             self.shortcuts_columns,
-            &["auto", "2", "3", "4", "5", "6"],
             defaults.shortcuts_columns.clone(),
         );
-        self.shortcuts_gap = clamp_u32(self.shortcuts_gap, 4, 32);
-        self.shortcuts_border_width = clamp_u32(self.shortcuts_border_width, 0, 5);
+        self.shortcuts_gap = clamp_u32(&schema, "shortcuts_gap", self.shortcuts_gap);
+        self.shortcuts_border_width = clamp_u32(
+            &schema,
+            "shortcuts_border_width",
+            self.shortcuts_border_width,
+        );
         self.shortcuts_border_color = normalize_hex_color(
             self.shortcuts_border_color,
             defaults.shortcuts_border_color.clone(),
         );
         self.shortcuts_border_style = normalize_enum(
+            &schema,
+            "shortcuts_border_style",
             self.shortcuts_border_style,
-            &["none", "solid", "dashed", "double"],
             defaults.shortcuts_border_style.clone(),
         );
         self.shortcuts_shadow_color = normalize_hex_color(
             self.shortcuts_shadow_color,
             defaults.shortcuts_shadow_color.clone(),
         );
-        self.shortcuts_shadow_blur = clamp_u32(self.shortcuts_shadow_blur, 0, 40);
-        self.shortcuts_shadow_opacity = clamp_u32(self.shortcuts_shadow_opacity, 0, 100);
-        self.shortcuts_backdrop_blur = clamp_u32(self.shortcuts_backdrop_blur, 0, 20);
+        self.shortcuts_shadow_blur = clamp_u32(
+            &schema,
+            "shortcuts_shadow_blur",
+            self.shortcuts_shadow_blur,
+        );
+        self.shortcuts_shadow_opacity = clamp_u32(
+            &schema,
+            "shortcuts_shadow_opacity",
+            self.shortcuts_shadow_opacity,
+        );
+        self.shortcuts_backdrop_blur = clamp_u32(
+            &schema,
+            "shortcuts_backdrop_blur",
+            self.shortcuts_backdrop_blur,
+        );
         self.shortcuts_title_color = normalize_hex_color(
             self.shortcuts_title_color,
             defaults.shortcuts_title_color.clone(),
         );
-        self.shortcuts_icon_size = clamp_u32(self.shortcuts_icon_size, 16, 64);
-        self.shortcuts_padding_x = clamp_u32(self.shortcuts_padding_x, 0, 30);
-        self.shortcuts_padding_y = clamp_u32(self.shortcuts_padding_y, 0, 30);
+        self.shortcuts_icon_size =
+            clamp_u32(&schema, "shortcuts_icon_size", self.shortcuts_icon_size);
+        self.shortcuts_padding_x =
+            clamp_u32(&schema, "shortcuts_padding_x", self.shortcuts_padding_x);
+        self.shortcuts_padding_y =
+            clamp_u32(&schema, "shortcuts_padding_y", self.shortcuts_padding_y);
         self.shortcuts_shape = normalize_enum(
+            &schema,
+            "shortcuts_shape",
             self.shortcuts_shape,
-            &["auto", "square", "circle"],
             defaults.shortcuts_shape.clone(),
         );
 
         self.clock_shadow_color =
             normalize_hex_color(self.clock_shadow_color, defaults.clock_shadow_color.clone());
-        self.clock_shadow_blur = clamp_u32(self.clock_shadow_blur, 0, 30);
-        self.clock_shadow_opacity = clamp_u32(self.clock_shadow_opacity, 0, 100);
-        self.clock_letter_spacing = self.clock_letter_spacing.clamp(-10, 20);
+        self.clock_shadow_blur =
+            clamp_u32(&schema, "clock_shadow_blur", self.clock_shadow_blur);
+        self.clock_shadow_opacity = clamp_u32(
+            &schema,
+            "clock_shadow_opacity",
+            self.clock_shadow_opacity,
+        );
+        self.clock_letter_spacing =
+            clamp_i32(&schema, "clock_letter_spacing", self.clock_letter_spacing);
         self.clock_font_family = normalize_enum(
+            &schema,
+            "clock_font_family",
             self.clock_font_family,
-            &["system", "serif", "mono"],
             defaults.clock_font_family.clone(),
         );
 
@@ -583,8 +655,20 @@ impl BrowserSettings {
     }
 }
 
-fn clamp_u32(value: u32, min: u32, max: u32) -> u32 {
-    value.clamp(min, max)
+fn clamp_u32(schema: &SharedConfigSchema, key: &str, value: u32) -> u32 {
+    let rule = schema
+        .numbers
+        .get(key)
+        .unwrap_or_else(|| panic!("missing numeric config schema for {key}"));
+    (value as f64).clamp(rule.min, rule.max) as u32
+}
+
+fn clamp_i32(schema: &SharedConfigSchema, key: &str, value: i32) -> i32 {
+    let rule = schema
+        .numbers
+        .get(key)
+        .unwrap_or_else(|| panic!("missing numeric config schema for {key}"));
+    (value as f64).clamp(rule.min, rule.max) as i32
 }
 
 fn normalize_text(value: String, fallback: String) -> String {
@@ -605,9 +689,13 @@ fn normalize_optional_text(value: String) -> Option<String> {
     }
 }
 
-fn normalize_enum(value: String, allowed: &[&str], fallback: String) -> String {
+fn normalize_enum(schema: &SharedConfigSchema, key: &str, value: String, fallback: String) -> String {
     let lowered = value.trim().to_ascii_lowercase();
-    if allowed.iter().any(|allowed| *allowed == lowered) {
+    let allowed = schema
+        .enums
+        .get(key)
+        .unwrap_or_else(|| panic!("missing enum config schema for {key}"));
+    if allowed.iter().any(|allowed| allowed == &lowered) {
         lowered
     } else {
         fallback
